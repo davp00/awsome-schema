@@ -35,39 +35,40 @@ impl SchemaDiffPort for SchemaDiffer {
         name: &str,
     ) -> MigrationPlan {
         let mut operations = Vec::new();
+        let naming = &to.naming;
 
         let from_models: &[Model] = from.map(|schema| schema.models.as_slice()).unwrap_or(&[]);
         let from_model_names =
-            from_models.iter().map(|model| model.table_name()).collect::<Vec<_>>();
+            from_models.iter().map(|model| model.name.as_str()).collect::<Vec<_>>();
 
         for model in &to.models {
-            let table = model.table_name();
-            if !from_model_names.contains(&table) {
+            let table = model.table_name(naming);
+            if !from_model_names.contains(&model.name.as_str()) {
                 operations.push(MigrationOperation::CreateTable {
                     name: table.clone(),
                     mode: model.table_mode,
                 });
-                operations.extend(field_operations_for_model(model));
-                operations.extend(index_operations_for_model(model));
+                operations.extend(field_operations_for_model(model, naming));
+                operations.extend(index_operations_for_model(model, naming));
                 if let Some(permission) = &model.permissions {
                     operations.push(MigrationOperation::CreatePermission {
                         table: table.clone(),
                         permission: permission.clone(),
                     });
                 }
-            } else if let Some(previous) = from_models.iter().find(|m| m.table_name() == table) {
-                operations.extend(diff_model(previous, model));
+            } else if let Some(previous) = from_models.iter().find(|m| m.name == model.name) {
+                operations.extend(diff_model(previous, model, naming));
             }
         }
 
         for previous in from_models {
-            let table = previous.table_name();
-            if !to.models.iter().any(|model| model.table_name() == table) {
+            let table = previous.table_name(naming);
+            if !to.models.iter().any(|model| model.name == previous.name) {
                 operations.push(MigrationOperation::DropTable { name: table });
             }
         }
 
-        MigrationPlan { name: name.to_owned(), operations }
+        MigrationPlan { name: name.to_owned(), operations, naming: naming.clone() }
     }
 }
 
@@ -79,8 +80,12 @@ pub fn diff_schemas(
     SchemaDiffer::new().diff(from, to, name)
 }
 
-fn diff_model(from: &Model, to: &Model) -> Vec<MigrationOperation> {
-    let table = to.table_name();
+fn diff_model(
+    from: &Model,
+    to: &Model,
+    naming: &core::NamingConvention,
+) -> Vec<MigrationOperation> {
+    let table = to.table_name(naming);
     let mut operations = Vec::new();
 
     if from.table_mode != to.table_mode {
@@ -134,8 +139,11 @@ fn diff_model(from: &Model, to: &Model) -> Vec<MigrationOperation> {
     operations
 }
 
-fn field_operations_for_model(model: &Model) -> Vec<MigrationOperation> {
-    let table = model.table_name();
+fn field_operations_for_model(
+    model: &Model,
+    naming: &core::NamingConvention,
+) -> Vec<MigrationOperation> {
+    let table = model.table_name(naming);
     model
         .fields
         .iter()
@@ -143,8 +151,11 @@ fn field_operations_for_model(model: &Model) -> Vec<MigrationOperation> {
         .collect()
 }
 
-fn index_operations_for_model(model: &Model) -> Vec<MigrationOperation> {
-    let table = model.table_name();
+fn index_operations_for_model(
+    model: &Model,
+    naming: &core::NamingConvention,
+) -> Vec<MigrationOperation> {
+    let table = model.table_name(naming);
     model
         .indexes
         .iter()
@@ -156,7 +167,7 @@ fn index_operations_for_model(model: &Model) -> Vec<MigrationOperation> {
 mod tests {
     use std::collections::BTreeMap;
 
-    use core::{Datasource, Field, FieldType, TableMode};
+    use core::{Datasource, Field, FieldType, NamingConvention, TableMode};
 
     use super::*;
 
@@ -209,6 +220,7 @@ mod tests {
                 database: None,
                 extra: BTreeMap::new(),
             },
+            naming: NamingConvention::default(),
             generators: Vec::new(),
             models: vec![user_model()],
             edges: Vec::new(),

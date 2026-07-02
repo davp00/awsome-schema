@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use core::{
     DatabaseSchema, Datasource, DomainError, Edge, Field, FieldType, Generator, Index, Model,
-    TableMode,
+    NamingCase, NamingConvention, TableMode,
 };
 
 use crate::lexer::{Lexer, Token};
@@ -33,6 +33,7 @@ impl Parser {
             database: None,
             extra: BTreeMap::new(),
         };
+        let mut naming = NamingConvention::default();
         let mut generators = Vec::new();
         let mut models = Vec::new();
         let mut edges = Vec::new();
@@ -43,6 +44,9 @@ impl Parser {
                 "datasource" => {
                     let name = self.expect_identifier()?;
                     datasource = self.parse_datasource(name)?;
+                }
+                "naming" => {
+                    naming = self.parse_naming()?;
                 }
                 "generator" => {
                     let name = self.expect_identifier()?;
@@ -64,7 +68,38 @@ impl Parser {
             }
         }
 
-        Ok(DatabaseSchema { datasource, generators, models, edges })
+        Ok(DatabaseSchema { datasource, naming, generators, models, edges })
+    }
+
+    fn parse_naming(&mut self) -> Result<NamingConvention, DomainError> {
+        self.expect(Token::LeftBrace)?;
+        let mut naming = NamingConvention::default();
+
+        while !self.is_at(Token::RightBrace) {
+            let key = self.expect_identifier()?;
+            self.expect(Token::Equals)?;
+            let value = self.parse_value()?;
+            match key.as_str() {
+                "tables" => {
+                    naming.tables = NamingCase::parse(&value).ok_or_else(|| {
+                        DomainError::ParseError(format!("unknown naming case `{value}` for tables"))
+                    })?;
+                }
+                "fields" => {
+                    naming.fields = Some(NamingCase::parse(&value).ok_or_else(|| {
+                        DomainError::ParseError(format!("unknown naming case `{value}` for fields"))
+                    })?);
+                }
+                other => {
+                    return Err(DomainError::ParseError(format!(
+                        "unknown naming option `{other}`"
+                    )));
+                }
+            }
+        }
+
+        self.expect(Token::RightBrace)?;
+        Ok(naming)
     }
 
     fn parse_datasource(&mut self, _name: String) -> Result<Datasource, DomainError> {

@@ -5,6 +5,10 @@ datasource db {
   database  = "main"
 }
 
+naming {
+  tables = "snake_case"
+}
+
 generator client {
   provider = "typescript"
   output   = "./generated"
@@ -46,4 +50,9 @@ edge Likes {
   updatedAt datetime @updated(time::now())
 
   @@table(schemafull)
+}
+
+model TestTable {
+  id        RecordId<TestTable> @id
+  test      string
 }

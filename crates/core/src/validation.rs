@@ -46,7 +46,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use crate::domain::{Datasource, Field, FieldType, Model, TableMode};
+    use crate::domain::{Datasource, Field, FieldType, Model, NamingConvention, TableMode};
 
     fn sample_schema() -> DatabaseSchema {
         DatabaseSchema {
@@ -57,6 +57,7 @@ mod tests {
                 database: Some("main".to_owned()),
                 extra: BTreeMap::new(),
             },
+            naming: NamingConvention::default(),
             generators: Vec::new(),
             models: vec![Model {
                 name: "User".to_owned(),

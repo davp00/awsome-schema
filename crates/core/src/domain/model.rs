@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use super::naming::{NamingConvention, mapped_name};
 use super::{Field, Index};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -23,8 +24,8 @@ pub struct Model {
 
 impl Model {
     #[must_use]
-    pub fn table_name(&self) -> String {
-        self.attributes.get("map").cloned().unwrap_or_else(|| self.name.to_lowercase())
+    pub fn table_name(&self, naming: &NamingConvention) -> String {
+        mapped_name(&self.name, &self.attributes, Some(naming.tables))
     }
 }
 
@@ -41,7 +42,7 @@ pub struct Edge {
 
 impl Edge {
     #[must_use]
-    pub fn table_name(&self) -> String {
-        self.attributes.get("map").cloned().unwrap_or_else(|| self.name.to_lowercase())
+    pub fn table_name(&self, naming: &NamingConvention) -> String {
+        mapped_name(&self.name, &self.attributes, Some(naming.tables))
     }
 }

@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use super::naming::NamingConvention;
 use super::{Field, Index, TableMode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MigrationPlan {
     pub name: String,
     pub operations: Vec<MigrationOperation>,
+    #[serde(default)]
+    pub naming: NamingConvention,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

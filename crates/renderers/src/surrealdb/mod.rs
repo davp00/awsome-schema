@@ -8,7 +8,8 @@
 
 use core::ports::{MigrationRenderer, SchemaRenderer};
 use core::{
-    DatabaseSchema, DomainError, Edge, Field, MigrationOperation, MigrationPlan, Model, TableMode,
+    DatabaseSchema, DomainError, Edge, Field, Index, MigrationOperation, MigrationPlan, Model,
+    NamingContext, TableMode,
 };
 
 pub struct SurrealDbRenderer;
@@ -28,14 +29,15 @@ impl Default for SurrealDbRenderer {
 
 impl SchemaRenderer for SurrealDbRenderer {
     fn render_schema(&self, schema: &DatabaseSchema) -> Result<String, DomainError> {
+        let naming = NamingContext::new(&schema.naming, &schema.models);
         let mut lines = Vec::new();
 
         for model in &schema.models {
-            lines.extend(render_model_schema(model));
+            lines.extend(render_model_schema(model, &naming));
         }
 
         for edge in &schema.edges {
-            lines.extend(render_edge_schema(edge));
+            lines.extend(render_edge_schema(edge, &naming));
         }
 
         Ok(lines.join("\n"))
@@ -44,32 +46,33 @@ impl SchemaRenderer for SurrealDbRenderer {
 
 impl MigrationRenderer for SurrealDbRenderer {
     fn render_migration(&self, migration: &MigrationPlan) -> Result<String, DomainError> {
+        let naming = NamingContext::new(&migration.naming, &[]);
         let mut lines = vec![format!("-- Migration: {}", migration.name)];
 
         for operation in &migration.operations {
-            lines.extend(render_operation(operation)?);
+            lines.extend(render_operation(operation, &naming)?);
         }
 
         Ok(lines.join("\n"))
     }
 }
 
-fn render_model_schema(model: &Model) -> Vec<String> {
-    let table = model.table_name();
+fn render_model_schema(model: &Model, naming: &NamingContext<'_>) -> Vec<String> {
+    let table = naming.table_name_for_model(model);
     let mut lines = vec![render_define_table(&table, model.table_mode)];
 
     for field in &model.fields {
         if field.relation_name.is_some() {
             continue;
         }
-        lines.push(render_define_field(&table, field));
+        lines.push(render_define_field(&table, field, naming));
         if field.unique {
-            lines.push(render_unique_index(&table, field));
+            lines.push(render_unique_index(&table, field, naming));
         }
     }
 
     for index in &model.indexes {
-        lines.push(render_define_index(&table, index));
+        lines.push(render_define_index(&table, index, naming));
     }
 
     if let Some(permission) = &model.permissions {
@@ -79,12 +82,12 @@ fn render_model_schema(model: &Model) -> Vec<String> {
     lines
 }
 
-fn render_edge_schema(edge: &Edge) -> Vec<String> {
-    let table = edge.table_name();
+fn render_edge_schema(edge: &Edge, naming: &NamingContext<'_>) -> Vec<String> {
+    let table = naming.map_table_name(&edge.name, &edge.attributes);
     let mut lines = vec![render_define_table(&table, edge.table_mode)];
 
     for field in &edge.fields {
-        lines.push(render_define_field(&table, field));
+        lines.push(render_define_field(&table, field, naming));
     }
 
     lines
@@ -98,11 +101,11 @@ fn render_define_table(name: &str, mode: TableMode) -> String {
     format!("DEFINE TABLE {name} {mode_name};")
 }
 
-fn render_define_field(table: &str, field: &Field) -> String {
+fn render_define_field(table: &str, field: &Field, naming: &NamingContext<'_>) -> String {
+    let field_name = naming.field_name(field);
     let mut line = format!(
-        "DEFINE FIELD {} ON {table} TYPE {}",
-        field.name,
-        field.field_type.surreal_type_name(field.optional)
+        "DEFINE FIELD {field_name} ON {table} TYPE {}",
+        naming.surreal_type_name(&field.field_type, field.optional)
     );
 
     if let Some(default) = &field.default_value {
@@ -126,13 +129,19 @@ fn render_define_field(table: &str, field: &Field) -> String {
     line
 }
 
-fn render_unique_index(table: &str, field: &Field) -> String {
-    format!("DEFINE INDEX {}_{}_unique ON {table} FIELDS {} UNIQUE;", table, field.name, field.name)
+fn render_unique_index(table: &str, field: &Field, naming: &NamingContext<'_>) -> String {
+    let field_name = naming.field_name(field);
+    format!("DEFINE INDEX {table}_{field_name}_unique ON {table} FIELDS {field_name} UNIQUE;")
 }
 
-fn render_define_index(table: &str, index: &Index) -> String {
-    let name = index.resolved_name(table);
-    let fields = index.fields.join(", ");
+fn render_define_index(table: &str, index: &Index, naming: &NamingContext<'_>) -> String {
+    let name = index.resolved_name(table, naming.convention());
+    let fields = index
+        .fields
+        .iter()
+        .map(|field| naming.field_name_str(field, &BTreeMap::new()))
+        .collect::<Vec<_>>()
+        .join(", ");
 
     let mut line = format!("DEFINE INDEX {name} ON {table} FIELDS {fields}");
     if index.unique {
@@ -148,19 +157,29 @@ fn render_define_index(table: &str, index: &Index) -> String {
     line
 }
 
-fn render_operation(operation: &MigrationOperation) -> Result<Vec<String>, DomainError> {
+fn render_operation(
+    operation: &MigrationOperation,
+    naming: &NamingContext<'_>,
+) -> Result<Vec<String>, DomainError> {
     let lines = match operation {
         MigrationOperation::CreateTable { name, mode } => {
             vec![render_define_table(name, *mode)]
         }
         MigrationOperation::DropTable { name } => vec![format!("REMOVE TABLE {name};")],
         MigrationOperation::AlterTable { name, mode } => vec![render_define_table(name, *mode)],
-        MigrationOperation::CreateField { table, field } => vec![render_define_field(table, field)],
-        MigrationOperation::DropField { table, name } => {
-            vec![format!("REMOVE FIELD {name} ON {table};")]
+        MigrationOperation::CreateField { table, field } => {
+            vec![render_define_field(table, field, naming)]
         }
-        MigrationOperation::AlterField { table, field } => vec![render_define_field(table, field)],
-        MigrationOperation::CreateIndex { table, index } => vec![render_define_index(table, index)],
+        MigrationOperation::DropField { table, name } => {
+            let field_name = naming.field_name_str(name, &BTreeMap::new());
+            vec![format!("REMOVE FIELD {field_name} ON {table};")]
+        }
+        MigrationOperation::AlterField { table, field } => {
+            vec![render_define_field(table, field, naming)]
+        }
+        MigrationOperation::CreateIndex { table, index } => {
+            vec![render_define_index(table, index, naming)]
+        }
         MigrationOperation::DropIndex { table, name } => {
             vec![format!("REMOVE INDEX {name} ON {table};")]
         }
@@ -185,18 +204,24 @@ fn render_operation(operation: &MigrationOperation) -> Result<Vec<String>, Domai
     Ok(lines)
 }
 
-use core::Index;
+use std::collections::BTreeMap;
 
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
 
-    use core::{Datasource, Field, FieldType};
+    use core::{Datasource, Field, FieldType, Model, NamingCase, NamingContext, NamingConvention};
 
     use super::*;
 
+    fn snake_case_fields() -> NamingConvention {
+        NamingConvention { tables: NamingCase::SnakeCase, fields: Some(NamingCase::SnakeCase) }
+    }
+
     #[test]
     fn renders_default_value_field() {
+        let convention = snake_case_fields();
+        let naming = NamingContext::new(&convention, &[]);
         let field = Field {
             name: "createdAt".to_owned(),
             field_type: FieldType::Datetime,
@@ -212,12 +237,14 @@ mod tests {
             attributes: BTreeMap::new(),
         };
 
-        let rendered = render_define_field("user", &field);
-        assert_eq!(rendered, "DEFINE FIELD createdAt ON user TYPE datetime DEFAULT time::now();");
+        let rendered = render_define_field("user", &field, &naming);
+        assert_eq!(rendered, "DEFINE FIELD created_at ON user TYPE datetime DEFAULT time::now();");
     }
 
     #[test]
     fn renders_value_and_readonly_field() {
+        let convention = snake_case_fields();
+        let naming = NamingContext::new(&convention, &[]);
         let field = Field {
             name: "createdAt".to_owned(),
             field_type: FieldType::Datetime,
@@ -233,15 +260,17 @@ mod tests {
             attributes: BTreeMap::new(),
         };
 
-        let rendered = render_define_field("user", &field);
+        let rendered = render_define_field("user", &field, &naming);
         assert_eq!(
             rendered,
-            "DEFINE FIELD createdAt ON user TYPE datetime VALUE time::now() READONLY;"
+            "DEFINE FIELD created_at ON user TYPE datetime VALUE time::now() READONLY;"
         );
     }
 
     #[test]
     fn renders_updated_value_field() {
+        let convention = snake_case_fields();
+        let naming = NamingContext::new(&convention, &[]);
         let field = Field {
             name: "updatedAt".to_owned(),
             field_type: FieldType::Datetime,
@@ -257,12 +286,40 @@ mod tests {
             attributes: BTreeMap::new(),
         };
 
-        let rendered = render_define_field("user", &field);
-        assert_eq!(rendered, "DEFINE FIELD updatedAt ON user TYPE datetime VALUE time::now();");
+        let rendered = render_define_field("user", &field, &naming);
+        assert_eq!(rendered, "DEFINE FIELD updated_at ON user TYPE datetime VALUE time::now();");
+    }
+
+    #[test]
+    fn preserves_field_name_when_fields_naming_not_set() {
+        let convention = NamingConvention::default();
+        let naming = NamingContext::new(&convention, &[]);
+        let field = Field {
+            name: "createdAt".to_owned(),
+            field_type: FieldType::Datetime,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: Some("time::now()".to_owned()),
+            readonly: true,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("user", &field, &naming);
+        assert_eq!(
+            rendered,
+            "DEFINE FIELD createdAt ON user TYPE datetime VALUE time::now() READONLY;"
+        );
     }
 
     #[test]
     fn renders_optional_field_as_option_type() {
+        let convention = NamingConvention::default();
+        let naming = NamingContext::new(&convention, &[]);
         let field = Field {
             name: "age".to_owned(),
             field_type: FieldType::Int,
@@ -278,12 +335,22 @@ mod tests {
             attributes: BTreeMap::new(),
         };
 
-        let rendered = render_define_field("user", &field);
+        let rendered = render_define_field("user", &field, &naming);
         assert_eq!(rendered, "DEFINE FIELD age ON user TYPE option<int>;");
     }
 
     #[test]
     fn renders_optional_record_link() {
+        let models = vec![Model {
+            name: "User".to_owned(),
+            fields: Vec::new(),
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: Vec::new(),
+            attributes: BTreeMap::new(),
+        }];
+        let convention = NamingConvention::default();
+        let naming = NamingContext::new(&convention, &models);
         let field = Field {
             name: "author".to_owned(),
             field_type: FieldType::Model("User".to_owned()),
@@ -299,8 +366,8 @@ mod tests {
             attributes: BTreeMap::new(),
         };
 
-        let rendered = render_define_field("post", &field);
-        assert_eq!(rendered, "DEFINE FIELD author ON post TYPE option<record<User>>;");
+        let rendered = render_define_field("post", &field, &naming);
+        assert_eq!(rendered, "DEFINE FIELD author ON post TYPE option<record<user>>;");
     }
 
     #[test]
@@ -311,6 +378,7 @@ mod tests {
                 table: "user".to_owned(),
                 name: "name".to_owned(),
             }],
+            naming: NamingConvention::default(),
         };
 
         let rendered =
@@ -346,6 +414,7 @@ mod tests {
                     },
                 },
             ],
+            naming: NamingConvention::default(),
         };
 
         let rendered =
@@ -365,6 +434,7 @@ mod tests {
                 database: None,
                 extra: BTreeMap::new(),
             },
+            naming: NamingConvention::default(),
             generators: Vec::new(),
             models: vec![Model {
                 name: "User".to_owned(),

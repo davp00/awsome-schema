@@ -27,10 +27,12 @@ impl DbPushUseCase {
     pub fn execute(&self, _port: DbPushInput) -> Result<DbPushOutput, DomainError> {
         let schema = self.schema_source.load_schema()?;
         let rendered = self.schema_renderer.render_schema(&schema)?;
+        let naming = schema.naming;
         let _migration =
             self.migration_renderer.render_migration(&crate::domain::MigrationPlan {
                 name: "push".to_owned(),
                 operations: Vec::new(),
+                naming,
             })?;
 
         Err(DomainError::NotImplemented(format!(

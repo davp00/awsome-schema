@@ -102,10 +102,40 @@ mod tests {
     }
 
     #[test]
+    fn parses_naming_block() {
+        let schema = parse(
+            r#"datasource db { provider = "surrealdb" }
+naming { tables = "snake_case" fields = "camelCase" }"#,
+        )
+        .expect("should parse");
+
+        assert_eq!(schema.naming.tables, core::NamingCase::SnakeCase);
+        assert_eq!(schema.naming.fields, Some(core::NamingCase::CamelCase));
+    }
+
+    #[test]
+    fn preserves_field_naming_when_fields_not_set() {
+        let schema = parse(
+            r#"datasource db { provider = "surrealdb" }
+naming { tables = "snake_case" }"#,
+        )
+        .expect("should parse");
+
+        assert_eq!(schema.naming.tables, core::NamingCase::SnakeCase);
+        assert_eq!(schema.naming.fields, None);
+    }
+
+    #[test]
+    fn parses_example_schema_naming() {
+        let schema = parse(EXAMPLE).expect("example schema should parse");
+        assert_eq!(schema.naming.fields, None);
+    }
+
+    #[test]
     fn parses_example_schema() {
         let schema = parse(EXAMPLE).expect("example schema should parse");
         assert_eq!(schema.datasource.provider, "surrealdb");
-        assert_eq!(schema.models.len(), 2);
+        assert_eq!(schema.models.len(), 3);
         assert_eq!(schema.edges.len(), 1);
 
         let user = &schema.models[0];
