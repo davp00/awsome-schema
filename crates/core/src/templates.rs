@@ -1,0 +1,47 @@
+pub const DEFAULT_SCHEMA_TEMPLATE: &str = r#"datasource db {
+  provider = "surrealdb"
+  url      = env("SURREALDB_URL")
+  namespace = "app"
+  database  = "main"
+}
+
+generator client {
+  provider = "typescript"
+  output   = "./generated"
+}
+
+model User {
+  id        RecordId<User> @id
+  email     string @unique
+  name      string
+  age       int?
+  profile   object?
+  tags      string[]
+  createdAt datetime @default(time::now())
+
+  posts     Post[] @relation("user_posts")
+
+  @@table(schemafull)
+  @@permissions("FULL")
+}
+
+model Post {
+  id        RecordId<Post> @id
+  title     string
+  content   string
+  author    User @link
+  createdAt datetime @default(time::now())
+
+  @@table(schemafull)
+  @@index([title])
+}
+
+edge Likes {
+  in  User
+  out Post
+
+  createdAt datetime @default(time::now())
+
+  @@table(schemafull)
+}
+"#;

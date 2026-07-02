@@ -1,9 +1,25 @@
 [package]
 name = "cli"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Awesome Schema CLI."
+
+[[bin]]
+name = "awesome-schema"
+path = "src/main.rs"
 
 [lints]
 workspace = true
 
 [dependencies]
+anyhow.workspace = true
+clap.workspace = true
+schema-core.workspace = true
+parser.workspace = true
+migrations.workspace = true
+sql.workspace = true
+codegen-rust.workspace = true
+codegen-typescript.workspace = true
+serde_json.workspace = true

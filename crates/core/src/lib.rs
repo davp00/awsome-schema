@@ -1,15 +1,20 @@
-#[must_use]
-pub const fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::needless_pass_by_value,
+    clippy::new_without_default,
+    clippy::missing_const_for_fn,
+    clippy::use_self
+)]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod domain;
+pub mod errors;
+pub mod ports;
+pub mod templates;
+pub mod usecases;
+pub mod validation;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use domain::*;
+pub use errors::DomainError;
+pub use ports::*;
+pub use usecases::*;
+pub use validation::validate_schema;

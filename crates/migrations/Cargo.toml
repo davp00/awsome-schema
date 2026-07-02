@@ -1,9 +1,16 @@
 [package]
 name = "migrations"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Schema diffing and migration planning."
 
 [lints]
 workspace = true
 
 [dependencies]
+core.workspace = true
+
+[dev-dependencies]
+core.workspace = true

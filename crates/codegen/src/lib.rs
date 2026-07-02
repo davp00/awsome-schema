@@ -1,15 +1,8 @@
-#[must_use]
-pub const fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![allow(clippy::missing_errors_doc)]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use core::{DatabaseSchema, DomainError};
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub trait CodeGenerator: Send + Sync {
+    fn language(&self) -> &'static str;
+    fn generate(&self, schema: &DatabaseSchema) -> Result<String, DomainError>;
 }

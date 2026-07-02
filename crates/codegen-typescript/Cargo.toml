@@ -1,9 +1,14 @@
 [package]
 name = "codegen-typescript"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "TypeScript model code generation."
 
 [lints]
 workspace = true
 
 [dependencies]
+codegen.workspace = true
+core.workspace = true

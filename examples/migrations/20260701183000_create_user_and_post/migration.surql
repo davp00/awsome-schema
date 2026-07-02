@@ -1,0 +1,20 @@
+-- Migration: create_user_and_post
+DEFINE TABLE user SCHEMAFULL;
+DEFINE FIELD id ON user TYPE record<User>;
+DEFINE FIELD email ON user TYPE string;
+DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;
+DEFINE FIELD name ON user TYPE string;
+DEFINE FIELD age ON user TYPE int OPTIONAL;
+DEFINE FIELD profile ON user TYPE object OPTIONAL;
+DEFINE FIELD tags ON user TYPE array<string>;
+DEFINE FIELD createdat ON user TYPE datetime DEFAULT time::now();
+DEFINE TABLE user PERMISSIONS FULL;
+DEFINE TABLE post SCHEMAFULL;
+DEFINE FIELD id ON post TYPE record<Post>;
+DEFINE FIELD title ON post TYPE string;
+DEFINE FIELD content ON post TYPE string;
+DEFINE FIELD author ON post TYPE record<User>;
+DEFINE FIELD createdat ON post TYPE datetime DEFAULT time::now();
+DEFINE INDEX post_title_idx ON post FIELDS title;
+DEFINE TABLE likes SCHEMAFULL;
+DEFINE FIELD createdat ON likes TYPE datetime DEFAULT time::now();

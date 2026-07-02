@@ -1,0 +1,111 @@
+{
+  "datasource": {
+    "provider": "surrealdb",
+    "url": "env(\"SURREALDB_URL\")",
+    "namespace": "app",
+    "database": "main",
+    "extra": {}
+  },
+  "generators": [
+    {
+      "provider": "typescript",
+      "output": "./generated",
+      "extra": {}
+    }
+  ],
+  "models": [
+    {
+      "name": "User",
+      "fields": [
+        {
+          "name": "id",
+          "field_type": { "record_id": "User" },
+          "optional": false,
+          "unique": false,
+          "is_id": true,
+          "default_value": null,
+          "link_target": null,
+          "relation_name": null,
+          "attributes": {}
+        },
+        {
+          "name": "email",
+          "field_type": "string",
+          "optional": false,
+          "unique": true,
+          "is_id": false,
+          "default_value": null,
+          "link_target": null,
+          "relation_name": null,
+          "attributes": {}
+        }
+      ],
+      "table_mode": "schemafull",
+      "permissions": "FULL",
+      "indexes": [],
+      "attributes": {}
+    },
+    {
+      "name": "Post",
+      "fields": [
+        {
+          "name": "id",
+          "field_type": { "record_id": "Post" },
+          "optional": false,
+          "unique": false,
+          "is_id": true,
+          "default_value": null,
+          "link_target": null,
+          "relation_name": null,
+          "attributes": {}
+        },
+        {
+          "name": "title",
+          "field_type": "string",
+          "optional": false,
+          "unique": false,
+          "is_id": false,
+          "default_value": null,
+          "link_target": null,
+          "relation_name": null,
+          "attributes": {}
+        }
+      ],
+      "table_mode": "schemafull",
+      "permissions": null,
+      "indexes": [
+        {
+          "name": null,
+          "fields": ["title"],
+          "unique": false,
+          "fulltext": false,
+          "vector": false
+        }
+      ],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "name": "Likes",
+      "in_model": "User",
+      "out_model": "Post",
+      "fields": [
+        {
+          "name": "createdAt",
+          "field_type": "datetime",
+          "optional": false,
+          "unique": false,
+          "is_id": false,
+          "default_value": "time::now()",
+          "link_target": null,
+          "relation_name": null,
+          "attributes": {}
+        }
+      ],
+      "table_mode": "schemafull",
+      "permissions": null,
+      "attributes": {}
+    }
+  ]
+}
