@@ -39,6 +39,10 @@ impl MigrateCreateUseCase {
             &format!("{migration_dir}/migration.surql"),
             "-- Empty migration created manually\n",
         )?;
+        self.filesystem.write_string(
+            &format!("{migration_dir}/migration.down.surql"),
+            "-- No rollback operations\n",
+        )?;
         self.migration_store.save_snapshot(&schema, &migration_dir)?;
 
         Ok(MigrateCreateOutput { migration_dir })

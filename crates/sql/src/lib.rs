@@ -193,6 +193,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn renders_down_migration_for_field_removal() {
+        let plan = MigrationPlan {
+            name: "add_name_down".to_owned(),
+            operations: vec![MigrationOperation::DropField {
+                table: "user".to_owned(),
+                name: "name".to_owned(),
+            }],
+        };
+
+        let rendered =
+            SurrealDbRenderer::new().render_migration(&plan).expect("down migration should render");
+
+        assert!(rendered.contains("REMOVE FIELD name ON user;"));
+    }
+
+    #[test]
     fn renders_user_table_migration() {
         let plan = MigrationPlan {
             name: "create_user".to_owned(),

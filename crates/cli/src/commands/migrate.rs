@@ -13,7 +13,7 @@ pub fn run_dev(context: &AppContext, name: Option<String>, printer: &Printer) ->
 
     if output.created {
         printer.success(&format!(
-            "Created migration `{}` with {} operations.",
+            "Created migration `{}` with {} operations (up + down).",
             output.migration_dir, output.operation_count
         ));
     } else {

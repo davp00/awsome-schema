@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use chrono::Utc;
 
+use crate::domain::DatabaseSchema;
 use crate::errors::DomainError;
 use crate::ports::{FileSystemPort, MigrationRenderer, MigrationStore, SchemaSource};
 
@@ -62,6 +63,12 @@ impl MigrateDevUseCase {
             });
         }
 
+        let down_name = format!("{name}_down");
+        let down_plan = previous.as_ref().map_or_else(
+            || self.diff.diff(Some(&current), &DatabaseSchema::empty(), &down_name),
+            |prev| self.diff.diff(Some(&current), prev, &down_name),
+        );
+
         let migration_dir =
             format!("{}/{}_{}", port.migrations_dir, Utc::now().format("%Y%m%d%H%M%S"), name);
 
@@ -69,6 +76,10 @@ impl MigrateDevUseCase {
 
         let surql = self.migration_renderer.render_migration(&plan)?;
         self.filesystem.write_string(&format!("{migration_dir}/migration.surql"), &surql)?;
+
+        let down_surql = self.migration_renderer.render_migration(&down_plan)?;
+        self.filesystem
+            .write_string(&format!("{migration_dir}/migration.down.surql"), &down_surql)?;
 
         self.migration_store.save_snapshot(&current, &migration_dir)?;
 

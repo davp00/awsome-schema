@@ -136,8 +136,10 @@ Migrations work similarly to **TypeORM**:
 
 1. `migrate dev` parses the current schema and diffs it against the latest `snapshot.json`.
 2. Domain-level operations are produced (`CreateTable`, `CreateField`, `CreateIndex`, …).
-3. The SurrealDB renderer writes `migration.surql`.
+3. The SurrealDB renderer writes `migration.surql` (up) and `migration.down.surql` (down).
 4. A new `snapshot.json` is saved for the next diff.
+
+Down migrations are computed as the reverse schema diff (`current → previous`), so rollback operations mirror the forward migration.
 
 Example layout:
 
@@ -145,8 +147,15 @@ Example layout:
 migrations/
 └── 20260701183000_create_user_and_post/
     ├── migration.surql
+    ├── migration.down.surql
     └── snapshot.json
 ```
+
+Each migration directory contains:
+
+- `migration.surql` — forward (up) operations to apply the schema change
+- `migration.down.surql` — reverse (down) operations for rollback
+- `snapshot.json` — normalized schema state after the up migration
 
 See [`examples/migrations/`](examples/migrations/) for a reference migration.
 

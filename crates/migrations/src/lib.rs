@@ -230,6 +230,37 @@ mod tests {
     }
 
     #[test]
+    fn down_migration_reverses_up_changes() {
+        let previous = target_schema();
+        let mut current = target_schema();
+        current.models[0].fields.push(Field {
+            name: "name".to_owned(),
+            field_type: FieldType::String,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+
+        let up = diff_schemas(Some(&previous), &current, "add_name");
+        let down = diff_schemas(Some(&current), &previous, "add_name_down");
+
+        assert!(up.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::CreateField { table, field }
+            if table == "user" && field.name == "name"
+        )));
+        assert!(down.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::DropField { table, name }
+            if table == "user" && name == "name"
+        )));
+    }
+
+    #[test]
     fn detects_added_field() {
         let mut updated = target_schema();
         updated.models[0].fields.push(Field {
