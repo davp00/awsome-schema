@@ -112,6 +112,7 @@ See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The
 - `model` and `edge` blocks
 - Schemafull / schemaless tables (`@@table`)
 - Fields, optionals, arrays, record links, relations
+- Flexible nested objects (`object @flexible`) and subdocument fields (`metadata.user_id`)
 - Field assignments: `@default`, `@value`, `@updated`, `@readonly`
 - Indexes, permissions, and provider-specific extensions
 
@@ -124,6 +125,26 @@ Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 | `@value(expr)` | `VALUE expr` | Recomputed on every CREATE and UPDATE |
 | `@updated(expr)` | `VALUE expr` | Alias for auto-updating timestamps (`updatedAt`) |
 | `@readonly` | `READONLY` | Prevents manual updates (use with `@value`) |
+| `@flexible` | `FLEXIBLE` | Allows extra undefined keys on a schemafull object field |
+
+Flexible objects mirror SurrealDB's schemaless-in-schemafull pattern for nested data:
+
+```prisma
+model User {
+  id        @id
+  metadata  object @flexible
+  metadata.user_id int?
+  metadata.source  string
+}
+```
+
+Renders as:
+
+```sql
+DEFINE FIELD metadata ON user TYPE object FLEXIBLE;
+DEFINE FIELD metadata.user_id ON user TYPE option<int>;
+DEFINE FIELD metadata.source ON user TYPE string;
+```
 
 ```prisma
 model User {

@@ -108,6 +108,10 @@ fn render_define_field(table: &str, field: &Field, naming: &NamingContext<'_>) -
         naming.surreal_type_name(&field.field_type, field.optional)
     );
 
+    if field.flexible {
+        line.push_str(" FLEXIBLE");
+    }
+
     if let Some(default) = &field.default_value {
         if field.default_always {
             line.push_str(" DEFAULT ALWAYS");
@@ -232,6 +236,7 @@ mod tests {
             default_always: false,
             value_expression: None,
             readonly: false,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -255,6 +260,7 @@ mod tests {
             default_always: false,
             value_expression: Some("time::now()".to_owned()),
             readonly: true,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -281,6 +287,7 @@ mod tests {
             default_always: false,
             value_expression: Some("time::now()".to_owned()),
             readonly: false,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -304,6 +311,7 @@ mod tests {
             default_always: false,
             value_expression: Some("time::now()".to_owned()),
             readonly: true,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -330,6 +338,7 @@ mod tests {
             default_always: false,
             value_expression: None,
             readonly: false,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -337,6 +346,52 @@ mod tests {
 
         let rendered = render_define_field("user", &field, &naming);
         assert_eq!(rendered, "DEFINE FIELD age ON user TYPE option<int>;");
+    }
+
+    #[test]
+    fn renders_flexible_object_and_nested_subdocument_fields() {
+        let convention = snake_case_fields();
+        let naming = NamingContext::new(&convention, &[]);
+
+        let metadata = Field {
+            name: "metadata".to_owned(),
+            field_type: FieldType::Object,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: true,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+        assert_eq!(
+            render_define_field("user", &metadata, &naming),
+            "DEFINE FIELD metadata ON user TYPE object FLEXIBLE;"
+        );
+
+        let nested = Field {
+            name: "metadata.userId".to_owned(),
+            field_type: FieldType::Int,
+            optional: true,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+        assert_eq!(
+            render_define_field("user", &nested, &naming),
+            "DEFINE FIELD metadata.user_id ON user TYPE option<int>;"
+        );
     }
 
     #[test]
@@ -361,6 +416,7 @@ mod tests {
             default_always: false,
             value_expression: None,
             readonly: false,
+            flexible: false,
             link_target: Some("User".to_owned()),
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -408,6 +464,7 @@ mod tests {
                         default_always: false,
                         value_expression: None,
                         readonly: false,
+                        flexible: false,
                         link_target: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
@@ -448,6 +505,7 @@ mod tests {
                     default_always: false,
                     value_expression: None,
                     readonly: false,
+                    flexible: false,
                     link_target: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
@@ -552,6 +610,7 @@ mod tests {
             default_always: true,
             value_expression: None,
             readonly: false,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),
@@ -588,6 +647,7 @@ mod tests {
                         default_always: false,
                         value_expression: None,
                         readonly: false,
+                        flexible: false,
                         link_target: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
@@ -602,6 +662,7 @@ mod tests {
                         default_always: false,
                         value_expression: None,
                         readonly: false,
+                        flexible: false,
                         link_target: None,
                         relation_name: Some("user_posts".to_owned()),
                         attributes: BTreeMap::new(),
@@ -632,6 +693,7 @@ mod tests {
                     default_always: false,
                     value_expression: None,
                     readonly: false,
+                    flexible: false,
                     link_target: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),

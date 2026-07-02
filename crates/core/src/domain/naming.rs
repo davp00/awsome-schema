@@ -100,12 +100,12 @@ impl<'a> NamingContext<'a> {
 
     #[must_use]
     pub fn field_name(&self, field: &Field) -> String {
-        mapped_name(&field.name, &field.attributes, self.naming.fields)
+        map_field_path(&field.name, &field.attributes, self.naming.fields)
     }
 
     #[must_use]
     pub fn field_name_str(&self, name: &str, attributes: &BTreeMap<String, String>) -> String {
-        mapped_name(name, attributes, self.naming.fields)
+        map_field_path(name, attributes, self.naming.fields)
     }
 
     #[must_use]
@@ -132,6 +132,31 @@ impl<'a> NamingContext<'a> {
             FieldType::Custom(value) => value.clone(),
         }
     }
+}
+
+fn map_field_path(
+    name: &str,
+    attributes: &BTreeMap<String, String>,
+    field_naming: Option<NamingCase>,
+) -> String {
+    let segments: Vec<&str> = name.split('.').collect();
+    if segments.len() == 1 {
+        return mapped_name(name, attributes, field_naming);
+    }
+
+    let last = segments.len() - 1;
+    segments
+        .into_iter()
+        .enumerate()
+        .map(|(index, segment)| {
+            if index == last {
+                mapped_name(segment, attributes, field_naming)
+            } else {
+                mapped_name(segment, &BTreeMap::new(), field_naming)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(".")
 }
 
 fn to_snake_case(input: &str) -> String {
@@ -270,6 +295,7 @@ mod tests {
                 default_always: false,
                 value_expression: None,
                 readonly: false,
+                flexible: false,
                 link_target: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
@@ -305,5 +331,13 @@ mod tests {
         assert_eq!(ctx.surreal_type_name(&FieldType::Float, false), "float");
         assert_eq!(ctx.surreal_type_name(&FieldType::Bool, false), "bool");
         assert_eq!(ctx.surreal_type_name(&FieldType::Object, false), "object");
+    }
+
+    #[test]
+    fn maps_dotted_field_paths_per_segment() {
+        let naming =
+            NamingConvention { tables: NamingCase::SnakeCase, fields: Some(NamingCase::SnakeCase) };
+        let ctx = NamingContext::new(&naming, &[]);
+        assert_eq!(ctx.field_name_str("metadata.userId", &BTreeMap::new()), "metadata.user_id");
     }
 }

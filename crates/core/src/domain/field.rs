@@ -18,6 +18,9 @@ pub struct Field {
     pub value_expression: Option<String>,
     /// Prevents manual updates (`READONLY` clause, typically with `@value`).
     pub readonly: bool,
+    /// `SurrealDB` `FLEXIBLE` object: schemaless nested fields on a schemafull table.
+    #[serde(default)]
+    pub flexible: bool,
     pub link_target: Option<String>,
     pub relation_name: Option<String>,
     pub attributes: BTreeMap<String, String>,
@@ -86,6 +89,7 @@ mod tests {
             default_always: false,
             value_expression: Some("time::now()".to_owned()),
             readonly: false,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),

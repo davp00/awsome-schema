@@ -20,6 +20,9 @@ model User {
   name      string
   age       int?
   profile   object?
+  metadata  object @flexible
+  metadata.user_id int?
+  metadata.source string
   tags      string[]
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
@@ -55,4 +58,6 @@ edge Likes {
 model TestTable {
   id        @id
   test      string
+
+  testObject object
 }

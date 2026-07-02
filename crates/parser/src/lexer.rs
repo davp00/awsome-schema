@@ -12,6 +12,7 @@ pub enum Token {
     Greater,
     At,
     Comma,
+    Dot,
     Equals,
     Question,
     Eof,
@@ -88,6 +89,10 @@ impl<'a> Lexer<'a> {
             ',' => {
                 self.advance();
                 Token::Comma
+            }
+            '.' => {
+                self.advance();
+                Token::Dot
             }
             '=' => {
                 self.advance();
@@ -190,6 +195,21 @@ mod tests {
             Lexer::new("// comment\nprovider = \"surrealdb\", ?").tokenize().expect("tokenize");
         assert!(tokens.iter().any(|token| matches!(token, Token::Comma)));
         assert!(tokens.iter().any(|token| matches!(token, Token::Question)));
+    }
+
+    #[test]
+    fn tokenizes_dotted_field_path() {
+        let tokens = Lexer::new("metadata.user_id int").tokenize().expect("tokenize");
+        assert!(matches!(
+            tokens.as_slice(),
+            [
+                Token::Identifier(first),
+                Token::Dot,
+                Token::Identifier(second),
+                Token::Identifier(_),
+                Token::Eof
+            ] if first == "metadata" && second == "user_id"
+        ));
     }
 
     #[test]

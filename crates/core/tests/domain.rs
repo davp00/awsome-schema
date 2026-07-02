@@ -58,6 +58,7 @@ fn model_and_edge_table_names_use_naming_convention() {
             default_always: false,
             value_expression: None,
             readonly: false,
+            flexible: false,
             link_target: None,
             relation_name: None,
             attributes: BTreeMap::new(),

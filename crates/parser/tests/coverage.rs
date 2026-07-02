@@ -321,3 +321,37 @@ fn rejects_invalid_expression_in_attribute() {
     let error = parse(r"model User { id @id x string @default(1) }").expect_err("bad expr");
     assert!(matches!(error, DomainError::ParseError(_)));
 }
+
+#[test]
+fn parses_flexible_object_and_nested_subdocument_fields() {
+    let schema = parse(
+        r"model User {
+  id @id
+  metadata object @flexible
+  metadata.user_id int?
+  metadata.source string
+}",
+    )
+    .expect("parse");
+
+    let user = &schema.models[0];
+    let metadata = user.fields.iter().find(|f| f.name == "metadata").unwrap();
+    assert!(metadata.flexible);
+    assert_eq!(metadata.field_type, FieldType::Object);
+
+    let user_id = user.fields.iter().find(|f| f.name == "metadata.user_id").unwrap();
+    assert!(user_id.optional);
+    assert_eq!(user_id.field_type, FieldType::Int);
+}
+
+#[test]
+fn rejects_flexible_on_non_object_field() {
+    let error = parse("model User { id @id name string @flexible }").expect_err("flexible");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
+fn rejects_nested_field_with_id() {
+    let error = parse("model User { id @id metadata.user_id @id }").expect_err("nested id");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}

@@ -252,7 +252,7 @@ impl Parser {
     }
 
     fn parse_field(&mut self, model_name: Option<&str>) -> Result<Field, DomainError> {
-        let name = self.expect_identifier()?;
+        let name = self.parse_field_path()?;
         let field_type = if self.is_at(Token::At)
             && !matches!(self.tokens.get(self.position + 1), Some(Token::At))
         {
@@ -267,6 +267,7 @@ impl Parser {
         let mut default_always = false;
         let mut value_expression = None;
         let mut readonly = false;
+        let mut flexible = false;
         let mut link_target = None;
         let mut relation_name = None;
         let mut attributes = BTreeMap::new();
@@ -286,6 +287,7 @@ impl Parser {
                 }
                 "value" | "updated" => value_expression = Some(attr.1),
                 "readonly" => readonly = true,
+                "flexible" => flexible = true,
                 "link" => {
                     link_target = Some(if attr.1.is_empty() {
                         let Some(ref ft) = field_type else {
@@ -309,17 +311,15 @@ impl Parser {
             optional = false;
         }
 
-        if default_value.is_some() && value_expression.is_some() {
-            return Err(DomainError::ParseError(format!(
-                "field `{name}` cannot use both @default and @value/@updated"
-            )));
-        }
-
-        if readonly && value_expression.is_none() && default_value.is_none() {
-            return Err(DomainError::ParseError(format!(
-                "field `{name}` @readonly requires @value or @default"
-            )));
-        }
+        validate_field_rules(
+            &name,
+            is_id,
+            flexible,
+            field_type.as_ref(),
+            readonly,
+            default_value.as_ref(),
+            value_expression.as_ref(),
+        )?;
 
         let field_type = match (field_type, is_id, model_name) {
             (Some(field_type), _, _) => field_type,
@@ -344,10 +344,20 @@ impl Parser {
             default_always,
             value_expression,
             readonly,
+            flexible,
             link_target,
             relation_name,
             attributes,
         })
+    }
+
+    fn parse_field_path(&mut self) -> Result<String, DomainError> {
+        let mut path = self.expect_identifier()?;
+        while self.match_token(Token::Dot) {
+            path.push('.');
+            path.push_str(&self.expect_identifier()?);
+        }
+        Ok(path)
     }
 
     fn parse_field_type(&mut self) -> Result<FieldType, DomainError> {
@@ -518,6 +528,40 @@ fn parse_index_fields(raw: &str) -> Result<Vec<String>, DomainError> {
         return Ok(Vec::new());
     }
     Ok(raw.split(',').map(str::trim).map(ToOwned::to_owned).collect())
+}
+
+fn validate_field_rules(
+    name: &str,
+    is_id: bool,
+    flexible: bool,
+    field_type: Option<&FieldType>,
+    readonly: bool,
+    default_value: Option<&String>,
+    value_expression: Option<&String>,
+) -> Result<(), DomainError> {
+    if default_value.is_some() && value_expression.is_some() {
+        return Err(DomainError::ParseError(format!(
+            "field `{name}` cannot use both @default and @value/@updated"
+        )));
+    }
+
+    if readonly && value_expression.is_none() && default_value.is_none() {
+        return Err(DomainError::ParseError(format!(
+            "field `{name}` @readonly requires @value or @default"
+        )));
+    }
+
+    if name.contains('.') && is_id {
+        return Err(DomainError::ParseError(format!("nested field `{name}` cannot use @id")));
+    }
+
+    if flexible && !matches!(field_type, Some(FieldType::Object)) {
+        return Err(DomainError::ParseError(format!(
+            "field `{name}` @flexible requires type object"
+        )));
+    }
+
+    Ok(())
 }
 
 fn link_target_from_type(field_type: &FieldType) -> String {

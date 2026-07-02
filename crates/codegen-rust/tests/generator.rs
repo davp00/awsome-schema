@@ -30,6 +30,7 @@ fn schema_with_field(field_type: FieldType, optional: bool) -> DatabaseSchema {
                 default_always: false,
                 value_expression: None,
                 readonly: false,
+                flexible: false,
                 link_target: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
