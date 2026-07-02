@@ -101,13 +101,9 @@ fn render_define_table(name: &str, mode: TableMode) -> String {
 fn render_define_field(table: &str, field: &Field) -> String {
     let mut line = format!(
         "DEFINE FIELD {} ON {table} TYPE {}",
-        field.name.to_lowercase(),
-        field.field_type.surreal_type_name()
+        field.name,
+        field.field_type.surreal_type_name(field.optional)
     );
-
-    if field.optional {
-        line.push_str(" OPTIONAL");
-    }
 
     if let Some(default) = &field.default_value {
         if field.default_always {
@@ -131,18 +127,12 @@ fn render_define_field(table: &str, field: &Field) -> String {
 }
 
 fn render_unique_index(table: &str, field: &Field) -> String {
-    format!(
-        "DEFINE INDEX {}_{}_unique ON {table} FIELDS {} UNIQUE;",
-        table,
-        field.name.to_lowercase(),
-        field.name.to_lowercase()
-    )
+    format!("DEFINE INDEX {}_{}_unique ON {table} FIELDS {} UNIQUE;", table, field.name, field.name)
 }
 
 fn render_define_index(table: &str, index: &Index) -> String {
     let name = index.resolved_name(table);
-    let fields =
-        index.fields.iter().map(|field| field.to_lowercase()).collect::<Vec<_>>().join(", ");
+    let fields = index.fields.join(", ");
 
     let mut line = format!("DEFINE INDEX {name} ON {table} FIELDS {fields}");
     if index.unique {
@@ -223,7 +213,7 @@ mod tests {
         };
 
         let rendered = render_define_field("user", &field);
-        assert_eq!(rendered, "DEFINE FIELD createdat ON user TYPE datetime DEFAULT time::now();");
+        assert_eq!(rendered, "DEFINE FIELD createdAt ON user TYPE datetime DEFAULT time::now();");
     }
 
     #[test]
@@ -246,7 +236,7 @@ mod tests {
         let rendered = render_define_field("user", &field);
         assert_eq!(
             rendered,
-            "DEFINE FIELD createdat ON user TYPE datetime VALUE time::now() READONLY;"
+            "DEFINE FIELD createdAt ON user TYPE datetime VALUE time::now() READONLY;"
         );
     }
 
@@ -268,7 +258,49 @@ mod tests {
         };
 
         let rendered = render_define_field("user", &field);
-        assert_eq!(rendered, "DEFINE FIELD updatedat ON user TYPE datetime VALUE time::now();");
+        assert_eq!(rendered, "DEFINE FIELD updatedAt ON user TYPE datetime VALUE time::now();");
+    }
+
+    #[test]
+    fn renders_optional_field_as_option_type() {
+        let field = Field {
+            name: "age".to_owned(),
+            field_type: FieldType::Int,
+            optional: true,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("user", &field);
+        assert_eq!(rendered, "DEFINE FIELD age ON user TYPE option<int>;");
+    }
+
+    #[test]
+    fn renders_optional_record_link() {
+        let field = Field {
+            name: "author".to_owned(),
+            field_type: FieldType::Model("User".to_owned()),
+            optional: true,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            link_target: Some("User".to_owned()),
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("post", &field);
+        assert_eq!(rendered, "DEFINE FIELD author ON post TYPE option<record<User>>;");
     }
 
     #[test]

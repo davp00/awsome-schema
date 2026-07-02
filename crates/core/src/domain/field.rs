@@ -48,7 +48,13 @@ pub enum FieldType {
 
 impl FieldType {
     #[must_use]
-    pub fn surreal_type_name(&self) -> String {
+    pub fn surreal_type_name(&self, optional: bool) -> String {
+        let inner = self.base_surreal_type_name();
+        if optional { format!("option<{inner}>") } else { inner }
+    }
+
+    #[must_use]
+    pub fn base_surreal_type_name(&self) -> String {
         match self {
             Self::String => "string".to_owned(),
             Self::Int => "int".to_owned(),
@@ -56,7 +62,7 @@ impl FieldType {
             Self::Bool => "bool".to_owned(),
             Self::Datetime => "datetime".to_owned(),
             Self::Object => "object".to_owned(),
-            Self::Array(inner) => format!("array<{}>", inner.surreal_type_name()),
+            Self::Array(inner) => format!("array<{}>", inner.base_surreal_type_name()),
             Self::RecordId(target) => format!("record<{target}>"),
             Self::Model(name) => format!("record<{name}>"),
             Self::Custom(value) => value.clone(),

@@ -465,6 +465,6 @@ fn link_target_from_type(field_type: &FieldType) -> String {
     match field_type {
         FieldType::Model(name) => name.clone(),
         FieldType::RecordId(name) => name.clone(),
-        other => other.surreal_type_name(),
+        other => other.base_surreal_type_name(),
     }
 }
