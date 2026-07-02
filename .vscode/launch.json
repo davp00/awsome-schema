@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug cli",
+      "cargo": {
+        "args": ["build", "--package=cli", "--bin=cli"],
+        "filter": {
+          "name": "cli",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Run cli",
+      "cargo": {
+        "args": ["run", "--package=cli", "--bin=cli"],
+        "filter": {
+          "name": "cli",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug workspace tests",
+      "cargo": {
+        "args": ["test", "--no-run", "--workspace", "--locked"],
+        "filter": {
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

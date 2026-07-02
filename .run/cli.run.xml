@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="cli" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+    <option name="command" value="run --package cli --bin cli" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+    <method v="2">
+      <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+    </method>
+  </configuration>
+</component>

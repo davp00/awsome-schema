@@ -1,0 +1,63 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cargo: build",
+      "type": "cargo",
+      "command": "build",
+      "args": ["--workspace"],
+      "problemMatcher": ["$rustc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "cargo: run cli",
+      "type": "cargo",
+      "command": "run",
+      "args": ["--package", "cli", "--bin", "cli"],
+      "problemMatcher": ["$rustc"],
+      "group": "none"
+    },
+    {
+      "label": "cargo: test",
+      "type": "cargo",
+      "command": "test",
+      "args": ["--workspace", "--locked"],
+      "problemMatcher": ["$rustc"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "cargo: clippy",
+      "type": "cargo",
+      "command": "clippy",
+      "args": [
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo: fmt",
+      "type": "shell",
+      "command": "cargo fmt --all",
+      "problemMatcher": []
+    },
+    {
+      "label": "scripts: check",
+      "type": "shell",
+      "command": "./scripts/check.sh",
+      "problemMatcher": ["$rustc"],
+      "group": "none"
+    }
+  ]
+}
