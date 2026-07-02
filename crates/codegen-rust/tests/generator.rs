@@ -18,6 +18,7 @@ fn schema_with_field(field_type: FieldType, optional: bool) -> DatabaseSchema {
         },
         naming: NamingConvention::default(),
         generators: Vec::new(),
+        object_types: Vec::new(),
         models: vec![Model {
             name: "Sample".to_owned(),
             fields: vec![Field {

@@ -8,6 +8,7 @@
 
 pub mod domain;
 pub mod errors;
+pub mod normalize;
 pub mod ports;
 pub mod templates;
 pub mod usecases;
@@ -15,6 +16,7 @@ pub mod validation;
 
 pub use domain::*;
 pub use errors::DomainError;
+pub use normalize::{nested_fields_from_object_body, normalize_schema};
 pub use ports::*;
 pub use usecases::*;
 pub use validation::validate_schema;

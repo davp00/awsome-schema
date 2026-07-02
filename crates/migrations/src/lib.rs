@@ -224,6 +224,7 @@ mod tests {
             },
             naming: NamingConvention::default(),
             generators: Vec::new(),
+            object_types: Vec::new(),
             models: vec![user_model()],
             edges: Vec::new(),
         }

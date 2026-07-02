@@ -112,7 +112,7 @@ See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The
 - `model` and `edge` blocks
 - Schemafull / schemaless tables (`@@table`)
 - Fields, optionals, arrays, record links, relations
-- Flexible nested objects (`object @flexible`) and subdocument fields (`metadata.user_id`)
+- Flexible nested objects (`object @flexible`) with inline blocks or reusable `type` definitions
 - Field assignments: `@default`, `@value`, `@updated`, `@readonly`
 - Indexes, permissions, and provider-specific extensions
 
@@ -127,24 +127,39 @@ Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 | `@readonly` | `READONLY` | Prevents manual updates (use with `@value`) |
 | `@flexible` | `FLEXIBLE` | Allows extra undefined keys on a schemafull object field |
 
-Flexible objects mirror SurrealDB's schemaless-in-schemafull pattern for nested data:
+Flexible objects mirror SurrealDB's schemaless-in-schemafull pattern for nested data. Define nested fields inline, with dotted paths, or via a reusable type:
 
 ```prisma
+// Inline object block
 model User {
   id        @id
-  metadata  object @flexible
-  metadata.user_id int?
-  metadata.source  string
+  metadata  object @flexible {
+    user_id int?
+    source  string
+  }
+}
+
+// Reusable object type
+type UserMetadata @flexible {
+  user_id int?
+  source  string
+}
+
+model User {
+  id        @id
+  metadata  UserMetadata
 }
 ```
 
-Renders as:
+Both forms render as:
 
 ```sql
 DEFINE FIELD metadata ON user TYPE object FLEXIBLE;
 DEFINE FIELD metadata.user_id ON user TYPE option<int>;
 DEFINE FIELD metadata.source ON user TYPE string;
 ```
+
+Dotted paths (`metadata.user_id int?`) remain supported for flat declarations.
 
 ```prisma
 model User {

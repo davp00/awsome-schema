@@ -14,15 +14,22 @@ generator client {
   output   = "./generated"
 }
 
+type UserMetadata @flexible {
+  user_id int?
+  source  string
+}
+
 model User {
   id        @id
   email     string @unique
   name      string
   age       int?
   profile   object?
-  metadata  object @flexible
-  metadata.user_id int?
-  metadata.source string
+  metadata  object @flexible {
+    user_id int?
+    source  string
+  }
+  settings  UserMetadata
   tags      string[]
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())

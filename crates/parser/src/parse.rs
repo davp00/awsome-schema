@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use core::{
     DatabaseSchema, Datasource, DomainError, Edge, Field, FieldType, Generator, Index, Model,
-    NamingCase, NamingConvention, TableMode,
+    NamingCase, NamingConvention, ObjectTypeDefinition, ObjectTypeField, TableMode,
+    nested_fields_from_object_body, normalize_schema,
 };
 
 use crate::lexer::{Lexer, Token};
@@ -35,6 +36,7 @@ impl Parser {
         };
         let mut naming = NamingConvention::default();
         let mut generators = Vec::new();
+        let mut object_types = Vec::new();
         let mut models = Vec::new();
         let mut edges = Vec::new();
 
@@ -56,6 +58,10 @@ impl Parser {
                     let name = self.expect_identifier()?;
                     models.push(self.parse_model(name)?);
                 }
+                "type" => {
+                    let name = self.expect_identifier()?;
+                    object_types.push(self.parse_object_type(name)?);
+                }
                 "edge" => {
                     let name = self.expect_identifier()?;
                     edges.push(self.parse_edge(name)?);
@@ -68,7 +74,10 @@ impl Parser {
             }
         }
 
-        Ok(DatabaseSchema { datasource, naming, generators, models, edges })
+        let mut schema =
+            DatabaseSchema { datasource, naming, generators, object_types, models, edges };
+        normalize_schema(&mut schema)?;
+        Ok(schema)
     }
 
     fn parse_naming(&mut self) -> Result<NamingConvention, DomainError> {
@@ -193,7 +202,9 @@ impl Parser {
                     }
                 }
             } else {
-                fields.push(self.parse_field(Some(&name))?);
+                let (field, nested) = self.parse_field(Some(&name))?;
+                fields.push(field);
+                fields.extend(nested);
             }
         }
 
@@ -242,7 +253,9 @@ impl Parser {
                     out_model = self.expect_identifier()?;
                 } else {
                     self.position -= 1;
-                    fields.push(self.parse_field(None)?);
+                    let (field, nested) = self.parse_field(None)?;
+                    fields.push(field);
+                    fields.extend(nested);
                 }
             }
         }
@@ -251,7 +264,64 @@ impl Parser {
         Ok(Edge { name, in_model, out_model, fields, table_mode, permissions, attributes })
     }
 
-    fn parse_field(&mut self, model_name: Option<&str>) -> Result<Field, DomainError> {
+    fn parse_object_type(&mut self, name: String) -> Result<ObjectTypeDefinition, DomainError> {
+        let mut flexible = false;
+
+        while self.is_at(Token::At)
+            && !matches!(self.tokens.get(self.position + 1), Some(Token::At))
+        {
+            self.advance();
+            let attr = self.parse_field_attribute()?;
+            match attr.0.as_str() {
+                "flexible" => flexible = true,
+                other => {
+                    return Err(DomainError::ParseError(format!(
+                        "object type `{name}` does not support attribute `@{other}`"
+                    )));
+                }
+            }
+        }
+
+        let fields = self.parse_object_type_body()?;
+        Ok(ObjectTypeDefinition { name, flexible, fields })
+    }
+
+    fn parse_object_type_body(&mut self) -> Result<Vec<ObjectTypeField>, DomainError> {
+        self.expect(Token::LeftBrace)?;
+        let mut fields = Vec::new();
+
+        while !self.is_at(Token::RightBrace) {
+            fields.push(self.parse_object_type_field()?);
+        }
+
+        self.expect(Token::RightBrace)?;
+        Ok(fields)
+    }
+
+    fn parse_object_type_field(&mut self) -> Result<ObjectTypeField, DomainError> {
+        let name = self.expect_identifier()?;
+        if name.contains('.') {
+            return Err(DomainError::ParseError(format!(
+                "object type field `{name}` must be a simple name, not a nested path"
+            )));
+        }
+
+        let field_type = self.parse_field_type()?;
+        let optional = self.match_token(Token::Question);
+
+        if self.is_at(Token::At) {
+            return Err(DomainError::ParseError(format!(
+                "object type field `{name}` does not support field attributes"
+            )));
+        }
+
+        Ok(ObjectTypeField { name, field_type, optional })
+    }
+
+    fn parse_field(
+        &mut self,
+        model_name: Option<&str>,
+    ) -> Result<(Field, Vec<Field>), DomainError> {
         let name = self.parse_field_path()?;
         let field_type = if self.is_at(Token::At)
             && !matches!(self.tokens.get(self.position + 1), Some(Token::At))
@@ -260,7 +330,91 @@ impl Parser {
         } else {
             Some(self.parse_field_type()?)
         };
-        let mut optional = self.match_token(Token::Question);
+        let optional = self.match_token(Token::Question);
+        let ParsedFieldAttributes {
+            optional,
+            unique,
+            is_id,
+            default_value,
+            default_always,
+            value_expression,
+            readonly,
+            flexible,
+            link_target,
+            relation_name,
+            attributes,
+        } = self.parse_field_attributes(&name, field_type.as_ref(), optional)?;
+
+        validate_field_rules(
+            &name,
+            is_id,
+            flexible,
+            field_type.as_ref(),
+            readonly,
+            default_value.as_ref(),
+            value_expression.as_ref(),
+        )?;
+
+        let field_type = match (field_type, is_id, model_name) {
+            (Some(field_type), _, _) => field_type,
+            (None, true, Some(model)) => FieldType::RecordId(model.to_owned()),
+            (None, true, None) => {
+                return Err(DomainError::ParseError(format!(
+                    "field `{name}` with @id must be declared inside a model"
+                )));
+            }
+            (None, false, _) => {
+                return Err(DomainError::ParseError(format!("field `{name}` requires a type")));
+            }
+        };
+
+        let nested = self.parse_inline_object_fields(&name, &field_type)?;
+
+        Ok((
+            Field {
+                name,
+                field_type,
+                optional,
+                unique,
+                is_id,
+                default_value,
+                default_always,
+                value_expression,
+                readonly,
+                flexible,
+                link_target,
+                relation_name,
+                attributes,
+            },
+            nested,
+        ))
+    }
+
+    fn parse_inline_object_fields(
+        &mut self,
+        name: &str,
+        field_type: &FieldType,
+    ) -> Result<Vec<Field>, DomainError> {
+        if !self.is_at(Token::LeftBrace) {
+            return Ok(Vec::new());
+        }
+
+        if *field_type != FieldType::Object {
+            return Err(DomainError::ParseError(format!(
+                "field `{name}` inline object body requires type object"
+            )));
+        }
+
+        let body = self.parse_object_type_body()?;
+        Ok(nested_fields_from_object_body(name, &body))
+    }
+
+    fn parse_field_attributes(
+        &mut self,
+        name: &str,
+        field_type: Option<&FieldType>,
+        mut optional: bool,
+    ) -> Result<ParsedFieldAttributes, DomainError> {
         let mut unique = false;
         let mut is_id = false;
         let mut default_value = None;
@@ -290,7 +444,7 @@ impl Parser {
                 "flexible" => flexible = true,
                 "link" => {
                     link_target = Some(if attr.1.is_empty() {
-                        let Some(ref ft) = field_type else {
+                        let Some(ft) = field_type else {
                             return Err(DomainError::ParseError(format!(
                                 "field `{name}` @link requires a type when no target is given"
                             )));
@@ -307,36 +461,11 @@ impl Parser {
             }
         }
 
-        if matches!(field_type.as_ref(), Some(FieldType::Model(_))) && !optional {
+        if matches!(field_type, Some(FieldType::Model(_))) && !optional {
             optional = false;
         }
 
-        validate_field_rules(
-            &name,
-            is_id,
-            flexible,
-            field_type.as_ref(),
-            readonly,
-            default_value.as_ref(),
-            value_expression.as_ref(),
-        )?;
-
-        let field_type = match (field_type, is_id, model_name) {
-            (Some(field_type), _, _) => field_type,
-            (None, true, Some(model)) => FieldType::RecordId(model.to_owned()),
-            (None, true, None) => {
-                return Err(DomainError::ParseError(format!(
-                    "field `{name}` with @id must be declared inside a model"
-                )));
-            }
-            (None, false, _) => {
-                return Err(DomainError::ParseError(format!("field `{name}` requires a type")));
-            }
-        };
-
-        Ok(Field {
-            name,
-            field_type,
+        Ok(ParsedFieldAttributes {
             optional,
             unique,
             is_id,
@@ -521,6 +650,21 @@ impl Parser {
         }
         token
     }
+}
+
+#[allow(clippy::struct_excessive_bools)]
+struct ParsedFieldAttributes {
+    optional: bool,
+    unique: bool,
+    is_id: bool,
+    default_value: Option<String>,
+    default_always: bool,
+    value_expression: Option<String>,
+    readonly: bool,
+    flexible: bool,
+    link_target: Option<String>,
+    relation_name: Option<String>,
+    attributes: BTreeMap<String, String>,
 }
 
 fn parse_index_fields(raw: &str) -> Result<Vec<String>, DomainError> {

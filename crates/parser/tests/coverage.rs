@@ -355,3 +355,71 @@ fn rejects_nested_field_with_id() {
     let error = parse("model User { id @id metadata.user_id @id }").expect_err("nested id");
     assert!(matches!(error, DomainError::ParseError(_)));
 }
+
+#[test]
+fn parses_inline_flexible_object_block() {
+    let schema = parse(
+        r"model User {
+  id @id
+  metadata object @flexible {
+    user_id int?
+    source string
+  }
+}",
+    )
+    .expect("parse");
+
+    let user = &schema.models[0];
+    let metadata = user.fields.iter().find(|field| field.name == "metadata").unwrap();
+    assert!(metadata.flexible);
+    assert_eq!(metadata.field_type, FieldType::Object);
+    assert!(user.fields.iter().any(|field| field.name == "metadata.user_id"));
+    assert!(user.fields.iter().any(|field| field.name == "metadata.source"));
+}
+
+#[test]
+fn parses_reusable_object_type_reference() {
+    let schema = parse(
+        r"type UserMetadata @flexible {
+  user_id int?
+  source string
+}
+model User {
+  id @id
+  metadata UserMetadata
+}",
+    )
+    .expect("parse");
+
+    assert_eq!(schema.object_types.len(), 1);
+    assert_eq!(schema.object_types[0].name, "UserMetadata");
+    let metadata = schema.models[0].fields.iter().find(|field| field.name == "metadata").unwrap();
+    assert!(metadata.flexible);
+    assert!(schema.models[0].fields.iter().any(|field| field.name == "metadata.user_id"));
+}
+
+#[test]
+fn rejects_inline_object_body_on_non_object_field() {
+    let error = parse(
+        r"model User {
+  id @id
+  name string {
+    nested string
+  }
+}",
+    )
+    .expect_err("inline on string");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
+fn rejects_unknown_type_reference() {
+    let error = parse(
+        r"model User {
+  id @id
+  metadata UnknownType
+}",
+    )
+    .expect_err("unknown type");
+    assert!(matches!(error, DomainError::ValidationError(_)));
+}

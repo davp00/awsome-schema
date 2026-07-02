@@ -106,6 +106,7 @@ mod tests {
             },
             naming: NamingConvention::default(),
             generators: Vec::new(),
+            object_types: Vec::new(),
             models: vec![Model {
                 name: "User".to_owned(),
                 fields: vec![Field {
@@ -175,6 +176,7 @@ mod tests {
             datasource: sample_schema().datasource,
             naming: NamingConvention::default(),
             generators: Vec::new(),
+            object_types: Vec::new(),
             models: Vec::new(),
             edges: Vec::new(),
         };

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::naming::NamingConvention;
-use super::{Edge, Model};
+use super::{Edge, Model, ObjectTypeDefinition};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DatabaseSchema {
@@ -11,6 +11,8 @@ pub struct DatabaseSchema {
     #[serde(default)]
     pub naming: NamingConvention,
     pub generators: Vec<Generator>,
+    #[serde(default)]
+    pub object_types: Vec<ObjectTypeDefinition>,
     pub models: Vec<Model>,
     pub edges: Vec<Edge>,
 }
@@ -28,6 +30,7 @@ impl DatabaseSchema {
             },
             naming: NamingConvention::default(),
             generators: Vec::new(),
+            object_types: Vec::new(),
             models: Vec::new(),
             edges: Vec::new(),
         }
