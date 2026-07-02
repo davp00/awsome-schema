@@ -223,6 +223,9 @@ impl Parser {
         let mut unique = false;
         let mut is_id = false;
         let mut default_value = None;
+        let mut default_always = false;
+        let mut value_expression = None;
+        let mut readonly = false;
         let mut link_target = None;
         let mut relation_name = None;
         let mut attributes = BTreeMap::new();
@@ -236,6 +239,12 @@ impl Parser {
                 "id" => is_id = true,
                 "unique" => unique = true,
                 "default" => default_value = Some(attr.1),
+                "defaultAlways" => {
+                    default_value = Some(attr.1);
+                    default_always = true;
+                }
+                "value" | "updated" => value_expression = Some(attr.1),
+                "readonly" => readonly = true,
                 "link" => {
                     link_target = Some(if attr.1.is_empty() {
                         link_target_from_type(&field_type)
@@ -254,6 +263,18 @@ impl Parser {
             optional = false;
         }
 
+        if default_value.is_some() && value_expression.is_some() {
+            return Err(DomainError::ParseError(format!(
+                "field `{name}` cannot use both @default and @value/@updated"
+            )));
+        }
+
+        if readonly && value_expression.is_none() && default_value.is_none() {
+            return Err(DomainError::ParseError(format!(
+                "field `{name}` @readonly requires @value or @default"
+            )));
+        }
+
         Ok(Field {
             name,
             field_type,
@@ -261,6 +282,9 @@ impl Parser {
             unique,
             is_id,
             default_value,
+            default_always,
+            value_expression,
+            readonly,
             link_target,
             relation_name,
             attributes,

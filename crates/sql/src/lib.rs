@@ -110,7 +110,20 @@ fn render_define_field(table: &str, field: &Field) -> String {
     }
 
     if let Some(default) = &field.default_value {
-        line.push_str(&format!(" DEFAULT {default}"));
+        if field.default_always {
+            line.push_str(" DEFAULT ALWAYS");
+        } else {
+            line.push_str(" DEFAULT");
+        }
+        line.push_str(&format!(" {default}"));
+    }
+
+    if let Some(value) = &field.value_expression {
+        line.push_str(&format!(" VALUE {value}"));
+    }
+
+    if field.readonly {
+        line.push_str(" READONLY");
     }
 
     line.push(';');
@@ -193,6 +206,72 @@ mod tests {
     use super::*;
 
     #[test]
+    fn renders_default_value_field() {
+        let field = Field {
+            name: "createdAt".to_owned(),
+            field_type: FieldType::Datetime,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: Some("time::now()".to_owned()),
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("user", &field);
+        assert_eq!(rendered, "DEFINE FIELD createdat ON user TYPE datetime DEFAULT time::now();");
+    }
+
+    #[test]
+    fn renders_value_and_readonly_field() {
+        let field = Field {
+            name: "createdAt".to_owned(),
+            field_type: FieldType::Datetime,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: Some("time::now()".to_owned()),
+            readonly: true,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("user", &field);
+        assert_eq!(
+            rendered,
+            "DEFINE FIELD createdat ON user TYPE datetime VALUE time::now() READONLY;"
+        );
+    }
+
+    #[test]
+    fn renders_updated_value_field() {
+        let field = Field {
+            name: "updatedAt".to_owned(),
+            field_type: FieldType::Datetime,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: Some("time::now()".to_owned()),
+            readonly: false,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("user", &field);
+        assert_eq!(rendered, "DEFINE FIELD updatedat ON user TYPE datetime VALUE time::now();");
+    }
+
+    #[test]
     fn renders_down_migration_for_field_removal() {
         let plan = MigrationPlan {
             name: "add_name_down".to_owned(),
@@ -226,6 +305,9 @@ mod tests {
                         unique: true,
                         is_id: false,
                         default_value: None,
+                        default_always: false,
+                        value_expression: None,
+                        readonly: false,
                         link_target: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
@@ -261,6 +343,9 @@ mod tests {
                     unique: true,
                     is_id: false,
                     default_value: None,
+                    default_always: false,
+                    value_expression: None,
+                    readonly: false,
                     link_target: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),

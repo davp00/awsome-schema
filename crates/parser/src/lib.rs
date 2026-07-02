@@ -24,7 +24,7 @@ pub fn parse(source: &str) -> Result<DatabaseSchema, DomainError> {
 
 #[cfg(test)]
 mod tests {
-    use core::{FieldType, TableMode};
+    use core::{DomainError, FieldType, TableMode};
 
     use super::*;
 
@@ -53,6 +53,55 @@ mod tests {
     }
 
     #[test]
+    fn parses_field_default_value() {
+        let schema = parse(
+            r#"model User { id RecordId<User> @id createdAt datetime @default(time::now()) }"#,
+        )
+        .expect("should parse");
+
+        let field = schema.models[0]
+            .fields
+            .iter()
+            .find(|field| field.name == "createdAt")
+            .expect("createdAt field");
+
+        assert_eq!(field.default_value.as_deref(), Some("time::now()"));
+        assert!(!field.default_always);
+        assert!(field.value_expression.is_none());
+        assert!(!field.readonly);
+    }
+
+    #[test]
+    fn parses_field_value_and_updated_attributes() {
+        let schema = parse(
+            r#"model User {
+  id RecordId<User> @id
+  createdAt datetime @value(time::now()) @readonly
+  updatedAt datetime @updated(time::now())
+}"#,
+        )
+        .expect("should parse");
+
+        let user = &schema.models[0];
+        let created = user.fields.iter().find(|field| field.name == "createdAt").unwrap();
+        assert_eq!(created.value_expression.as_deref(), Some("time::now()"));
+        assert!(created.readonly);
+        assert!(created.default_value.is_none());
+
+        let updated = user.fields.iter().find(|field| field.name == "updatedAt").unwrap();
+        assert_eq!(updated.value_expression.as_deref(), Some("time::now()"));
+        assert!(!updated.readonly);
+    }
+
+    #[test]
+    fn rejects_default_and_value_on_same_field() {
+        let error = parse(r#"model User { id RecordId<User> @id when datetime @default(time::now()) @value(time::now()) }"#)
+            .expect_err("should reject conflicting assignments");
+
+        assert!(matches!(error, DomainError::ParseError(_)));
+    }
+
+    #[test]
     fn parses_example_schema() {
         let schema = parse(EXAMPLE).expect("example schema should parse");
         assert_eq!(schema.datasource.provider, "surrealdb");
@@ -70,6 +119,13 @@ mod tests {
         let posts = user.fields.iter().find(|field| field.name == "posts").unwrap();
         assert!(matches!(posts.field_type, FieldType::Array(_)));
         assert_eq!(posts.relation_name.as_deref(), Some("user_posts"));
+
+        let created = user.fields.iter().find(|field| field.name == "createdAt").unwrap();
+        assert_eq!(created.value_expression.as_deref(), Some("time::now()"));
+        assert!(created.readonly);
+
+        let updated = user.fields.iter().find(|field| field.name == "updatedAt").unwrap();
+        assert_eq!(updated.value_expression.as_deref(), Some("time::now()"));
     }
 
     #[test]

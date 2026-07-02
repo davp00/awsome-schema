@@ -17,7 +17,8 @@ model User {
   age       int?
   profile   object?
   tags      string[]
-  createdAt datetime @default(time::now())
+  createdAt datetime @value(time::now()) @readonly
+  updatedAt datetime @updated(time::now())
 
   posts     Post[] @relation("user_posts")
 
@@ -30,7 +31,8 @@ model Post {
   title     string
   content   string
   author    User @link
-  createdAt datetime @default(time::now())
+  createdAt datetime @value(time::now()) @readonly
+  updatedAt datetime @updated(time::now())
 
   @@table(schemafull)
   @@index([title])
@@ -40,7 +42,8 @@ edge Likes {
   in  User
   out Post
 
-  createdAt datetime @default(time::now())
+  createdAt datetime @value(time::now()) @readonly
+  updatedAt datetime @updated(time::now())
 
   @@table(schemafull)
 }

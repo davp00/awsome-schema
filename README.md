@@ -112,16 +112,30 @@ See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The
 - `model` and `edge` blocks
 - Schemafull / schemaless tables (`@@table`)
 - Fields, optionals, arrays, record links, relations
-- Indexes, permissions, defaults, and provider-specific extensions
+- Field assignments: `@default`, `@value`, `@updated`, `@readonly`
+- Indexes, permissions, and provider-specific extensions
+
+Field assignments map to SurrealDB `DEFINE FIELD` clauses:
+
+| DSL attribute | SurrealDB clause | Behavior |
+|---|---|---|
+| `@default(expr)` | `DEFAULT expr` | Applied on INSERT when no value is provided |
+| `@defaultAlways(expr)` | `DEFAULT ALWAYS expr` | Also applied on UPDATE when the value is empty |
+| `@value(expr)` | `VALUE expr` | Recomputed on every CREATE and UPDATE |
+| `@updated(expr)` | `VALUE expr` | Alias for auto-updating timestamps (`updatedAt`) |
+| `@readonly` | `READONLY` | Prevents manual updates (use with `@value`) |
 
 ```prisma
 model User {
-  id    RecordId<User> @id
-  email string @unique
-  posts Post[] @relation("user_posts")
+  id        RecordId<User> @id
+  email     string @unique
+  createdAt datetime @value(time::now()) @readonly
+  updatedAt datetime @updated(time::now())
+  posts     Post[] @relation("user_posts")
 
   @@table(schemafull)
 }
+```
 
 edge Likes {
   in  User
