@@ -1,0 +1,31 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/cli",
+    "crates/core",
+    "crates/parser",
+    "crates/migrations",
+    "crates/codegen",
+    "crates/codegen-rust",
+    "crates/codegen-typescript",
+    "crates/sql",
+]
+
+default-members = [
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Daniel Viloria"]
+license = "MIT"
+repository = "https://github.com/davp00/awesome-schema"
+homepage = "https://github.com/davp00/awesome-schema"
+documentation = "https://github.com/davp00/awesome-schema"
+description = "A schema modeling, migration and code generation toolkit."
+readme = "README.md"
+keywords = ["schema", "database", "migration", "orm", "codegen"]
+categories = ["database", "command-line-utilities", "development-tools"]
+
+[workspace.dependencies]
