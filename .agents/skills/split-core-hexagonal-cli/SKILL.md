@@ -1,94 +1,100 @@
 ---
 name: split-core-hexagonal-cli
 description: >-
-  Design CLI tools with Split-Core Hexagonal Architecture. Use when building
-  command-line applications, refactoring monolithic scripts into testable use cases,
-  or structuring CLIs with ports, adapters, use cases, formatters, and exit codes.
-  Self-contained and language-agnostic. Keywords: cli, command-line, subcommand,
-  hexagonal, clean architecture, ports, adapters, use cases, stdin, stdout, exit codes.
+  Design Rust CLI tools with Split-Core Hexagonal Architecture. Use when building
+  Cargo workspace CLIs, structuring crates/cli + crates/core, defining port traits,
+  use cases with execute(port), clap handlers, formatters, DomainError, and exit codes.
+  Keywords: rust, cli, cargo, clap, hexagonal, ports, adapters, use cases, thiserror.
 license: Proprietary
-compatibility: Language-agnostic. Terminal I/O required at presentation layer only.
+compatibility: Rust (edition 2024). Terminal I/O at presentation layer only.
 metadata:
   author: tous-secouristes-services
-  version: "1.1.0"
+  version: "1.2.0"
   repository: tous-secouristes-services
-  tags: hexagonal,clean-architecture,cli,ports-adapters
+  tags: rust,hexagonal,clean-architecture,cli,ports-adapters,clap
 ---
 
-# Split-Core Hexagonal CLI Architecture
+# Split-Core Hexagonal CLI Architecture (Rust)
 
-Ports-and-adapters architecture for command-line applications. Business logic lives in use cases; infrastructure implements ports; command handlers are thin presentation.
+Ports-and-adapters architecture for Rust CLI applications. Business logic lives in the `core` crate; the `cli` crate implements port traits and thin clap handlers.
+
+**Default stack:** Cargo workspace, `clap` (derive), `thiserror` for `DomainError`, manual `di` wiring with `Arc<dyn Port>`.
 
 ## When to activate
 
-- New CLI tool or binary entry point
-- Refactoring a fat `main` script into layered architecture
-- Adding subcommands to a hexagonal project
-- Sharing `core/` with other deployables in a monorepo
+- New CLI binary or `crates/cli` entry point
+- Refactoring a fat `main.rs` into layered architecture
+- Adding clap subcommands to a hexagonal workspace
+- Sharing `crates/core` with other workspace members (codegen, tests, future binaries)
 
 **Do not use** for throwaway one-liners with no business rules.
 
 ## Core philosophy
 
-1. **Deployable unit = CLI application** — one process, one composition root, one command registry
-2. **Split the core** — contracts in `core/domain/`; use case classes in `core/usecases/`
-3. **Dependencies point inward** — `commands → di → usecases → domain ← adapters`
-4. **One action = one use case** — single `execute(port)` per class; param always named `port`
-5. **Ports over frameworks** — CLI framework, colors, and terminal APIs live at the edge only
-6. **Explicit composition** — `infrastructure/di` wires everything; no service locator
-7. **Subcommand = use case** — `app users create` → `CreateUserUseCase.execute(port)`
-8. **No print in use cases** — I/O via ports; formatters render output
-9. **Fail with codes** — `SCREAMING_SNAKE_CASE` in core; human messages and exit codes at presentation
-10. **Test use cases** — mock ports; do not test business rules through subprocess only
+1. **Deployable unit = `cli` binary** — one process, one `di.rs`, one clap command tree
+2. **Split the core** — `crates/core`: contracts in `domain/`; use case structs in `usecases/`
+3. **Dependencies point inward** — `cli` → `core`; `core` never depends on `cli`
+4. **One action = one use case** — single `execute(&self, port)`; parameter always named `port`
+5. **Ports = traits** — `dyn Trait` in domain; `clap`/stdio/DB only in `cli`
+6. **Explicit composition** — `cli/src/di.rs` builds `AppContext`; no global service locator
+7. **Subcommand = use case** — `app users create` → `CreateUserUseCase::execute(port)`
+8. **No println in use cases** — I/O via port traits; formatters write stdout
+9. **Fail with codes** — `DomainError::code()` returns `SCREAMING_SNAKE_CASE`; exit mapping in presentation
+10. **Test use cases in `core`** — manual mocks or `mockall`; subprocess tests are sparse E2E only
 
 ## Split core (non-negotiable)
 
 | Location | Contains |
 |----------|----------|
-| `core/domain/usecases/` | `{Name}UseCaseInput` / `Output` types **only** |
-| `core/usecases/` | `{Name}UseCase` class with `execute(port)` |
-| `core/domain/repositories/` | `{Entity}Repository` port interfaces |
-| `core/domain/services/` | Outbound port interfaces (`AppLogger`, `FileSystemPort`, …) |
-| `core/services/` | Orchestrators only (wizards, command dispatch) — optional |
-| `infrastructure/adapters/` | `{Entity}DatabaseRepository`, HTTP/SDK adapters |
-| `infrastructure/di` | Composition root — only place that instantiates adapters |
-| `infrastructure/presentation/commands/` | Subcommand handlers |
+| `core/src/domain/usecases/` | `{Name}Input` / `{Name}Output` types **only** |
+| `core/src/usecases/` | `{Name}UseCase` struct with `execute(&self, port)` |
+| `core/src/domain/repositories/` | `{Entity}Repository` traits |
+| `core/src/domain/services/` | Outbound port traits (`AppLogger`, `FileSystemPort`, …) |
+| `core/src/domain/errors.rs` | `DomainError` enum + `code()` |
+| `core/src/services/` | Orchestrators only — optional |
+| `cli/src/adapters/` | `{Entity}DatabaseRepository`, I/O, HTTP/SDK impls |
+| `cli/src/di.rs` | `AppContext` — only place that constructs adapters |
+| `cli/src/presentation/commands/` | clap structs + `{Verb}{Resource}Command` |
 
 **Boundaries:**
 
-- `core/domain/services/` = outbound **ports** (interfaces)
+- `core/domain/services/` = outbound **ports** (traits)
 - `core/services/` = **orchestrators** (coordinate use cases, build Input from prompts)
-- Never put implementation logic in `core/domain/usecases/` files
+- Never put use case logic in `core/domain/usecases/` files (types only)
 
-## Folder layout
+## Cargo workspace layout
 
 ```
-{cli-name}/
-  src/
-    index                       # bootstrap: argv, di, exit
-    core/domain/{models,repositories,services,usecases,events}/
-    core/usecases/
-    core/services/              # optional
-    infrastructure/
-      di, environment
+{workspace}/
+  Cargo.toml
+  crates/
+    core/src/
+      domain/{models,repositories,services,usecases,errors}.rs
+      usecases/
+      services/                 # optional
+    cli/src/
+      main.rs                   # bootstrap: clap → di → exit
+      di.rs                     # AppContext
+      environment.rs
       adapters/{repositories,services,io,config}/
       presentation/
         commands/
         formatters/
-        exit-codes
-  test/
+        exit_codes.rs
+        error_catalog.rs
+    {capability}/               # optional shared crates
 ```
 
 ## Dependency diagram
 
 ```
-presentation/commands → formatters
+cli/presentation/commands → formatters
         ↓
-   infrastructure/di
+   cli/di (AppContext)
         ↓
    core/usecases
         ↓
-   core/domain  ←  infrastructure/adapters
+   core/domain  ←  cli/adapters (impl traits)
 ```
 
 ## Exit codes
@@ -96,25 +102,28 @@ presentation/commands → formatters
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `1` | Business/runtime error |
-| `2` | Usage / invalid arguments |
+| `1` | Business/runtime error (`DomainError`) |
+| `2` | Usage / clap validation |
 
 ## Progressive disclosure — read before implementing
 
-1. [references/REFERENCE.md](references/REFERENCE.md) — layers, naming, flow, errors, validation, testing, integrations
-2. [references/EXAMPLES.md](references/EXAMPLES.md) — entity, use case, port, adapter, handler, formatter, tests
-3. [references/CHECKLIST.md](references/CHECKLIST.md) — verification, anti-patterns, migration
+1. [references/RUST.md](references/RUST.md) — **start here**: traits, errors, clap, di, testing, dependencies
+2. [references/REFERENCE.md](references/REFERENCE.md) — layers, naming, flow, validation (language-neutral concepts)
+3. [references/RUST_EXAMPLES.md](references/RUST_EXAMPLES.md) — full Rust examples
+4. [references/CHECKLIST.md](references/CHECKLIST.md) — verification, anti-patterns, migration
 
 ## Quick naming reference
 
 | Kind | Pattern |
 |------|---------|
-| Use case | `{Verb}{Entity}UseCase` |
-| Repository port | `{Entity}Repository` |
+| Use case struct | `{Verb}{Entity}UseCase` |
+| Input / Output | `{Verb}{Entity}Input`, `{Verb}{Entity}Output` |
+| Repository port | `trait {Entity}Repository` |
 | Repository adapter | `{Entity}DatabaseRepository` |
-| Service port | `{Capability}Service` |
-| Command handler | `{Verb}{Resource}Command` |
-| Handler file | `{verb}.command` |
+| Service port | `trait {Capability}Port` or `{Capability}Service` |
+| Command struct | `{Verb}{Resource}Command` |
+| clap args module | `presentation/commands/{group}/{verb}.rs` |
 | Formatter | `{Format}Formatter` |
-| I/O ports | `OutputWriter`, `InputReader`, `PromptService` |
-| CLI app | `{domain}-cli` |
+| Composition root | `AppContext` in `di.rs` |
+| Error enum | `DomainError` with `code() -> &'static str` |
+| Binary crate | `cli` (or `{domain}-cli`) |

@@ -160,12 +160,15 @@ shared/adapters → shared/domain
       *.mock
 ```
 
-### Monorepo placement
+### Monorepo placement (Rust)
 
 ```
-monorepo/
-  cli/{cli-name}/
-  packages/shared-{capability}/
+{workspace}/
+  Cargo.toml
+  crates/
+    core/                   # domain + usecases library
+    cli/                    # binary + adapters + presentation
+    shared-{capability}/    # optional
 ```
 
 ### Bootstrap `index` responsibilities
@@ -466,12 +469,16 @@ ERROR_CATALOG = {
 
 ## Language-agnostic implementation
 
-| Concern | Approach |
-|---------|----------|
-| Arg parsing | CLI framework in presentation only |
-| Entry | `main` → bootstrap → command registry |
-| DI | Manual `di` module |
-| Sync/async | Same flow; await where supported |
-| Distribution | Single binary/script; `core` unchanged |
+Conceptual rules above apply to any language. For **Rust** (this skill's primary target), see [RUST.md](RUST.md) and [RUST_EXAMPLES.md](RUST_EXAMPLES.md).
 
-**Rule:** folder semantics and dependency direction are fixed; only interface mechanisms change per language.
+| Concern | Rust approach |
+|---------|---------------|
+| Arg parsing | `clap` derive in `cli/presentation/commands/` |
+| Entry | `main.rs` → bootstrap → clap dispatch |
+| Ports | `trait` in `core/domain/`; `Arc<dyn Trait>` in use cases |
+| DI | Manual `AppContext` in `cli/src/di.rs` |
+| Errors | `DomainError` + `thiserror` in core; exit map in cli |
+| Sync/async | Pick one; use `async-trait` if async |
+| Distribution | `cargo install` / workspace binary; `core` unchanged |
+
+**Rule:** folder semantics and dependency direction are fixed; Rust uses traits, modules, and `Result` instead of classes and exceptions.

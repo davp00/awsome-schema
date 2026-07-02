@@ -2,6 +2,8 @@
 
 Pseudocode examples for Split-Core Hexagonal CLI Architecture.
 
+> **Rust:** Prefer [RUST_EXAMPLES.md](RUST_EXAMPLES.md) for idiomatic Rust code. This file retains language-neutral pseudocode for conceptual reference.
+
 ## Domain entity
 
 ```
