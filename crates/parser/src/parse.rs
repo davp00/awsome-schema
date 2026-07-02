@@ -193,7 +193,7 @@ impl Parser {
                     }
                 }
             } else {
-                fields.push(self.parse_field()?);
+                fields.push(self.parse_field(Some(&name))?);
             }
         }
 
@@ -242,7 +242,7 @@ impl Parser {
                     out_model = self.expect_identifier()?;
                 } else {
                     self.position -= 1;
-                    fields.push(self.parse_field()?);
+                    fields.push(self.parse_field(None)?);
                 }
             }
         }
@@ -251,9 +251,15 @@ impl Parser {
         Ok(Edge { name, in_model, out_model, fields, table_mode, permissions, attributes })
     }
 
-    fn parse_field(&mut self) -> Result<Field, DomainError> {
+    fn parse_field(&mut self, model_name: Option<&str>) -> Result<Field, DomainError> {
         let name = self.expect_identifier()?;
-        let field_type = self.parse_field_type()?;
+        let field_type = if self.is_at(Token::At)
+            && !matches!(self.tokens.get(self.position + 1), Some(Token::At))
+        {
+            None
+        } else {
+            Some(self.parse_field_type()?)
+        };
         let mut optional = self.match_token(Token::Question);
         let mut unique = false;
         let mut is_id = false;
@@ -282,7 +288,12 @@ impl Parser {
                 "readonly" => readonly = true,
                 "link" => {
                     link_target = Some(if attr.1.is_empty() {
-                        link_target_from_type(&field_type)
+                        let Some(ref ft) = field_type else {
+                            return Err(DomainError::ParseError(format!(
+                                "field `{name}` @link requires a type when no target is given"
+                            )));
+                        };
+                        link_target_from_type(ft)
                     } else {
                         attr.1
                     });
@@ -294,7 +305,7 @@ impl Parser {
             }
         }
 
-        if matches!(field_type, FieldType::Model(_)) && !optional {
+        if matches!(field_type.as_ref(), Some(FieldType::Model(_))) && !optional {
             optional = false;
         }
 
@@ -309,6 +320,19 @@ impl Parser {
                 "field `{name}` @readonly requires @value or @default"
             )));
         }
+
+        let field_type = match (field_type, is_id, model_name) {
+            (Some(field_type), _, _) => field_type,
+            (None, true, Some(model)) => FieldType::RecordId(model.to_owned()),
+            (None, true, None) => {
+                return Err(DomainError::ParseError(format!(
+                    "field `{name}` with @id must be declared inside a model"
+                )));
+            }
+            (None, false, _) => {
+                return Err(DomainError::ParseError(format!("field `{name}` requires a type")));
+            }
+        };
 
         Ok(Field {
             name,
@@ -329,10 +353,10 @@ impl Parser {
     fn parse_field_type(&mut self) -> Result<FieldType, DomainError> {
         let base = self.expect_identifier()?;
 
-        if base == "RecordId" && self.match_token(Token::Less) {
-            let inner = self.expect_identifier()?;
-            self.expect(Token::Greater)?;
-            return Ok(FieldType::RecordId(inner));
+        if base == "RecordId" {
+            return Err(DomainError::ParseError(
+                "RecordId<Model> is not supported; declare model ids as `id @id`".to_owned(),
+            ));
         }
 
         let field_type = match base.as_str() {

@@ -1,4 +1,4 @@
-use crate::domain::DatabaseSchema;
+use crate::domain::{DatabaseSchema, FieldType};
 use crate::errors::DomainError;
 
 pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
@@ -26,6 +26,21 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
                 "model `{}` must define an @id field",
                 model.name
             )));
+        }
+
+        for field in &model.fields {
+            if !field.is_id {
+                continue;
+            }
+            match &field.field_type {
+                FieldType::RecordId(target) if target == &model.name => {}
+                _ => {
+                    return Err(DomainError::ValidationError(format!(
+                        "model `{}` field `{}` @id must reference the same model; use `id @id`",
+                        model.name, field.name
+                    )));
+                }
+            }
         }
     }
 

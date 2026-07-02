@@ -127,7 +127,7 @@ Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 
 ```prisma
 model User {
-  id        RecordId<User> @id
+  id        @id
   email     string @unique
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
@@ -137,6 +137,9 @@ model User {
 }
 ```
 
+Model `@id` fields infer a SurrealDB `record<table>` type from the containing model — no `RecordId<Model>` syntax needed.
+
+```prisma
 edge Likes {
   in  User
   out Post

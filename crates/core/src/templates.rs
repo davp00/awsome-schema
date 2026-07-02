@@ -11,7 +11,7 @@ generator client {
 }
 
 model User {
-  id        RecordId<User> @id
+  id        @id
   email     string @unique
   name      string
   age       int?
@@ -27,7 +27,7 @@ model User {
 }
 
 model Post {
-  id        RecordId<Post> @id
+  id        @id
   title     string
   content   string
   author    User @link

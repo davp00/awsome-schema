@@ -38,14 +38,23 @@ mod tests {
 
     #[test]
     fn parses_model_with_id() {
-        parse(r#"model User { id RecordId<User> @id }"#).expect("should parse");
+        let schema = parse(r#"model User { id @id }"#).expect("should parse");
+        let id = &schema.models[0].fields[0];
+        assert!(id.is_id);
+        assert_eq!(id.field_type, FieldType::RecordId("User".to_owned()));
+    }
+
+    #[test]
+    fn rejects_record_id_type_syntax() {
+        let error = parse(r#"model User { id RecordId<User> @id }"#).expect_err("should reject");
+        assert!(matches!(error, DomainError::ParseError(_)));
     }
 
     #[test]
     fn parses_model_with_attributes() {
         parse(
             r#"model User {
-  id RecordId<User> @id
+  id @id
   @@table(schemafull)
 }"#,
         )
@@ -54,10 +63,8 @@ mod tests {
 
     #[test]
     fn parses_field_default_value() {
-        let schema = parse(
-            r#"model User { id RecordId<User> @id createdAt datetime @default(time::now()) }"#,
-        )
-        .expect("should parse");
+        let schema = parse(r#"model User { id @id createdAt datetime @default(time::now()) }"#)
+            .expect("should parse");
 
         let field = schema.models[0]
             .fields
@@ -75,7 +82,7 @@ mod tests {
     fn parses_field_value_and_updated_attributes() {
         let schema = parse(
             r#"model User {
-  id RecordId<User> @id
+  id @id
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
 }"#,
@@ -95,8 +102,10 @@ mod tests {
 
     #[test]
     fn rejects_default_and_value_on_same_field() {
-        let error = parse(r#"model User { id RecordId<User> @id when datetime @default(time::now()) @value(time::now()) }"#)
-            .expect_err("should reject conflicting assignments");
+        let error = parse(
+            r#"model User { id @id when datetime @default(time::now()) @value(time::now()) }"#,
+        )
+        .expect_err("should reject conflicting assignments");
 
         assert!(matches!(error, DomainError::ParseError(_)));
     }
@@ -142,6 +151,10 @@ naming { tables = "snake_case" }"#,
         assert_eq!(user.name, "User");
         assert_eq!(user.table_mode, TableMode::Schemafull);
         assert!(user.fields.iter().any(|field| field.name == "email" && field.unique));
+
+        let id = user.fields.iter().find(|field| field.name == "id").unwrap();
+        assert!(id.is_id);
+        assert_eq!(id.field_type, FieldType::RecordId("User".to_owned()));
 
         let email = user.fields.iter().find(|field| field.name == "email").unwrap();
         assert_eq!(email.field_type, FieldType::String);
