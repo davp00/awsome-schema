@@ -36,7 +36,7 @@ crates/
 ├── core                # Domain model, ports, use cases, errors
 ├── parser              # Awesome Schema DSL → domain model
 ├── migrations          # Schema diffing → migration plans
-├── sql                 # SurrealQL rendering (SurrealDB adapter)
+├── renderers           # Provider-specific DDL renderers (SurrealDB first)
 ├── codegen             # Language-agnostic codegen contracts
 ├── codegen-rust        # Rust model generator (stub)
 └── codegen-typescript  # TypeScript model generator (stub)
@@ -45,7 +45,7 @@ crates/
 ### Architecture (hexagonal / clean)
 
 - **`core`** owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases.
-- **`parser`**, **`migrations`**, **`sql`**, and **`codegen-*`** are capability crates that implement or support ports.
+- **`parser`**, **`migrations`**, **`renderers`**, and **`codegen-*`** are capability crates that implement or support ports.
 - **`cli`** wires dependencies via `di.rs`, implements adapters (filesystem, migration store, introspector stubs), and exposes commands through `clap`. **No business logic lives in the CLI.**
 
 Port traits (in `core`):
@@ -175,7 +175,7 @@ See [`examples/migrations/`](examples/migrations/) for a reference migration.
 
 ## Adding a new database provider
 
-1. Implement `SchemaRenderer` and `MigrationRenderer` in a new adapter crate (or extend `sql` with a submodule).
+1. Implement `SchemaRenderer` and `MigrationRenderer` in `renderers` (e.g. `renderers::postgres`) or a dedicated `crates/providers/<name>` crate.
 2. Map domain `MigrationOperation` variants to provider DDL.
 3. Optionally implement `SchemaIntrospector` for `db pull`.
 4. Register the adapter in `cli/src/di.rs` based on `datasource.provider`.

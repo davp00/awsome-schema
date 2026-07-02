@@ -8,7 +8,7 @@ members = [
     "crates/codegen",
     "crates/codegen-rust",
     "crates/codegen-typescript",
-    "crates/sql",
+    "crates/renderers",
 ]
 
 default-members = [
@@ -52,7 +52,7 @@ core = { path = "crates/core" }
 schema-core = { package = "core", path = "crates/core" }
 parser = { path = "crates/parser" }
 migrations = { path = "crates/migrations" }
-sql = { path = "crates/sql" }
+renderers = { path = "crates/renderers" }
 codegen = { path = "crates/codegen" }
 codegen-rust = { path = "crates/codegen-rust" }
 codegen-typescript = { path = "crates/codegen-typescript" }

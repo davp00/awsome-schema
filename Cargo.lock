@@ -160,8 +160,8 @@ dependencies = [
  "core",
  "migrations",
  "parser",
+ "renderers",
  "serde_json",
- "sql",
 ]
 
 [[package]]
@@ -370,6 +370,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "renderers"
+version = "0.1.0"
+dependencies = [
+ "core",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -429,13 +436,6 @@ name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
-
-[[package]]
-name = "sql"
-version = "0.1.0"
-dependencies = [
- "core",
-]
 
 [[package]]
 name = "strsim"

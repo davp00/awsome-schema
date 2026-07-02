@@ -1,10 +1,10 @@
 [package]
-name = "sql"
+name = "renderers"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Database-specific schema and migration rendering."
+description = "Database-specific schema and migration renderers."
 
 [lints]
 workspace = true

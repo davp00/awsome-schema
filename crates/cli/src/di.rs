@@ -3,6 +3,7 @@ use std::sync::Arc;
 use codegen_rust::RustGenerator;
 use codegen_typescript::TypeScriptGenerator;
 use migrations::SchemaDiffer;
+use renderers::SurrealDbRenderer;
 use schema_core::ports::{
     FileSystemPort, MigrationRenderer, MigrationStore, SchemaIntrospector, SchemaRenderer,
     SchemaSource,
@@ -13,7 +14,6 @@ use schema_core::{
     MigrateApplyUseCase, MigrateCreateUseCase, MigrateDevUseCase, MigrateStatusUseCase,
     ValidateSchemaUseCase,
 };
-use sql::SurrealDbRenderer;
 
 use crate::adapters::{FsAdapter, MigrationStoreAdapter, SchemaFileSource, SurrealDbIntrospector};
 
