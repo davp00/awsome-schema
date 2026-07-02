@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
+
+if ! git diff --cached --name-only --diff-filter=ACMR | grep -qE '\.(rs|toml)$|Cargo\.lock$'; then
+  exit 0
+fi
+
+exec "$ROOT/scripts/check.sh"

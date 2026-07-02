@@ -28,4 +28,16 @@ readme = "README.md"
 keywords = ["schema", "database", "migration", "orm", "codegen"]
 categories = ["database", "command-line-utilities", "development-tools"]
 
+[workspace.lints.rust]
+future-incompatible = { level = "deny", priority = 1 }
+nonstandard_style = { level = "deny", priority = 2 }
+unsafe_code = { level = "forbid", priority = 3 }
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = 10 }
+redundant_clone = { level = "deny", priority = 9 }
+manual_while_let_some = { level = "deny", priority = 4 }
+pedantic = { level = "warn", priority = 3 }
+nursery = { level = "warn", priority = 2 }
+
 [workspace.dependencies]
