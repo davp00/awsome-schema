@@ -306,4 +306,59 @@ mod tests {
             if table == "user" && field.name == "name"
         )));
     }
+
+    #[test]
+    fn detects_altered_field_and_permissions() {
+        let mut updated = target_schema();
+        updated.models[0].fields[1].optional = true;
+        updated.models[0].permissions = Some("NONE".to_owned());
+        updated.models[0].indexes.push(core::Index {
+            name: None,
+            fields: vec!["email".to_owned()],
+            unique: false,
+            fulltext: false,
+            vector: false,
+        });
+
+        let plan = diff_schemas(Some(&target_schema()), &updated, "alter_user");
+        assert!(
+            plan.operations.iter().any(|op| matches!(op, MigrationOperation::AlterField { .. }))
+        );
+        assert!(
+            plan.operations
+                .iter()
+                .any(|op| matches!(op, MigrationOperation::UpdatePermission { .. }))
+        );
+        assert!(
+            plan.operations.iter().any(|op| matches!(op, MigrationOperation::CreateIndex { .. }))
+        );
+    }
+
+    #[test]
+    fn detects_dropped_table() {
+        let plan = diff_schemas(Some(&target_schema()), &DatabaseSchema::empty(), "drop_all");
+        assert!(
+            plan.operations
+                .iter()
+                .any(|op| matches!(op, MigrationOperation::DropTable { name } if name == "user"))
+        );
+    }
+
+    #[test]
+    fn detects_altered_table_mode() {
+        let mut updated = target_schema();
+        updated.models[0].table_mode = TableMode::Schemaless;
+
+        let plan = diff_schemas(Some(&target_schema()), &updated, "alter_mode");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::AlterTable { name, mode: TableMode::Schemaless }
+            if name == "user"
+        )));
+    }
+
+    #[test]
+    fn schema_differ_default_is_constructible() {
+        assert!(SchemaDiffer.diff(None, &target_schema(), "init").operations.len() > 1);
+    }
 }

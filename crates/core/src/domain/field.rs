@@ -69,3 +69,44 @@ impl FieldType {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn has_value_expression_when_set() {
+        let field = Field {
+            name: "updatedAt".to_owned(),
+            field_type: FieldType::Datetime,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: Some("time::now()".to_owned()),
+            readonly: false,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+        assert!(field.has_value_expression());
+    }
+
+    #[test]
+    fn surreal_type_names_cover_all_variants() {
+        assert_eq!(FieldType::String.surreal_type_name(true), "option<string>");
+        assert_eq!(FieldType::Int.base_surreal_type_name(), "int");
+        assert_eq!(FieldType::Float.base_surreal_type_name(), "float");
+        assert_eq!(FieldType::Bool.base_surreal_type_name(), "bool");
+        assert_eq!(FieldType::Datetime.base_surreal_type_name(), "datetime");
+        assert_eq!(FieldType::Object.base_surreal_type_name(), "object");
+        assert_eq!(
+            FieldType::Array(Box::new(FieldType::String)).base_surreal_type_name(),
+            "array<string>"
+        );
+        assert_eq!(FieldType::RecordId("User".into()).base_surreal_type_name(), "record<User>");
+        assert_eq!(FieldType::Model("Post".into()).base_surreal_type_name(), "record<Post>");
+        assert_eq!(FieldType::Custom("geometry".into()).base_surreal_type_name(), "geometry");
+    }
+}

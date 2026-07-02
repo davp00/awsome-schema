@@ -5,19 +5,22 @@ use codegen_typescript::TypeScriptGenerator;
 use migrations::SchemaDiffer;
 use renderers::SurrealDbRenderer;
 use schema_core::ports::{
-    FileSystemPort, MigrationRenderer, MigrationStore, SchemaIntrospector, SchemaRenderer,
-    SchemaSource,
+    DatabaseExecutor, FileSystemPort, MigrationRenderer, MigrationStore, SchemaIntrospector,
+    SchemaRenderer, SchemaSource,
 };
 use schema_core::usecases::{CodeGeneratorPort, SchemaDiffPort};
 use schema_core::{
-    DbPullUseCase, DbPushUseCase, FormatSchemaUseCase, GenerateCodeUseCase, InitProjectUseCase,
-    MigrateApplyUseCase, MigrateCreateUseCase, MigrateDevUseCase, MigrateStatusUseCase,
-    ValidateSchemaUseCase,
+    DatabaseSchema, DbPullUseCase, DbPushUseCase, DomainError, FormatSchemaUseCase,
+    GenerateCodeUseCase, InitProjectUseCase, MigrateApplyUseCase, MigrateCreateUseCase,
+    MigrateDevUseCase, MigrateStatusUseCase, ValidateSchemaUseCase,
 };
 
-use crate::adapters::{FsAdapter, MigrationStoreAdapter, SchemaFileSource, SurrealDbIntrospector};
+use crate::adapters::{
+    FsAdapter, MigrationStoreAdapter, SchemaFileSource, SurrealDbExecutor, SurrealDbIntrospector,
+};
 
 pub struct AppContext {
+    pub schema_source: Arc<dyn SchemaSource>,
     pub init_project: InitProjectUseCase,
     pub validate_schema: ValidateSchemaUseCase,
     pub format_schema: FormatSchemaUseCase,
@@ -37,12 +40,39 @@ impl AppContext {
         let filesystem: Arc<dyn FileSystemPort> = Arc::new(FsAdapter);
         build_context(filesystem, schema_path, migrations_dir)
     }
+
+    pub fn load_schema(&self) -> Result<DatabaseSchema, DomainError> {
+        self.schema_source.load_schema()
+    }
+}
+
+#[doc(hidden)]
+pub fn test_context_with_introspector(
+    schema_path: String,
+    migrations_dir: String,
+    introspector: Arc<dyn SchemaIntrospector>,
+) -> anyhow::Result<AppContext> {
+    build_context_with_introspector(Arc::new(FsAdapter), schema_path, migrations_dir, introspector)
 }
 
 fn build_context(
     filesystem: Arc<dyn FileSystemPort>,
     schema_path: String,
     migrations_dir: String,
+) -> anyhow::Result<AppContext> {
+    build_context_with_introspector(
+        filesystem,
+        schema_path,
+        migrations_dir,
+        Arc::new(SurrealDbIntrospector),
+    )
+}
+
+fn build_context_with_introspector(
+    filesystem: Arc<dyn FileSystemPort>,
+    schema_path: String,
+    migrations_dir: String,
+    introspector: Arc<dyn SchemaIntrospector>,
 ) -> anyhow::Result<AppContext> {
     let schema_source: Arc<dyn SchemaSource> =
         Arc::new(SchemaFileSource::new(filesystem.clone(), schema_path.clone()));
@@ -54,9 +84,11 @@ fn build_context(
     let diff: Arc<dyn SchemaDiffPort> = Arc::new(SchemaDiffer::new());
     let rust_generator: Arc<dyn CodeGeneratorPort> = Arc::new(RustGenerator::new());
     let typescript_generator: Arc<dyn CodeGeneratorPort> = Arc::new(TypeScriptGenerator::new());
-    let introspector: Arc<dyn SchemaIntrospector> = Arc::new(SurrealDbIntrospector);
+    let introspector: Arc<dyn SchemaIntrospector> = introspector;
+    let database: Arc<dyn DatabaseExecutor> = Arc::new(SurrealDbExecutor);
 
     Ok(AppContext {
+        schema_source: schema_source.clone(),
         init_project: InitProjectUseCase::new(filesystem.clone()),
         validate_schema: ValidateSchemaUseCase::new(schema_source.clone()),
         format_schema: FormatSchemaUseCase::new(
@@ -82,10 +114,14 @@ fn build_context(
             migration_store.clone(),
             filesystem.clone(),
         ),
-        migrate_status: MigrateStatusUseCase::new(migration_store),
-        migrate_apply: MigrateApplyUseCase::new(),
+        migrate_status: MigrateStatusUseCase::new(migration_store.clone()),
+        migrate_apply: MigrateApplyUseCase::new(
+            migration_store,
+            filesystem.clone(),
+            database.clone(),
+        ),
         db_pull: DbPullUseCase::new(introspector),
-        db_push: DbPushUseCase::new(schema_source, schema_renderer, migration_renderer),
+        db_push: DbPushUseCase::new(schema_source, schema_renderer, database),
         schema_path,
         migrations_dir,
     })

@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
+use crate::domain::{DatabaseConfig, Datasource};
 use crate::errors::DomainError;
-use crate::ports::{MigrationRenderer, SchemaRenderer, SchemaSource};
+use crate::ports::{DatabaseExecutor, SchemaRenderer, SchemaSource};
 
-pub struct DbPushInput;
+pub struct DbPushInput {
+    pub datasource: Datasource,
+}
 
 pub struct DbPushOutput {
     pub statements: String,
@@ -12,31 +15,24 @@ pub struct DbPushOutput {
 pub struct DbPushUseCase {
     schema_source: Arc<dyn SchemaSource>,
     schema_renderer: Arc<dyn SchemaRenderer>,
-    migration_renderer: Arc<dyn MigrationRenderer>,
+    database: Arc<dyn DatabaseExecutor>,
 }
 
 impl DbPushUseCase {
     pub fn new(
         schema_source: Arc<dyn SchemaSource>,
         schema_renderer: Arc<dyn SchemaRenderer>,
-        migration_renderer: Arc<dyn MigrationRenderer>,
+        database: Arc<dyn DatabaseExecutor>,
     ) -> Self {
-        Self { schema_source, schema_renderer, migration_renderer }
+        Self { schema_source, schema_renderer, database }
     }
 
-    pub fn execute(&self, _port: DbPushInput) -> Result<DbPushOutput, DomainError> {
+    pub fn execute(&self, port: DbPushInput) -> Result<DbPushOutput, DomainError> {
         let schema = self.schema_source.load_schema()?;
         let rendered = self.schema_renderer.render_schema(&schema)?;
-        let naming = schema.naming;
-        let _migration =
-            self.migration_renderer.render_migration(&crate::domain::MigrationPlan {
-                name: "push".to_owned(),
-                operations: Vec::new(),
-                naming,
-            })?;
+        let config = DatabaseConfig::from_datasource(&port.datasource)?;
+        self.database.execute_script(&config, &rendered)?;
 
-        Err(DomainError::NotImplemented(format!(
-            "db push will apply rendered schema to the database (preview ready, {rendered} bytes)"
-        )))
+        Ok(DbPushOutput { statements: rendered })
     }
 }

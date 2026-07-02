@@ -1,0 +1,21 @@
+[package]
+name = "e2e"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+cli = { path = "../cli" }
+schema-core.workspace = true
+parser.workspace = true
+renderers.workspace = true
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+serde_json.workspace = true
+surrealdb.workspace = true
+testcontainers-modules.workspace = true

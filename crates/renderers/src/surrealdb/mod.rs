@@ -466,4 +466,197 @@ mod tests {
         assert!(rendered.contains("DEFINE TABLE user SCHEMAFULL;"));
         assert!(rendered.contains("DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;"));
     }
+
+    #[test]
+    fn renders_remaining_migration_operations() {
+        use core::{Index, MigrationOperation, MigrationPlan};
+
+        let plan = MigrationPlan {
+            name: "full".to_owned(),
+            operations: vec![
+                MigrationOperation::DropTable { name: "legacy".to_owned() },
+                MigrationOperation::AlterTable {
+                    name: "user".to_owned(),
+                    mode: TableMode::Schemaless,
+                },
+                MigrationOperation::DropField {
+                    table: "user".to_owned(),
+                    name: "legacy".to_owned(),
+                },
+                MigrationOperation::CreateIndex {
+                    table: "user".to_owned(),
+                    index: Index {
+                        name: Some("custom_idx".to_owned()),
+                        fields: vec!["email".to_owned()],
+                        unique: true,
+                        fulltext: true,
+                        vector: true,
+                    },
+                },
+                MigrationOperation::DropIndex {
+                    table: "user".to_owned(),
+                    name: "custom_idx".to_owned(),
+                },
+                MigrationOperation::CreateEvent {
+                    table: "user".to_owned(),
+                    name: "created".to_owned(),
+                    body: "WHEN $event = 'CREATE'".to_owned(),
+                },
+                MigrationOperation::DropEvent {
+                    table: "user".to_owned(),
+                    name: "created".to_owned(),
+                },
+                MigrationOperation::CreateFunction {
+                    name: "hello".to_owned(),
+                    body: "{ RETURN 'hi'; }".to_owned(),
+                },
+                MigrationOperation::DropFunction { name: "hello".to_owned() },
+                MigrationOperation::CreatePermission {
+                    table: "user".to_owned(),
+                    permission: "FULL".to_owned(),
+                },
+                MigrationOperation::UpdatePermission {
+                    table: "user".to_owned(),
+                    permission: "NONE".to_owned(),
+                },
+            ],
+            naming: NamingConvention::default(),
+        };
+
+        let rendered =
+            SurrealDbRenderer::new().render_migration(&plan).expect("migration should render");
+
+        assert!(rendered.contains("REMOVE TABLE legacy;"));
+        assert!(rendered.contains("DEFINE TABLE user SCHEMALESS;"));
+        assert!(rendered.contains("REMOVE FIELD legacy ON user;"));
+        assert!(
+            rendered
+                .contains("DEFINE INDEX custom_idx ON user FIELDS email UNIQUE FULLTEXT VECTOR;")
+        );
+        assert!(rendered.contains("DEFINE EVENT created ON user WHEN $event = 'CREATE';"));
+        assert!(rendered.contains("DEFINE FUNCTION fn::hello() { RETURN 'hi'; };"));
+        assert!(rendered.contains("DEFINE TABLE user PERMISSIONS NONE;"));
+    }
+
+    #[test]
+    fn renders_default_always_clause() {
+        let convention = snake_case_fields();
+        let naming = NamingContext::new(&convention, &[]);
+        let field = Field {
+            name: "status".to_owned(),
+            field_type: FieldType::String,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: Some("'active'".to_owned()),
+            default_always: true,
+            value_expression: None,
+            readonly: false,
+            link_target: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+
+        let rendered = render_define_field("user", &field, &naming);
+        assert_eq!(rendered, "DEFINE FIELD status ON user TYPE string DEFAULT ALWAYS 'active';");
+    }
+
+    #[test]
+    fn renderer_default_and_edge_schema_paths() {
+        let _ = SurrealDbRenderer;
+
+        let schema = DatabaseSchema {
+            datasource: Datasource {
+                provider: "surrealdb".to_owned(),
+                url: None,
+                namespace: None,
+                database: None,
+                extra: BTreeMap::new(),
+            },
+            naming: NamingConvention::default(),
+            generators: Vec::new(),
+            models: vec![Model {
+                name: "User".to_owned(),
+                fields: vec![
+                    Field {
+                        name: "id".to_owned(),
+                        field_type: FieldType::RecordId("User".to_owned()),
+                        optional: false,
+                        unique: false,
+                        is_id: true,
+                        default_value: None,
+                        default_always: false,
+                        value_expression: None,
+                        readonly: false,
+                        link_target: None,
+                        relation_name: None,
+                        attributes: BTreeMap::new(),
+                    },
+                    Field {
+                        name: "posts".to_owned(),
+                        field_type: FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+                        optional: false,
+                        unique: false,
+                        is_id: false,
+                        default_value: None,
+                        default_always: false,
+                        value_expression: None,
+                        readonly: false,
+                        link_target: None,
+                        relation_name: Some("user_posts".to_owned()),
+                        attributes: BTreeMap::new(),
+                    },
+                ],
+                table_mode: TableMode::Schemafull,
+                permissions: Some("FULL".to_owned()),
+                indexes: vec![core::Index {
+                    name: None,
+                    fields: vec!["email".to_owned()],
+                    unique: false,
+                    fulltext: false,
+                    vector: false,
+                }],
+                attributes: BTreeMap::new(),
+            }],
+            edges: vec![Edge {
+                name: "Likes".to_owned(),
+                in_model: "User".to_owned(),
+                out_model: "Post".to_owned(),
+                fields: vec![Field {
+                    name: "score".to_owned(),
+                    field_type: FieldType::Int,
+                    optional: false,
+                    unique: false,
+                    is_id: false,
+                    default_value: None,
+                    default_always: false,
+                    value_expression: None,
+                    readonly: false,
+                    link_target: None,
+                    relation_name: None,
+                    attributes: BTreeMap::new(),
+                }],
+                table_mode: TableMode::Schemafull,
+                permissions: None,
+                attributes: BTreeMap::new(),
+            }],
+        };
+
+        let rendered = SurrealDbRenderer::new().render_schema(&schema).expect("render");
+        assert!(rendered.contains("DEFINE TABLE likes SCHEMAFULL;"));
+        assert!(rendered.contains("DEFINE FIELD score ON likes TYPE int;"));
+        assert!(rendered.contains("DEFINE TABLE user PERMISSIONS FULL;"));
+        assert!(!rendered.contains("posts"));
+
+        let alter_plan = MigrationPlan {
+            name: "alter".to_owned(),
+            operations: vec![MigrationOperation::AlterField {
+                table: "user".to_owned(),
+                field: schema.models[0].fields[0].clone(),
+            }],
+            naming: NamingConvention::default(),
+        };
+        let migration = SurrealDbRenderer::new().render_migration(&alter_plan).expect("alter");
+        assert!(migration.contains("DEFINE FIELD id ON user TYPE record<user>;"));
+    }
 }

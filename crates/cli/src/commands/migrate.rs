@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use schema_core::{MigrateApplyInput, MigrateCreateInput, MigrateDevInput, MigrateStatusInput};
+use schema_core::{MigrateCreateInput, MigrateDevInput, MigrateStatusInput};
 
 use crate::di::AppContext;
 use crate::output::Printer;
@@ -53,7 +53,11 @@ pub fn run_status(context: &AppContext, printer: &Printer) -> Result<()> {
 }
 
 pub fn run_apply(context: &AppContext, printer: &Printer) -> Result<()> {
-    let output = context.migrate_apply.execute(MigrateApplyInput)?;
+    let schema = context.load_schema()?;
+    let output = context.migrate_apply.execute(schema_core::MigrateApplyInput {
+        migrations_dir: context.migrations_dir.clone(),
+        datasource: schema.datasource,
+    })?;
     printer.success(&format!("Applied {} migrations.", output.applied));
     Ok(())
 }

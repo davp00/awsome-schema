@@ -173,3 +173,34 @@ impl<'a> Lexer<'a> {
         self.input[self.position..].starts_with(prefix)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tokenizes_model_header() {
+        let tokens = Lexer::new("model User { id @id }").tokenize().expect("tokenize");
+        assert!(matches!(tokens.first(), Some(Token::Identifier(name)) if name == "model"));
+    }
+
+    #[test]
+    fn tokenizes_comments_and_punctuation() {
+        let tokens =
+            Lexer::new("// comment\nprovider = \"surrealdb\", ?").tokenize().expect("tokenize");
+        assert!(tokens.iter().any(|token| matches!(token, Token::Comma)));
+        assert!(tokens.iter().any(|token| matches!(token, Token::Question)));
+    }
+
+    #[test]
+    fn rejects_unexpected_character() {
+        let error = Lexer::new("model User { id @id $ }").tokenize().expect_err("bad char");
+        assert!(error.contains("unexpected character"));
+    }
+
+    #[test]
+    fn rejects_unterminated_string() {
+        let error = Lexer::new(r#"provider = "open"#).tokenize().expect_err("unterminated");
+        assert!(error.contains("unterminated string literal"));
+    }
+}

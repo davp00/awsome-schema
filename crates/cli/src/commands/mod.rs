@@ -1,5 +1,5 @@
-mod db;
-mod format;
+pub mod db;
+pub mod format;
 mod generate;
 mod init;
 mod migrate;

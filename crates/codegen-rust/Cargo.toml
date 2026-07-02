@@ -12,3 +12,6 @@ workspace = true
 [dependencies]
 codegen.workspace = true
 core.workspace = true
+
+[dev-dependencies]
+codegen.workspace = true

@@ -208,6 +208,7 @@ fn split_identifier_parts(input: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::TableMode;
 
     #[test]
     fn snake_case_converts_camel_case() {
@@ -232,5 +233,77 @@ mod tests {
     #[test]
     fn preserves_field_name_when_naming_not_set() {
         assert_eq!(mapped_name("createdAt", &BTreeMap::new(), None), "createdAt");
+    }
+
+    #[test]
+    fn parse_all_naming_cases() {
+        assert_eq!(NamingCase::parse("snake_case"), Some(NamingCase::SnakeCase));
+        assert_eq!(NamingCase::parse("camelCase"), Some(NamingCase::CamelCase));
+        assert_eq!(NamingCase::parse("PascalCase"), Some(NamingCase::PascalCase));
+        assert_eq!(NamingCase::parse("kebab-case"), Some(NamingCase::KebabCase));
+        assert_eq!(NamingCase::parse("lowercase"), Some(NamingCase::Lowercase));
+        assert_eq!(NamingCase::parse("unknown"), None);
+    }
+
+    #[test]
+    fn applies_all_naming_case_transforms() {
+        assert_eq!(NamingCase::PascalCase.apply("user_post"), "UserPost");
+        assert_eq!(NamingCase::KebabCase.apply("UserPost"), "user-post");
+        assert_eq!(NamingCase::Lowercase.apply("UserPost"), "userpost");
+        assert_eq!(NamingCase::SnakeCase.apply("HTTPRequest"), "http_request");
+        assert_eq!(NamingCase::SnakeCase.apply("User-Post"), "user_post");
+    }
+
+    #[test]
+    fn naming_context_resolves_table_and_field_names() {
+        let naming =
+            NamingConvention { tables: NamingCase::SnakeCase, fields: Some(NamingCase::CamelCase) };
+        let models = vec![Model {
+            name: "UserPost".to_owned(),
+            fields: vec![Field {
+                name: "created_at".to_owned(),
+                field_type: FieldType::Datetime,
+                optional: false,
+                unique: false,
+                is_id: false,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                link_target: None,
+                relation_name: None,
+                attributes: BTreeMap::new(),
+            }],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: Vec::new(),
+            attributes: BTreeMap::new(),
+        }];
+        let ctx = NamingContext::new(&naming, &models);
+
+        assert_eq!(ctx.table_name_for_model(&models[0]), "user_post");
+        assert_eq!(ctx.table_name_for_type("UserPost"), "user_post");
+        assert_eq!(ctx.table_name_for_type("Unknown"), "unknown");
+        assert_eq!(ctx.field_name(&models[0].fields[0]), "createdAt");
+        assert_eq!(
+            ctx.surreal_type_name(&FieldType::Array(Box::new(FieldType::String)), false),
+            "array<string>"
+        );
+        assert_eq!(
+            ctx.surreal_type_name(&FieldType::RecordId("UserPost".to_owned()), false),
+            "record<user_post>"
+        );
+        assert_eq!(
+            ctx.surreal_type_name(&FieldType::Model("UserPost".to_owned()), false),
+            "record<user_post>"
+        );
+        assert_eq!(
+            ctx.surreal_type_name(&FieldType::Custom("geo".to_owned()), true),
+            "option<geo>"
+        );
+        assert_eq!(ctx.surreal_type_name(&FieldType::Int, false), "int");
+        assert_eq!(ctx.surreal_type_name(&FieldType::Float, false), "float");
+        assert_eq!(ctx.surreal_type_name(&FieldType::Bool, false), "bool");
+        assert_eq!(ctx.surreal_type_name(&FieldType::Object, false), "object");
     }
 }

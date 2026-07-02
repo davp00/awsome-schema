@@ -527,3 +527,15 @@ fn link_target_from_type(field_type: &FieldType) -> String {
         other => other.base_surreal_type_name(),
     }
 }
+
+#[cfg(test)]
+mod link_target_tests {
+    use super::*;
+    use core::FieldType;
+
+    #[test]
+    fn resolves_record_id_and_builtin_targets() {
+        assert_eq!(link_target_from_type(&FieldType::RecordId("User".into())), "User");
+        assert_eq!(link_target_from_type(&FieldType::String), "string");
+    }
+}

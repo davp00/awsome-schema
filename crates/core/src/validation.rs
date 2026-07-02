@@ -61,7 +61,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use crate::domain::{Datasource, Field, FieldType, Model, NamingConvention, TableMode};
+    use crate::domain::{Datasource, Edge, Field, FieldType, Model, NamingConvention, TableMode};
 
     fn sample_schema() -> DatabaseSchema {
         DatabaseSchema {
@@ -110,5 +110,73 @@ mod tests {
         schema.datasource.provider.clear();
         let error = validate_schema(&schema).expect_err("missing provider should fail");
         assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_model_without_id_field() {
+        let mut schema = sample_schema();
+        schema.models[0].fields[0].is_id = false;
+        let error = validate_schema(&schema).expect_err("missing id");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_edge_without_endpoints() {
+        let mut schema = sample_schema();
+        schema.edges.push(Edge {
+            name: "Broken".to_owned(),
+            in_model: String::new(),
+            out_model: String::new(),
+            fields: Vec::new(),
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: BTreeMap::new(),
+        });
+        let error = validate_schema(&schema).expect_err("broken edge");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_empty_schema() {
+        let schema = DatabaseSchema {
+            datasource: sample_schema().datasource,
+            naming: NamingConvention::default(),
+            generators: Vec::new(),
+            models: Vec::new(),
+            edges: Vec::new(),
+        };
+        let error = validate_schema(&schema).expect_err("empty");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_model_without_fields() {
+        let mut schema = sample_schema();
+        schema.models[0].fields.clear();
+        let error = validate_schema(&schema).expect_err("no fields");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_wrong_id_field_type() {
+        let mut schema = sample_schema();
+        schema.models[0].fields[0].field_type = FieldType::RecordId("Post".to_owned());
+        let error = validate_schema(&schema).expect_err("wrong id type");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn validates_schema_with_valid_edge() {
+        let mut schema = sample_schema();
+        schema.edges.push(Edge {
+            name: "Follows".to_owned(),
+            in_model: "User".to_owned(),
+            out_model: "User".to_owned(),
+            fields: Vec::new(),
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: BTreeMap::new(),
+        });
+        validate_schema(&schema).expect("valid edge");
     }
 }

@@ -1,5 +1,11 @@
 pub struct Printer;
 
+impl Default for Printer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Printer {
     #[must_use]
     pub const fn new() -> Self {
