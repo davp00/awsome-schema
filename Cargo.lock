@@ -814,10 +814,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "cli",
- "core",
- "parser",
  "predicates",
- "renderers",
  "serde_json",
  "surrealdb",
  "tempfile",

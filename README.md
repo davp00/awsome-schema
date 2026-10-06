@@ -66,7 +66,18 @@ Port traits (in `core`):
 
 ```bash
 cargo check --workspace
-cargo test --workspace
+cargo test --workspace --exclude e2e   # unit/integration without Docker
+cargo test -p e2e                      # full e2e (live SurrealDB soft-skips without Docker)
+```
+
+Topic-based e2e binaries (under `crates/e2e/tests/`):
+
+```bash
+cargo test -p e2e --test offline_cli   # init + generate (always runs)
+cargo test -p e2e --test migrate       # apply / status / rollback ledger
+cargo test -p e2e --test db_sync       # db push / pull / split-by-table
+cargo test -p e2e --test graph_edges   # TYPE RELATION roundtrip
+cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
 ```
 
 ### Database pull and push

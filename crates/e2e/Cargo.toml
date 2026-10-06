@@ -9,9 +9,6 @@ workspace = true
 
 [dependencies]
 cli = { path = "../cli" }
-schema-core.workspace = true
-parser.workspace = true
-renderers.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
 tempfile.workspace = true

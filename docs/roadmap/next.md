@@ -45,4 +45,4 @@ Replace the Rust and TypeScript stubs after the schema and migrations match Surr
 
 ## Check still open
 
-Re-run `cargo test -p e2e` with Docker available for live SurrealDB coverage (migrate ledger, record-reference push/pull).
+Re-run `cargo test -p e2e` (or topic binaries like `--test migrate` / `--test record_refs`) with Docker available for live SurrealDB coverage.
