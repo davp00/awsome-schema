@@ -15,14 +15,14 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 | | Prisma | TypeORM | Awesome Schema |
 |---|---|---|---|
 | Primary model | Relational tables + Prisma Client | Decorator-based entities + migrations | DSL → domain model → provider renderers |
-| SurrealDB support | Limited / indirect | Manual | First-class target (SurrealDB 3.1.5+) |
+| SurrealDB support | Limited / indirect | Manual | First-class target (SurrealDB 3.3.0) |
 | Graph edges | Relations | Relations | Native `edge` blocks |
 | Migration model | SQL migrations (provider-specific) | TypeORM migration classes | Domain operations → SurrealQL |
 | Code generation | Strong client focus | Entity classes | Pluggable per-language generators |
 
 ## Why SurrealDB first
 
-SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The first milestone targets **SurrealDB 3.1.5** (latest stable 3.x at project inception).
+SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The current target is **SurrealDB 3.3.0**. The first milestone started on 3.1.5.
 
 Runtime database connectivity (`db pull`, `db push`, `migrate apply`) is intentionally stubbed—this milestone focuses on **parsing, validation, diffing, and SurrealQL rendering**.
 

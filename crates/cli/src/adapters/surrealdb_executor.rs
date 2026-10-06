@@ -22,7 +22,7 @@ async fn execute_script_async(config: &DatabaseConfig, script: &str) -> Result<(
         .await
         .map_err(|error| DomainError::DatabaseError(error.to_string()))?;
 
-    db.signin(Root { username: &config.username, password: &config.password })
+    db.signin(Root { username: config.username.clone(), password: config.password.clone() })
         .await
         .map_err(|error| DomainError::DatabaseError(error.to_string()))?;
 

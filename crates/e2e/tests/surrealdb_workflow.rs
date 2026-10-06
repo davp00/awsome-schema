@@ -10,6 +10,7 @@ use surrealdb::Surreal;
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use testcontainers_modules::surrealdb::{SURREALDB_PORT, SurrealDb};
+use testcontainers_modules::testcontainers::ImageExt;
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
 
 const MINIMAL_SCHEMA: &str = r#"datasource db {
@@ -69,6 +70,7 @@ async fn start_surrealdb()
     let container = SurrealDb::default()
         .with_user("root")
         .with_password("root")
+        .with_tag("v3.3.0")
         .start()
         .await
         .expect("start surrealdb");
@@ -81,7 +83,9 @@ async fn start_surrealdb()
 
 async fn table_exists(endpoint: &str, table: &str) -> bool {
     let db = Surreal::new::<Ws>(endpoint.to_owned()).await.expect("connect");
-    db.signin(Root { username: "root", password: "root" }).await.expect("signin");
+    db.signin(Root { username: "root".to_owned(), password: "root".to_owned() })
+        .await
+        .expect("signin");
     db.use_ns("test").use_db("main").await.expect("use ns/db");
 
     let mut response = db.query("INFO FOR DB;").await.expect("info for db");

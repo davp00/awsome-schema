@@ -9,6 +9,7 @@ Stay on SurrealDB until the schema that the DSL already accepts is what migratio
 - Render `edge` as `DEFINE TABLE … TYPE RELATION IN <in> OUT <out>`.
 - Stop skipping `@relation` fields, or turn them into the edge they name.
 - Include edges in `SchemaDiffer` (create, alter, drop), including edge fields.
+- SurrealDB 3.3 adds `LIGHTWEIGHT` relations and `INLINE` edge fields. See [surrealdb-3.3.md](surrealdb-3.3.md). Model those only after a normal relation renders correctly.
 
 ## 2. Migration lifecycle
 
@@ -34,6 +35,7 @@ The introspector is the remaining explicit stub.
 
 - Extend `@@index` so those flags can be written in the DSL.
 - Cover them in differ and renderer tests once the parser produces them.
+- A vector index on 3.3 is `HNSW DIMENSION … DIST …`, not the bare `VECTOR` keyword the renderer appends today.
 
 ## 5. Client generators
 
