@@ -126,8 +126,8 @@
     "semantic_hash": ""
   },
   "crates/cli/src/lib.rs": {
-    "mtime": 1791304458.2071116,
-    "seen": 1791304912.188395,
+    "mtime": 1791317581.084581,
+    "seen": 1791318361.8914702,
     "ast_hash": "5b9adfc28a2085975515e0e46f74ed17",
     "semantic_hash": ""
   },
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "crates/cli/tests/commands.rs": {
-    "mtime": 1791306393.384572,
-    "seen": 1791307356.4497201,
-    "ast_hash": "d196b538ed034b8b9fde50c632b96055",
+    "mtime": 1791318267.6456645,
+    "seen": 1791318361.8914719,
+    "ast_hash": "8370161bb8f6e27854fda8f64dd15efd",
     "semantic_hash": ""
   },
   "crates/cli/tests/db_pull.rs": {
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "crates/cli/tests/dispatch.rs": {
-    "mtime": 1791306352.953996,
-    "seen": 1791307356.449721,
-    "ast_hash": "e3972b9ddde7fa2f6ec36f037a8b8582",
+    "mtime": 1791318267.6404686,
+    "seen": 1791318361.8914728,
+    "ast_hash": "042c5a79104307f549188897e2f66b4a",
     "semantic_hash": ""
   },
   "crates/codegen-rust/Cargo.toml": {
@@ -426,9 +426,9 @@
     "semantic_hash": "b2401ea80325046a168d542ba658a2e9"
   },
   "crates/core/src/validation.rs": {
-    "mtime": 1791313153.9941573,
-    "seen": 1791313802.563984,
-    "ast_hash": "61544e56ce77b695b66016c6f702fbea",
+    "mtime": 1791318267.5754883,
+    "seen": 1791318361.8914912,
+    "ast_hash": "051910e06928e16f7a1792860f44e51b",
     "semantic_hash": ""
   },
   "crates/core/tests/domain.rs": {
@@ -486,15 +486,15 @@
     "semantic_hash": ""
   },
   "crates/parser/src/parse.rs": {
-    "mtime": 1791315110.172077,
-    "seen": 1791315617.001091,
-    "ast_hash": "e940087529557ae00c7c40de7c60c24a",
+    "mtime": 1791318267.653742,
+    "seen": 1791318361.891497,
+    "ast_hash": "ddf2f43853d330e7363cbb473fdbd2e9",
     "semantic_hash": ""
   },
   "crates/parser/tests/coverage.rs": {
-    "mtime": 1791315198.9050536,
-    "seen": 1791315617.0010922,
-    "ast_hash": "2d2651c25242551611a1e78630a76698",
+    "mtime": 1791318267.6661751,
+    "seen": 1791318361.891498,
+    "ast_hash": "e75c3eba96115708110191090ee8f564",
     "semantic_hash": ""
   },
   "crates/renderers/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791314460.240647,
-    "seen": 1791314740.547988,
-    "ast_hash": "19bcc37e41dc5d7a208ede413498b526",
+    "mtime": 1791318310.3573258,
+    "seen": 1791318361.891511,
+    "ast_hash": "f23224d142aafce31e200fb3b4ee18a6",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -684,9 +684,9 @@
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
-    "mtime": 1791315166.4066682,
-    "seen": 1791315617.001107,
-    "ast_hash": "fc668c7a461c6e2a61ed6b1af82ee9c7",
+    "mtime": 1791318267.6718812,
+    "seen": 1791318361.891513,
+    "ast_hash": "c84bb77a84c9ca5045f08aac45b98fc4",
     "semantic_hash": ""
   },
   "crates/cli/src/adapters/surrealdb_connection.rs": {
@@ -714,9 +714,9 @@
     "semantic_hash": ""
   },
   "crates/renderers/src/surrealdb/introspect.rs": {
-    "mtime": 1791315156.4129667,
-    "seen": 1791315617.0010931,
-    "ast_hash": "fe52ae225ba10c3a59ac73fb4c146fb6",
+    "mtime": 1791318267.6599727,
+    "seen": 1791318361.891499,
+    "ast_hash": "5cd5d7cf245defe72bb4a3e5532890d3",
     "semantic_hash": ""
   },
   "crates/renderers/tests/fixtures/minimal_user_info.json": {
@@ -726,9 +726,9 @@
     "semantic_hash": ""
   },
   "crates/renderers/tests/introspect_mapper.rs": {
-    "mtime": 1791305697.0849295,
-    "seen": 1791305954.078943,
-    "ast_hash": "8309e2b306a4ba5b14c433020cf5d8be",
+    "mtime": 1791318267.6043055,
+    "seen": 1791318361.891501,
+    "ast_hash": "e56fbde2d5c7f368063d3682275a96d1",
     "semantic_hash": ""
   },
   "crates/cli/src/adapters/surrealdb_migration_ledger.rs": {
@@ -783,6 +783,18 @@
     "mtime": 1791314447.9592304,
     "seen": 1791314740.547971,
     "ast_hash": "3b4f74af4222c104a08628a0dd6cc015",
+    "semantic_hash": ""
+  },
+  "scripts/manual-test-indexes.sh": {
+    "mtime": 1791318267.6777713,
+    "seen": 1791318361.891503,
+    "ast_hash": "61cef3cd38f1a2b3b3f2cb4a5ec82c76",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1791318267.6830795,
+    "seen": 1791318361.891511,
+    "ast_hash": "cc454e88517390bde19df7b86edd538a",
     "semantic_hash": ""
   }
 }
