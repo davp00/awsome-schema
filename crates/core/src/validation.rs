@@ -76,6 +76,23 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
                 }
             }
         }
+
+        for index in &model.indexes {
+            if index.fields.is_empty() {
+                return Err(DomainError::ValidationError(format!(
+                    "model `{}` @@index requires at least one field",
+                    model.name
+                )));
+            }
+            for field_name in &index.fields {
+                if !model.fields.iter().any(|field| field.name == *field_name) {
+                    return Err(DomainError::ValidationError(format!(
+                        "model `{}` @@index references unknown field `{field_name}`",
+                        model.name
+                    )));
+                }
+            }
+        }
     }
 
     for edge in &schema.edges {

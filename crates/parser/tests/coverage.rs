@@ -254,15 +254,28 @@ fn parses_model_attribute_without_value() {
 }
 
 #[test]
-fn parses_empty_index_field_list() {
-    let schema = parse(
+fn rejects_empty_index_field_list() {
+    let error = parse(
         r"model User {
   id @id
   @@index([])
 }",
     )
-    .expect("parse");
-    assert!(schema.models[0].indexes[0].fields.is_empty());
+    .expect_err("empty index");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
+fn rejects_bare_index_without_fields() {
+    let error = parse(
+        r#"model User { id @id }
+model UserSession {
+  id @id
+  user User @link("UserSession") @onDelete(Ignore) @@index
+}"#,
+    )
+    .expect_err("bare @@index");
+    assert!(matches!(error, DomainError::ParseError(_)));
 }
 
 #[test]

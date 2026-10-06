@@ -28,11 +28,15 @@ pub fn map_database_info(
         if is_relation_table(table_define) {
             let (in_table, out_table) = parse_relation_endpoints(table_define)?;
             let domain_name = edge_name_for_table(table_name, preserve);
+            let mut fields = map_fields(table_name, &info, preserve, None)?;
+            // RELATION tables expose `in`/`out` as fields in INFO; those are the edge
+            // endpoints, not DSL fields — keep only payload fields (e.g. score).
+            fields.retain(|field| field.name != "in" && field.name != "out");
             let edge = Edge {
                 name: domain_name,
                 in_model: model_name_for_table(&in_table, preserve),
                 out_model: model_name_for_table(&out_table, preserve),
-                fields: map_fields(table_name, &info, preserve, None)?,
+                fields,
                 table_mode: parse_table_mode(table_define),
                 permissions: parse_permissions(table_define),
                 attributes: BTreeMap::new(),
@@ -41,6 +45,7 @@ pub fn map_database_info(
         } else {
             let domain_name = model_name_for_table(table_name, preserve);
             let mut fields = map_fields(table_name, &info, preserve, Some(table_name))?;
+            ensure_model_id_field(&mut fields, &domain_name);
             let mut indexes = map_indexes(table_name, &info, &mut fields, preserve)?;
             indexes.sort_by(|a, b| a.resolved_name(table_name, &preserve.naming).cmp(&b.resolved_name(table_name, &preserve.naming)));
 
@@ -66,7 +71,7 @@ pub fn map_database_info(
         models,
         edges,
     };
-    pair_pulled_links(&mut schema);
+    pair_pulled_links(&mut schema, preserve);
     Ok(schema)
 }
 
@@ -104,7 +109,48 @@ fn parse_permissions(define: &str) -> Option<String> {
     let tokens = tokenize(define);
     let pos = tokens.iter().position(|t| t.eq_ignore_ascii_case("permissions"))?;
     let rest = tokens.get(pos + 1..)?.join(" ");
-    if rest.is_empty() { None } else { Some(rest) }
+    if rest.is_empty() || rest.eq_ignore_ascii_case("none") {
+        None
+    } else {
+        Some(rest)
+    }
+}
+
+/// SurrealDB 3.3 `INFO FOR TABLE` omits the primary `id` field even when it was
+/// defined as `TYPE record<table>`. Models still require `@id`, so synthesize it.
+fn ensure_model_id_field(fields: &mut Vec<Field>, model_name: &str) {
+    if let Some(field) = fields.iter_mut().find(|field| field.name == "id") {
+        field.is_id = true;
+        if let FieldType::Model(target) = &field.field_type {
+            field.field_type = FieldType::RecordId(target.clone());
+            field.link_target = None;
+            field.link_storage = None;
+            field.on_delete = None;
+            field.link_name = None;
+        }
+        return;
+    }
+
+    fields.push(Field {
+        name: "id".into(),
+        field_type: FieldType::RecordId(model_name.to_owned()),
+        optional: false,
+        unique: false,
+        is_id: true,
+        default_value: None,
+        default_always: false,
+        value_expression: None,
+        readonly: false,
+        flexible: false,
+        link_target: None,
+        link_name: None,
+        on_delete: None,
+        link_storage: None,
+        link_opposite_field: None,
+        relation_name: None,
+        attributes: BTreeMap::new(),
+    });
+    fields.sort_by(|a, b| a.name.cmp(&b.name));
 }
 
 fn map_fields(
@@ -328,7 +374,7 @@ fn parse_computed_backlink(define: &str, preserve: &DatabaseSchema) -> Option<Co
     None
 }
 
-fn pair_pulled_links(schema: &mut DatabaseSchema) {
+fn pair_pulled_links(schema: &mut DatabaseSchema, preserve: &DatabaseSchema) {
     // Assign shared link_name from computed side → stored opposite
     let mut pairs: Vec<(String, String, String, String)> = Vec::new();
     // (computed_model, computed_field, stored_model, stored_field)
@@ -356,7 +402,9 @@ fn pair_pulled_links(schema: &mut DatabaseSchema) {
     }
 
     for (computed_model, computed_field, stored_model, stored_field) in pairs {
-        let pair_name = format!("{stored_model}{computed_model}");
+        let pair_name = preserved_link_name(preserve, &computed_model, &computed_field)
+            .or_else(|| preserved_link_name(preserve, &stored_model, &stored_field))
+            .unwrap_or_else(|| format!("{stored_model}{computed_model}"));
         if let Some(model) = schema.models.iter_mut().find(|m| m.name == computed_model) {
             if let Some(field) = model.fields.iter_mut().find(|f| f.name == computed_field) {
                 field.link_name = Some(pair_name.clone());
@@ -380,6 +428,22 @@ fn pair_pulled_links(schema: &mut DatabaseSchema) {
             }
         }
     }
+}
+
+fn preserved_link_name(
+    preserve: &DatabaseSchema,
+    model_name: &str,
+    field_name: &str,
+) -> Option<String> {
+    preserve
+        .models
+        .iter()
+        .find(|model| model.name == model_name)?
+        .fields
+        .iter()
+        .find(|field| field.name == field_name)?
+        .link_name
+        .clone()
 }
 
 fn parse_index_define(define: &str) -> Result<Index, DomainError> {
@@ -653,6 +717,27 @@ mod tests {
     }
 
     #[test]
+    fn synthesizes_id_when_info_omits_it() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL PERMISSIONS NONE;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "email".into(),
+            "DEFINE FIELD email ON user TYPE string;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let user = &pulled.models[0];
+        let id = user.fields.iter().find(|f| f.name == "id").expect("synthesized id");
+        assert!(id.is_id);
+        assert_eq!(id.field_type, FieldType::RecordId("User".into()));
+        assert!(user.permissions.is_none());
+    }
+
+    #[test]
     fn maps_fulltext_and_hnsw_indexes() {
         let preserve = preserve_with_user();
         let mut tables = BTreeMap::new();
@@ -702,7 +787,25 @@ mod tests {
         preserve.naming.tables = core::NamingCase::SnakeCase;
         preserve.models.push(Model {
             name: "User".into(),
-            fields: vec![],
+            fields: vec![Field {
+                name: "posts".into(),
+                field_type: FieldType::Array(Box::new(FieldType::Model("Post".into()))),
+                optional: false,
+                unique: false,
+                is_id: false,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                flexible: false,
+                link_target: Some("Post".into()),
+                link_name: Some("PostAuthor".into()),
+                on_delete: None,
+                link_storage: Some(core::LinkStorage::Computed),
+                link_opposite_field: Some("author".into()),
+                relation_name: None,
+                attributes: BTreeMap::new(),
+            }],
             table_mode: TableMode::Schemafull,
             permissions: None,
             indexes: vec![],
@@ -710,7 +813,25 @@ mod tests {
         });
         preserve.models.push(Model {
             name: "Post".into(),
-            fields: vec![],
+            fields: vec![Field {
+                name: "author".into(),
+                field_type: FieldType::Model("User".into()),
+                optional: false,
+                unique: false,
+                is_id: false,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                flexible: false,
+                link_target: Some("User".into()),
+                link_name: Some("PostAuthor".into()),
+                on_delete: Some(core::OnDeleteAction::Cascade),
+                link_storage: Some(core::LinkStorage::Stored),
+                link_opposite_field: None,
+                relation_name: None,
+                attributes: BTreeMap::new(),
+            }],
             table_mode: TableMode::Schemafull,
             permissions: None,
             indexes: vec![],
@@ -753,7 +874,7 @@ mod tests {
         assert_eq!(posts.link_storage, Some(core::LinkStorage::Computed));
         assert_eq!(author.link_storage, Some(core::LinkStorage::Stored));
         assert_eq!(author.on_delete, Some(core::OnDeleteAction::Cascade));
-        assert_eq!(posts.link_name.as_ref(), author.link_name.as_ref());
-        assert!(posts.link_name.is_some());
+        assert_eq!(posts.link_name.as_deref(), Some("PostAuthor"));
+        assert_eq!(author.link_name.as_deref(), Some("PostAuthor"));
     }
 }

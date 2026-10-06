@@ -30,6 +30,7 @@ These still match `DEFINE FIELD` on 3.3.0. No renderer change was required.
 
 - `FLEXIBLE` now covers every object inside the type, including `option<object>`, `array<object>`, and object arms of a union. A type with no object is rejected. Our validator already requires `object` for `@flexible`.
 - `DEFINE FIELD id … TYPE` is enforced when a record is written. Our `@id` fields render as `TYPE record<table>`, so an id that is not a record of that table fails on insert. `DEFAULT` on `id` is allowed. `DEFAULT ALWAYS` on `id` is rejected, because an explicit id must win. The DSL does not block `@defaultAlways` on `@id` yet.
+- `INFO FOR TABLE` does **not** list the primary `id` field. `db pull` synthesizes `id @id` for models so validation still passes.
 - `DEFAULT`, `VALUE`, and `COMPUTED` run in dependency order, not field-name order. Interdependent fields no longer depend on declaration order.
 
 ## New in 3.2–3.3 that the DSL does not model

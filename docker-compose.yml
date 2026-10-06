@@ -1,0 +1,45 @@
+# Local SurrealDB 3.3 for Awesome Schema (matches e2e / roadmap target).
+#
+#   docker compose up -d
+#   docker compose down
+#   docker compose down -v   # also wipe data
+#
+# Connect from awesome.schema:
+#   url      = "ws://127.0.0.1:8000"
+#   namespace = "test"
+#   database  = "main"
+#   username  = "root"
+#   password  = "root"
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v3.3.0
+    container_name: awesome-schema-surrealdb
+    user: "0:0"
+    ports:
+      - "${SURREAL_PORT:-8000}:8000"
+    command: >
+      start
+      --log info
+      --user root
+      --pass root
+      rocksdb:/data/database.db
+    volumes:
+      - surreal-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/surreal",
+          "is-ready",
+          "--conn",
+          "http://127.0.0.1:8000",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 2s
+    restart: unless-stopped
+
+volumes:
+  surreal-data:

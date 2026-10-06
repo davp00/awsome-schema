@@ -98,6 +98,14 @@ fn maps_relation_table_to_edge() {
         "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;".into(),
     );
     let mut info = TableInfo::default();
+    info.fields.insert(
+        "in".into(),
+        "DEFINE FIELD in ON likes TYPE record<user> PERMISSIONS FULL;".into(),
+    );
+    info.fields.insert(
+        "out".into(),
+        "DEFINE FIELD out ON likes TYPE record<post> PERMISSIONS FULL;".into(),
+    );
     info.fields.insert("score".into(), "DEFINE FIELD score ON likes TYPE int;".into());
     let mut table_infos = BTreeMap::new();
     table_infos.insert("likes".into(), info);
@@ -107,4 +115,6 @@ fn maps_relation_table_to_edge() {
     assert_eq!(pulled.edges[0].name, "Likes");
     assert_eq!(pulled.edges[0].in_model, "User");
     assert_eq!(pulled.edges[0].out_model, "Post");
+    assert_eq!(pulled.edges[0].fields.len(), 1);
+    assert_eq!(pulled.edges[0].fields[0].name, "score");
 }

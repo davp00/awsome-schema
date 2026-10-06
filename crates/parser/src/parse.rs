@@ -802,9 +802,17 @@ struct ParsedFieldAttributes {
 
 fn parse_index_fields(raw: &str) -> Result<Vec<String>, DomainError> {
     if raw.is_empty() {
-        return Ok(Vec::new());
+        return Err(DomainError::ParseError(
+            "@@index requires a non-empty field list, e.g. @@index([email])".to_owned(),
+        ));
     }
-    Ok(raw.split(',').map(str::trim).map(ToOwned::to_owned).collect())
+    let fields: Vec<String> = raw.split(',').map(str::trim).filter(|s| !s.is_empty()).map(ToOwned::to_owned).collect();
+    if fields.is_empty() {
+        return Err(DomainError::ParseError(
+            "@@index requires a non-empty field list, e.g. @@index([email])".to_owned(),
+        ));
+    }
+    Ok(fields)
 }
 
 fn validate_field_rules(

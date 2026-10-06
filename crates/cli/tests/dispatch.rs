@@ -151,7 +151,19 @@ model User {
 
 #[test]
 fn dispatch_db_push_returns_connection_error_without_server() {
-    let (_temp, cli) = temp_cli(&["db", "push"]);
+    let schema = r#"datasource db {
+  provider = "surrealdb"
+  url      = "127.0.0.1:59999"
+  namespace = "test"
+  database  = "main"
+}
+
+model User {
+  id    @id
+  email string @unique
+}
+"#;
+    let (_temp, cli) = temp_cli_with_schema(schema, &["db", "push"]);
     let error = commands::dispatch(&cli, &Printer::new()).expect_err("push");
     assert!(error.to_string().contains("database") || error.to_string().contains("connect"));
 }

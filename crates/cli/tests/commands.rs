@@ -14,6 +14,20 @@ model User {
 }
 "#;
 
+/// Schema aimed at a closed port so status/apply fail without a live database.
+const UNREACHABLE_SCHEMA: &str = r#"datasource db {
+  provider = "surrealdb"
+  url      = "ws://127.0.0.1:59999"
+  namespace = "test"
+  database  = "main"
+}
+
+model User {
+  id    @id
+  email string @unique
+}
+"#;
+
 #[test]
 fn validate_command_succeeds_for_valid_schema() {
     let temp = tempfile::tempdir().expect("tempdir");
@@ -46,7 +60,7 @@ fn format_command_prints_schema_without_writing_by_default() {
 #[test]
 fn migrate_status_requires_database_connection() {
     let temp = tempfile::tempdir().expect("tempdir");
-    std::fs::write(temp.path().join("awesome.schema"), MINIMAL_SCHEMA).expect("write");
+    std::fs::write(temp.path().join("awesome.schema"), UNREACHABLE_SCHEMA).expect("write");
     std::fs::create_dir_all(temp.path().join("migrations")).expect("migrations dir");
 
     Command::cargo_bin("awesome-schema")

@@ -12,13 +12,17 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 
 ## How it differs from Prisma and TypeORM
 
-| | Prisma | TypeORM | Awesome Schema |
-|---|---|---|---|
-| Primary model | Relational tables + Prisma Client | Decorator-based entities + migrations | DSL → domain model → provider renderers |
-| SurrealDB support | Limited / indirect | Manual | First-class target (SurrealDB 3.3.0) |
-| Graph edges | Relations | Relations | Native `edge` blocks |
-| Migration model | SQL migrations (provider-specific) | TypeORM migration classes | Domain operations → SurrealQL |
-| Code generation | Strong client focus | Entity classes | Pluggable per-language generators |
+
+|                   | Prisma                             | TypeORM                               | Awesome Schema                          |
+| ----------------- | ---------------------------------- | ------------------------------------- | --------------------------------------- |
+| Primary model     | Relational tables + Prisma Client  | Decorator-based entities + migrations | DSL → domain model → provider renderers |
+| SurrealDB support | Limited / indirect                 | Manual                                | First-class target (SurrealDB 3.3.0)    |
+| Graph edges       | Relations                          | Relations                             | Native `edge` blocks                    |
+| Migration model   | SQL migrations (provider-specific) | TypeORM migration classes             | Domain operations → SurrealQL           |
+| Code generation   | Strong client focus                | Entity classes                        | Pluggable per-language generators       |
+
+
+
 
 ## Why SurrealDB first
 
@@ -42,11 +46,13 @@ crates/
 └── codegen-typescript  # TypeScript model generator (stub)
 ```
 
+
+
 ### Architecture (hexagonal / clean)
 
-- **`core`** owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases.
-- **`parser`**, **`migrations`**, **`renderers`**, and **`codegen-*`** are capability crates that implement or support ports.
-- **`cli`** wires dependencies via `di.rs`, implements adapters (filesystem, migration store, introspector stubs), and exposes commands through `clap`. **No business logic lives in the CLI.**
+- `core` owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases.
+- `parser`, `migrations`, `renderers`, and `codegen-*` are capability crates that implement or support ports.
+- `cli` wires dependencies via `di.rs`, implements adapters (filesystem, migration store, introspector stubs), and exposes commands through `clap`. **No business logic lives in the CLI.**
 
 Port traits (in `core`):
 
@@ -56,11 +62,31 @@ Port traits (in `core`):
 - `MigrationStore` — load/save schema snapshots for diffs
 - `SchemaSource` — load the DSL file
 
+
+
 ## Getting started
 
 ### Prerequisites
 
 - Rust **2024 edition** (stable toolchain via `rust-toolchain.toml`)
+- Docker (optional) for live SurrealDB via Compose or e2e
+
+### Local SurrealDB (Docker Compose)
+
+```bash
+docker compose up -d          # SurrealDB 3.3.0 on ws://127.0.0.1:8000 (root/root)
+docker compose down           # stop
+docker compose down -v        # stop and wipe data volume
+```
+
+Point `awesome.schema` at it with `url = "ws://127.0.0.1:8000"`, `namespace = "test"`, `database = "main"`.
+
+Manual index-kinds smoke test:
+
+```bash
+./scripts/manual-test-indexes.sh          # offline generate checks
+./scripts/manual-test-indexes.sh --live   # compose up + push + INFO + pull
+```
 
 ### Build and test
 
@@ -134,6 +160,8 @@ Global flags:
 - `--schema <path>` — schema file (default: `awesome.schema`)
 - `--migrations-dir <path>` — migrations directory (default: `migrations`)
 
+
+
 ## Awesome Schema DSL
 
 See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The DSL supports (or is designed to support):
@@ -148,16 +176,18 @@ See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The
 
 Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 
-| DSL attribute | SurrealDB clause | Behavior |
-|---|---|---|
-| `@default(expr)` | `DEFAULT expr` | Applied on INSERT when no value is provided |
-| `@defaultAlways(expr)` | `DEFAULT ALWAYS expr` | Also applied on UPDATE when the value is empty |
-| `@value(expr)` | `VALUE expr` | Recomputed on every CREATE and UPDATE |
-| `@updated(expr)` | `VALUE expr` | Alias for auto-updating timestamps (`updatedAt`) |
-| `@readonly` | `READONLY` | Prevents manual updates (use with `@value`) |
-| `@flexible` | `FLEXIBLE` | Allows extra undefined keys on a schemafull object field |
-| `@link` / `@link("Name")` | `REFERENCE` (+ optional `ON DELETE`) | Stored record reference; pair name matches Prisma-style opposite |
-| `@onDelete(Cascade\|Unset\|Reject\|Ignore)` | `ON DELETE …` | Delete policy on the stored `@link` side (default Ignore) |
+
+| DSL attribute                            | SurrealDB clause                     | Behavior                                                         |
+| ---------------------------------------- | ------------------------------------ | ---------------------------------------------------------------- |
+| `@default(expr)`                         | `DEFAULT expr`                       | Applied on INSERT when no value is provided                      |
+| `@defaultAlways(expr)`                   | `DEFAULT ALWAYS expr`                | Also applied on UPDATE when the value is empty                   |
+| `@value(expr)`                           | `VALUE expr`                         | Recomputed on every CREATE and UPDATE                            |
+| `@updated(expr)`                         | `VALUE expr`                         | Alias for auto-updating timestamps (`updatedAt`)                 |
+| `@readonly`                              | `READONLY`                           | Prevents manual updates (use with `@value`)                      |
+| `@flexible`                              | `FLEXIBLE`                           | Allows extra undefined keys on a schemafull object field         |
+| `@link` / `@link("Name")`                | `REFERENCE` (+ optional `ON DELETE`) | Stored record reference; pair name matches Prisma-style opposite |
+| `@onDelete(Cascade|Unset|Reject|Ignore)` | `ON DELETE …`                        | Delete policy on the stored `@link` side (default Ignore)        |
+
 
 Record references (provider-neutral in the domain; SurrealDB is the first renderer):
 
@@ -231,6 +261,8 @@ edge Likes {
 }
 ```
 
+
+
 ## Migrations
 
 Migrations work similarly to **TypeORM**:
@@ -282,6 +314,8 @@ cargo clippy --workspace --all-targets
 # Run helper script (if configured)
 ./scripts/check.sh
 ```
+
+
 
 ## License
 
