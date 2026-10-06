@@ -230,6 +230,8 @@ model Post {
     assert_eq!(author.link_storage, Some(LinkStorage::Stored));
     assert_eq!(author.on_delete, Some(OnDeleteAction::Cascade));
     assert_eq!(posts.link_opposite_field.as_deref(), Some("author"));
+    assert_eq!(posts.link_target.as_deref(), Some("Post"));
+    assert_eq!(author.link_target.as_deref(), Some("User"));
 }
 
 #[test]

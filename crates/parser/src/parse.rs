@@ -749,8 +749,8 @@ fn validate_field_rules(
 
 fn link_target_from_type(field_type: &FieldType) -> String {
     match field_type {
-        FieldType::Model(name) => name.clone(),
-        FieldType::RecordId(name) => name.clone(),
+        FieldType::Model(name) | FieldType::RecordId(name) => name.clone(),
+        FieldType::Array(inner) => link_target_from_type(inner),
         other => other.base_surreal_type_name(),
     }
 }
@@ -764,5 +764,13 @@ mod link_target_tests {
     fn resolves_record_id_and_builtin_targets() {
         assert_eq!(link_target_from_type(&FieldType::RecordId("User".into())), "User");
         assert_eq!(link_target_from_type(&FieldType::String), "string");
+    }
+
+    #[test]
+    fn resolves_array_model_targets() {
+        assert_eq!(
+            link_target_from_type(&FieldType::Array(Box::new(FieldType::Model("Post".into())))),
+            "Post"
+        );
     }
 }

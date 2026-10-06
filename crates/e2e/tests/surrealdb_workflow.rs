@@ -368,6 +368,158 @@ edge Likes {{
     project.awesome_schema_cmd().arg("validate").assert().success();
 }
 
+#[tokio::test]
+async fn cli_generate_emits_reference_and_computed_link() {
+    let schema = r#"datasource db {
+  provider = "surrealdb"
+  url      = env("SURREALDB_URL")
+  namespace = "test"
+  database  = "main"
+}
+
+naming {
+  tables = "snake_case"
+}
+
+model User {
+  id    @id
+  posts Post[] @link("PostAuthor")
+  @@table(schemafull)
+}
+
+model Post {
+  id     @id
+  author User @link("PostAuthor") @onDelete(Cascade)
+  @@table(schemafull)
+}
+"#;
+
+    let project = TestProject::new();
+    project.write_schema(schema);
+
+    project
+        .awesome_schema_cmd()
+        .arg("generate")
+        .arg("--target")
+        .arg("schema")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "DEFINE FIELD author ON post TYPE record<user> REFERENCE ON DELETE CASCADE;",
+        ))
+        .stdout(predicate::str::contains(
+            "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);",
+        ));
+}
+
+#[tokio::test]
+async fn cli_db_push_and_pull_preserves_record_references() {
+    let Some((_container, endpoint)) = start_surrealdb().await else {
+        return;
+    };
+
+    let schema = format!(
+        r#"datasource db {{
+  provider = "surrealdb"
+  url      = "{endpoint}"
+  namespace = "test"
+  database  = "main"
+}}
+
+naming {{
+  tables = "snake_case"
+}}
+
+model User {{
+  id    @id
+  posts Post[] @link("PostAuthor")
+  @@table(schemafull)
+}}
+
+model Post {{
+  id     @id
+  author User @link("PostAuthor") @onDelete(Cascade)
+  @@table(schemafull)
+}}
+"#
+    );
+
+    let project = TestProject::new();
+    project.write_schema(&schema);
+
+    project
+        .awesome_schema_cmd()
+        .arg("validate")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Schema is valid"));
+
+    project.awesome_schema_cmd().arg("db").arg("push").assert().success();
+    assert!(table_exists(&endpoint, "user").await);
+    assert!(table_exists(&endpoint, "post").await);
+
+    let author_define = field_define(&endpoint, "post", "author").await;
+    assert!(
+        author_define.to_ascii_lowercase().contains("reference"),
+        "expected REFERENCE on author, got: {author_define}"
+    );
+    assert!(
+        author_define.to_ascii_lowercase().contains("cascade"),
+        "expected ON DELETE CASCADE on author, got: {author_define}"
+    );
+
+    let posts_define = field_define(&endpoint, "user", "posts").await;
+    assert!(
+        posts_define.to_ascii_lowercase().contains("computed"),
+        "expected COMPUTED on posts, got: {posts_define}"
+    );
+    assert!(
+        posts_define.contains("<~") && posts_define.to_ascii_lowercase().contains("author"),
+        "expected backlink to author, got: {posts_define}"
+    );
+
+    project
+        .awesome_schema_cmd()
+        .arg("db")
+        .arg("pull")
+        .arg("--force")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Pulled"));
+
+    let pulled = fs::read_to_string(project.path("awesome.schema")).expect("pulled schema");
+    assert!(
+        pulled.contains("@link"),
+        "pulled schema should restore @link fields:\n{pulled}"
+    );
+    assert!(
+        pulled.contains("@onDelete(Cascade)") || pulled.contains("onDelete"),
+        "pulled schema should restore onDelete Cascade:\n{pulled}"
+    );
+
+    project.awesome_schema_cmd().arg("validate").assert().success();
+}
+
+async fn field_define(endpoint: &str, table: &str, field: &str) -> String {
+    let db = Surreal::new::<Ws>(endpoint.to_owned()).await.expect("connect");
+    db.signin(Root { username: "root".to_owned(), password: "root".to_owned() })
+        .await
+        .expect("signin");
+    db.use_ns("test").use_db("main").await.expect("use ns/db");
+
+    let mut response = db
+        .query(format!("INFO FOR TABLE {table};"))
+        .await
+        .expect("info for table");
+    let info: Option<serde_json::Value> = response.take(0).expect("take");
+    let info = info.expect("table info");
+    info.get("fields")
+        .and_then(|fields| fields.get(field))
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_owned()
+}
+
 #[test]
 fn parser_rejects_record_id_syntax_in_e2e_crate() {
     let error = parser::parse(r"model User { id RecordId<User> @id }").expect_err("reject");
