@@ -6,15 +6,16 @@ use core::domain::{
     NamingConvention, TableMode,
 };
 use core::ports::{
-    DatabaseExecutor, FileSystemPort, MigrationRenderer, MigrationStore, SchemaRenderer,
-    SchemaSource,
+    AppliedMigration, DatabaseExecutor, FileSystemPort, MigrationLedger, MigrationRenderer,
+    MigrationStore, SchemaRenderer, SchemaSource,
 };
 use core::usecases::{
     CodeGeneratorPort, DbPushInput, DbPushUseCase, FormatSchemaInput, FormatSchemaUseCase,
     GenerateCodeInput, GenerateCodeTarget, GenerateCodeUseCase, InitProjectInput,
     InitProjectUseCase, MigrateApplyInput, MigrateApplyUseCase, MigrateCreateInput,
-    MigrateCreateUseCase, MigrateDevInput, MigrateDevUseCase, MigrateStatusInput,
-    MigrateStatusUseCase, SchemaDiffPort, ValidateSchemaInput, ValidateSchemaUseCase,
+    MigrateCreateUseCase, MigrateDevInput, MigrateDevUseCase, MigrateRollbackInput,
+    MigrateRollbackUseCase, MigrateStatusInput, MigrateStatusUseCase, MigrationApplyState,
+    SchemaDiffPort, ValidateSchemaInput, ValidateSchemaUseCase,
 };
 use core::{DatabaseConfig, DomainError};
 
@@ -141,6 +142,60 @@ impl MigrationStore for MemoryMigrationStore {
 
     fn list_migrations(&self) -> Result<Vec<String>, DomainError> {
         Ok(self.migrations.lock().expect("lock").clone())
+    }
+}
+
+struct MemoryLedger {
+    applied: Mutex<Vec<AppliedMigration>>,
+}
+
+impl MemoryLedger {
+    fn new() -> Self {
+        Self { applied: Mutex::new(Vec::new()) }
+    }
+
+    fn with_applied(names: &[&str]) -> Self {
+        Self {
+            applied: Mutex::new(
+                names
+                    .iter()
+                    .map(|name| AppliedMigration {
+                        name: (*name).to_owned(),
+                        applied_at: Some(format!("2026-01-01T00:00:00Z-{name}")),
+                        checksum: "checksum".to_owned(),
+                    })
+                    .collect(),
+            ),
+        }
+    }
+}
+
+impl MigrationLedger for MemoryLedger {
+    fn ensure_schema(&self, _config: &DatabaseConfig) -> Result<(), DomainError> {
+        Ok(())
+    }
+
+    fn list_applied(&self, _config: &DatabaseConfig) -> Result<Vec<AppliedMigration>, DomainError> {
+        Ok(self.applied.lock().expect("lock").clone())
+    }
+
+    fn record_applied(
+        &self,
+        _config: &DatabaseConfig,
+        name: &str,
+        checksum: &str,
+    ) -> Result<(), DomainError> {
+        self.applied.lock().expect("lock").push(AppliedMigration {
+            name: name.to_owned(),
+            applied_at: Some("now".to_owned()),
+            checksum: checksum.to_owned(),
+        });
+        Ok(())
+    }
+
+    fn remove_applied(&self, _config: &DatabaseConfig, name: &str) -> Result<(), DomainError> {
+        self.applied.lock().expect("lock").retain(|row| row.name != name);
+        Ok(())
     }
 }
 
@@ -303,8 +358,9 @@ fn migrate_apply_executes_pending_migration_scripts() {
         snapshot: Mutex::new(None),
     });
     let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::new());
 
-    let use_case = MigrateApplyUseCase::new(store, fs, database.clone());
+    let use_case = MigrateApplyUseCase::new(store, fs, database.clone(), ledger.clone());
     let output = use_case
         .execute(MigrateApplyInput {
             migrations_dir: "migrations".to_owned(),
@@ -313,7 +369,111 @@ fn migrate_apply_executes_pending_migration_scripts() {
         .expect("apply");
 
     assert_eq!(output.applied, 1);
+    assert_eq!(output.skipped, 0);
     assert_eq!(database.scripts.lock().expect("lock").len(), 1);
+    assert_eq!(ledger.list_applied(&DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()).unwrap().len(), 1);
+}
+
+#[test]
+fn migrate_apply_skips_already_recorded_migrations() {
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("migrations/001_init/migration.surql", "DEFINE TABLE user SCHEMAFULL;")
+        .expect("write");
+    fs.write_string("migrations/002_next/migration.surql", "DEFINE TABLE post SCHEMAFULL;")
+        .expect("write");
+
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_init".to_owned(), "002_next".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
+
+    let use_case = MigrateApplyUseCase::new(store, fs, database.clone(), ledger.clone());
+    let output = use_case
+        .execute(MigrateApplyInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+        })
+        .expect("apply");
+
+    assert_eq!(output.applied, 1);
+    assert_eq!(output.skipped, 1);
+    assert_eq!(database.scripts.lock().expect("lock").len(), 1);
+    assert_eq!(
+        ledger
+            .list_applied(
+                &DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()
+            )
+            .unwrap()
+            .len(),
+        2
+    );
+}
+
+#[test]
+fn migrate_rollback_runs_down_then_removes_ledger() {
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("migrations/001_init/migration.down.surql", "REMOVE TABLE user;")
+        .expect("write");
+
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_init".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database.clone(), ledger.clone());
+    let output = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 1,
+        })
+        .expect("rollback");
+
+    assert_eq!(output.rolled_back, vec!["001_init".to_owned()]);
+    assert_eq!(database.scripts.lock().expect("lock").as_slice(), ["REMOVE TABLE user;"]);
+    assert!(
+        ledger
+            .list_applied(
+                &DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()
+            )
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn migrate_rollback_errors_when_down_missing() {
+    let fs = Arc::new(MemoryFs::new());
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_init".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database, ledger.clone());
+    let error = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 1,
+        })
+        .expect_err("missing down");
+
+    assert!(matches!(error, DomainError::MigrationError(_)));
+    assert_eq!(
+        ledger
+            .list_applied(
+                &DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()
+            )
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 #[test]
@@ -331,14 +491,21 @@ fn db_push_renders_and_applies_schema() {
 }
 
 #[test]
-fn migrate_status_lists_migrations_and_snapshot_flag() {
+fn migrate_status_reports_applied_and_pending() {
     let store = Arc::new(MemoryMigrationStore {
-        migrations: Mutex::new(vec!["001".to_owned()]),
+        migrations: Mutex::new(vec!["001".to_owned(), "002".to_owned()]),
         snapshot: Mutex::new(Some(sample_schema())),
     });
-    let use_case = MigrateStatusUseCase::new(store);
-    let output = use_case.execute(MigrateStatusInput).expect("status");
-    assert_eq!(output.migrations, vec!["001".to_owned()]);
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001"]));
+    let use_case = MigrateStatusUseCase::new(store, ledger);
+    let output = use_case
+        .execute(MigrateStatusInput { datasource: sample_schema().datasource })
+        .expect("status");
+    assert_eq!(output.migrations.len(), 2);
+    assert_eq!(output.migrations[0].state, MigrationApplyState::Applied);
+    assert_eq!(output.migrations[1].state, MigrationApplyState::Pending);
+    assert_eq!(output.applied_count, 1);
+    assert_eq!(output.pending_count, 1);
     assert!(output.has_snapshot);
 }
 
@@ -422,7 +589,7 @@ fn migrate_apply_skips_missing_and_empty_scripts() {
     });
     let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
 
-    let use_case = MigrateApplyUseCase::new(store, fs, database.clone());
+    let use_case = MigrateApplyUseCase::new(store, fs, database.clone(), Arc::new(MemoryLedger::new()));
     let output = use_case
         .execute(MigrateApplyInput {
             migrations_dir: "migrations".to_owned(),
@@ -431,6 +598,7 @@ fn migrate_apply_skips_missing_and_empty_scripts() {
         .expect("apply");
 
     assert_eq!(output.applied, 1);
+    assert_eq!(output.skipped, 0);
     assert_eq!(database.scripts.lock().expect("lock").len(), 1);
 }
 

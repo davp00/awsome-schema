@@ -6,6 +6,7 @@ pub mod init_project;
 pub mod migrate_apply;
 pub mod migrate_create;
 pub mod migrate_dev;
+pub mod migrate_rollback;
 pub mod migrate_status;
 pub mod validate_schema;
 
@@ -20,5 +21,9 @@ pub use init_project::{InitProjectInput, InitProjectOutput, InitProjectUseCase};
 pub use migrate_apply::{MigrateApplyInput, MigrateApplyOutput, MigrateApplyUseCase};
 pub use migrate_create::{MigrateCreateInput, MigrateCreateOutput, MigrateCreateUseCase};
 pub use migrate_dev::{MigrateDevInput, MigrateDevOutput, MigrateDevUseCase, SchemaDiffPort};
-pub use migrate_status::{MigrateStatusInput, MigrateStatusOutput, MigrateStatusUseCase};
+pub use migrate_rollback::{MigrateRollbackInput, MigrateRollbackOutput, MigrateRollbackUseCase};
+pub use migrate_status::{
+    MigrateStatusInput, MigrateStatusOutput, MigrateStatusUseCase, MigrationApplyState,
+    MigrationStatusRow,
+};
 pub use validate_schema::{ValidateSchemaInput, ValidateSchemaOutput, ValidateSchemaUseCase};

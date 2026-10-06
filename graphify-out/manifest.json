@@ -54,9 +54,9 @@
     "semantic_hash": "f6249b8b97e073d26e3ac4674f3b8d83"
   },
   "crates/cli/src/adapters/mod.rs": {
-    "mtime": 1791304496.017062,
-    "seen": 1791304912.188389,
-    "ast_hash": "a1dc32dc98fc05f9f90482de6d1903fe",
+    "mtime": 1791306300.0005536,
+    "seen": 1791307356.449711,
+    "ast_hash": "faee7523762b819d8f41d4e9d89e9a5c",
     "semantic_hash": ""
   },
   "crates/cli/src/adapters/schema_source.rs": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "crates/cli/src/app.rs": {
-    "mtime": 1791304471.401466,
-    "seen": 1791304912.188391,
-    "ast_hash": "4c9b346dfb085f3a679e1cf862c35ac7",
+    "mtime": 1791306307.2387385,
+    "seen": 1791307356.449714,
+    "ast_hash": "8cd21bc5a5fecb859ab5cb9b358c04dd",
     "semantic_hash": ""
   },
   "crates/cli/src/commands/db.rs": {
@@ -102,15 +102,15 @@
     "semantic_hash": "0dcbb61bc6c2187037e2a792d65fec50"
   },
   "crates/cli/src/commands/migrate.rs": {
-    "mtime": 1791294398.659424,
-    "seen": 1791298873.143887,
-    "ast_hash": "e425eca90418cf71599a03c0df249869",
-    "semantic_hash": "e425eca90418cf71599a03c0df249869"
+    "mtime": 1791306312.5105455,
+    "seen": 1791307356.4497159,
+    "ast_hash": "a9db801ff58bf6bdda37176fffc7c2c0",
+    "semantic_hash": ""
   },
   "crates/cli/src/commands/mod.rs": {
-    "mtime": 1791304471.401607,
-    "seen": 1791304912.188394,
-    "ast_hash": "963d407014ebc3a81d88c86d52cdf0bd",
+    "mtime": 1791306308.388833,
+    "seen": 1791307356.449717,
+    "ast_hash": "cc63086e9bcbb53c20b292481e4f39d4",
     "semantic_hash": ""
   },
   "crates/cli/src/commands/validate.rs": {
@@ -120,9 +120,9 @@
     "semantic_hash": "d7fa195e019a7f4de34afa59b306ee8b"
   },
   "crates/cli/src/di.rs": {
-    "mtime": 1791304478.1534328,
-    "seen": 1791304912.188394,
-    "ast_hash": "5c9c54d58b42bdca6396bf83e3b67324",
+    "mtime": 1791306306.9212408,
+    "seen": 1791307356.449718,
+    "ast_hash": "35e65e18cbe62fd5bc6229e17c4d7e22",
     "semantic_hash": ""
   },
   "crates/cli/src/lib.rs": {
@@ -150,10 +150,10 @@
     "semantic_hash": ""
   },
   "crates/cli/tests/commands.rs": {
-    "mtime": 1791294398.660312,
-    "seen": 1791298873.143889,
-    "ast_hash": "30536119729fbc60222e9a4e28be2065",
-    "semantic_hash": "30536119729fbc60222e9a4e28be2065"
+    "mtime": 1791306393.384572,
+    "seen": 1791307356.4497201,
+    "ast_hash": "d196b538ed034b8b9fde50c632b96055",
+    "semantic_hash": ""
   },
   "crates/cli/tests/db_pull.rs": {
     "mtime": 1791304496.0177372,
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "crates/cli/tests/dispatch.rs": {
-    "mtime": 1791304565.083559,
-    "seen": 1791304912.1883981,
-    "ast_hash": "ae1450c173a7b0add7cc951571b36726",
+    "mtime": 1791306352.953996,
+    "seen": 1791307356.449721,
+    "ast_hash": "e3972b9ddde7fa2f6ec36f037a8b8582",
     "semantic_hash": ""
   },
   "crates/codegen-rust/Cargo.toml": {
@@ -246,9 +246,9 @@
     "semantic_hash": "0824f8fdfcc4983bf94f2c5348670cd5"
   },
   "crates/core/src/domain/migration.rs": {
-    "mtime": 1791305807.153152,
-    "seen": 1791305954.078922,
-    "ast_hash": "0a5c8c5b3f78159a18aac23308bdb82b",
+    "mtime": 1791306258.4758348,
+    "seen": 1791307356.449727,
+    "ast_hash": "e0947391c58a1e564fb598c6802b1924",
     "semantic_hash": ""
   },
   "crates/core/src/domain/mod.rs": {
@@ -330,10 +330,10 @@
     "semantic_hash": "98be79dd7d26a895181e2bb9c88e419e"
   },
   "crates/core/src/ports/mod.rs": {
-    "mtime": 1791294398.6639493,
-    "seen": 1791298873.143899,
-    "ast_hash": "8d03a069a24272776b83db6298f1535e",
-    "semantic_hash": "8d03a069a24272776b83db6298f1535e"
+    "mtime": 1791306204.7062905,
+    "seen": 1791307356.449734,
+    "ast_hash": "af054ffb17fa051d71cbe80852346f0e",
+    "semantic_hash": ""
   },
   "crates/core/src/ports/schema_introspector.rs": {
     "mtime": 1791304434.507997,
@@ -390,10 +390,10 @@
     "semantic_hash": "80c6e1e5539cfaf433262d524f8e730d"
   },
   "crates/core/src/usecases/migrate_apply.rs": {
-    "mtime": 1791294398.6649356,
-    "seen": 1791298873.1439009,
-    "ast_hash": "2008b2e91d816efba0c1051ffb354049",
-    "semantic_hash": "2008b2e91d816efba0c1051ffb354049"
+    "mtime": 1791306245.9538548,
+    "seen": 1791307356.449738,
+    "ast_hash": "a866fe9c061691d5683bd5956f76c155",
+    "semantic_hash": ""
   },
   "crates/core/src/usecases/migrate_create.rs": {
     "mtime": 1791294398.6650362,
@@ -408,16 +408,16 @@
     "semantic_hash": "177f8b7d04a74de0922bf6bd559dba07"
   },
   "crates/core/src/usecases/migrate_status.rs": {
-    "mtime": 1791294398.66523,
-    "seen": 1791298873.143902,
-    "ast_hash": "93fe371a5296dc821b7f71e0d96e287a",
-    "semantic_hash": "93fe371a5296dc821b7f71e0d96e287a"
+    "mtime": 1791306250.394708,
+    "seen": 1791307356.44974,
+    "ast_hash": "31cae28ed85f2d6d47e06fbf8f489a23",
+    "semantic_hash": ""
   },
   "crates/core/src/usecases/mod.rs": {
-    "mtime": 1791294398.6653185,
-    "seen": 1791298873.143903,
-    "ast_hash": "f63abad198822a85ffef5bdc35acd83b",
-    "semantic_hash": "f63abad198822a85ffef5bdc35acd83b"
+    "mtime": 1791306257.894318,
+    "seen": 1791307356.4497411,
+    "ast_hash": "903d97e6627ff044ab78ce5719964e0a",
+    "semantic_hash": ""
   },
   "crates/core/src/usecases/validate_schema.rs": {
     "mtime": 1791294398.66541,
@@ -444,9 +444,9 @@
     "semantic_hash": ""
   },
   "crates/core/tests/usecases.rs": {
-    "mtime": 1791305597.0607266,
-    "seen": 1791305954.078936,
-    "ast_hash": "7d886fc70bce89f10f5736a960c84e77",
+    "mtime": 1791306340.7148108,
+    "seen": 1791307356.449743,
+    "ast_hash": "e3646a5bc24c9fc3c692666af605f225",
     "semantic_hash": ""
   },
   "crates/e2e/Cargo.toml": {
@@ -456,9 +456,9 @@
     "semantic_hash": "4d33c02e8ed334f7dc1fa1cd322aa33c"
   },
   "crates/e2e/tests/surrealdb_workflow.rs": {
-    "mtime": 1791305636.918941,
-    "seen": 1791305954.078937,
-    "ast_hash": "9445353204b95667480a4ec598e7f04b",
+    "mtime": 1791306353.9034367,
+    "seen": 1791307356.449744,
+    "ast_hash": "7eb3b03260ecd747454b8b69539aceec",
     "semantic_hash": ""
   },
   "crates/migrations/Cargo.toml": {
@@ -468,9 +468,9 @@
     "semantic_hash": "e584acfc352bb1a3f81bf594dc54e258"
   },
   "crates/migrations/src/lib.rs": {
-    "mtime": 1791305665.294387,
-    "seen": 1791305954.078938,
-    "ast_hash": "ac52d80d6792bb8594987804f7726dbf",
+    "mtime": 1791306316.9545555,
+    "seen": 1791307356.449745,
+    "ast_hash": "a503c55d7191a747adaf20919c65c0d4",
     "semantic_hash": ""
   },
   "crates/parser/Cargo.toml": {
@@ -516,9 +516,9 @@
     "semantic_hash": ""
   },
   "crates/renderers/src/surrealdb/mod.rs": {
-    "mtime": 1791305632.3969343,
-    "seen": 1791305954.078942,
-    "ast_hash": "bdd5f3d830a08e2065c2daa91d19853e",
+    "mtime": 1791306321.9451277,
+    "seen": 1791307356.44975,
+    "ast_hash": "0e9879d7e55e302e1c15653c7b030a8d",
     "semantic_hash": ""
   },
   "examples/migrations/20260701183000_create_user_and_post/snapshot.json": {
@@ -660,9 +660,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791305691.454364,
-    "seen": 1791305954.078954,
-    "ast_hash": "8d35149f2d6fc332e1dcad99620304f4",
+    "mtime": 1791306366.4094942,
+    "seen": 1791307356.449761,
+    "ast_hash": "db6c514b4daab27efbd9867201d73542",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -672,9 +672,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791305642.1095567,
-    "seen": 1791305954.078954,
-    "ast_hash": "4073bafefb4e97a97998dcfb16839118",
+    "mtime": 1791306355.1801522,
+    "seen": 1791307356.449762,
+    "ast_hash": "f325b9ae10c265b2dde180c8b8512cc4",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -684,9 +684,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791305645.7759445,
-    "seen": 1791305954.078955,
-    "ast_hash": "33b7bddead3c1aa954192b9297888fd9",
+    "mtime": 1791306361.185743,
+    "seen": 1791307356.449762,
+    "ast_hash": "f9e5dd73911acdcba318b2f9f676978d",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -735,6 +735,24 @@
     "mtime": 1791305697.0849295,
     "seen": 1791305954.078943,
     "ast_hash": "8309e2b306a4ba5b14c433020cf5d8be",
+    "semantic_hash": ""
+  },
+  "crates/cli/src/adapters/surrealdb_migration_ledger.rs": {
+    "mtime": 1791306232.5069842,
+    "seen": 1791307356.449713,
+    "ast_hash": "60ec82faed2e3b28bbabe255a0da27d7",
+    "semantic_hash": ""
+  },
+  "crates/core/src/ports/migration_ledger.rs": {
+    "mtime": 1791306203.2115803,
+    "seen": 1791307356.449733,
+    "ast_hash": "8716c79a79803bb39a86291aff2f3ac6",
+    "semantic_hash": ""
+  },
+  "crates/core/src/usecases/migrate_rollback.rs": {
+    "mtime": 1791306378.6709075,
+    "seen": 1791307356.44974,
+    "ast_hash": "7ee84b5c4ebca8aa72673a202a1499b7",
     "semantic_hash": ""
   }
 }

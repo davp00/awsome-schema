@@ -179,13 +179,26 @@ fn diff_model(
         }
     }
 
-    if from.permissions != to.permissions {
-        if let Some(permission) = &to.permissions {
+    for index in &from.indexes {
+        if !to.indexes.contains(index) {
+            operations.push(MigrationOperation::DropIndex {
+                table: table.clone(),
+                name: index.resolved_name(&table, naming),
+            });
+        }
+    }
+
+    match (&from.permissions, &to.permissions) {
+        (from_perm, Some(permission)) if from_perm.as_ref() != Some(permission) => {
             operations.push(MigrationOperation::UpdatePermission {
                 table: table.clone(),
                 permission: permission.clone(),
             });
         }
+        (Some(_), None) => {
+            operations.push(MigrationOperation::DropPermission { table: table.clone() });
+        }
+        _ => {}
     }
 
     operations
@@ -251,13 +264,17 @@ fn diff_edge(
         }
     }
 
-    if from.permissions != to.permissions {
-        if let Some(permission) = &to.permissions {
+    match (&from.permissions, &to.permissions) {
+        (from_perm, Some(permission)) if from_perm.as_ref() != Some(permission) => {
             operations.push(MigrationOperation::UpdatePermission {
                 table: table.clone(),
                 permission: permission.clone(),
             });
         }
+        (Some(_), None) => {
+            operations.push(MigrationOperation::DropPermission { table: table.clone() });
+        }
+        _ => {}
     }
 
     operations
@@ -615,6 +632,38 @@ mod tests {
         assert!(
             plan.operations.iter().any(|op| matches!(op, MigrationOperation::CreateIndex { .. }))
         );
+    }
+
+    #[test]
+    fn detects_dropped_index() {
+        let mut previous = target_schema();
+        previous.models[0].indexes.push(core::Index {
+            name: Some("user_email_idx".to_owned()),
+            fields: vec!["email".to_owned()],
+            unique: false,
+            fulltext: false,
+            vector: false,
+        });
+
+        let plan = diff_schemas(Some(&previous), &target_schema(), "drop_index");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::DropIndex { table, name }
+            if table == "user" && name == "user_email_idx"
+        )));
+    }
+
+    #[test]
+    fn detects_cleared_permissions() {
+        let previous = target_schema();
+        let mut updated = target_schema();
+        updated.models[0].permissions = None;
+
+        let plan = diff_schemas(Some(&previous), &updated, "clear_permissions");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::DropPermission { table } if table == "user"
+        )));
     }
 
     #[test]

@@ -27,8 +27,12 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e test exists |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` — 7 tests |
-| `migrate create` / `status` | Empty migration dir, and a filesystem listing plus snapshot flag | use case tests |
+| `migrate create` | Empty migration directory | use case + CLI tests |
+| `migrate status` | Applied vs pending via `_awesome_migrations` ledger; snapshot flag | use case tests; needs live DB for CLI |
+| `migrate apply` | Pending ups only; records name + checksum in ledger | use case tests; e2e apply-twice |
+| `migrate rollback` | Runs `migration.down.surql` newest-first; removes ledger rows | use case tests; e2e |
 | Table changes | Create, drop, and alter table mode; create, alter, and drop fields | differ + renderer |
+| Index / permission removal | Differ emits `DropIndex` and `DropPermission`; renderer emits `REMOVE INDEX` / `PERMISSIONS NONE` | migrations + renderer tests |
 
 ## Partial
 
@@ -38,18 +42,14 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen) | Not restored by `db pull` |
 | `db pull` | `INFO FOR DB` / `INFO FOR TABLE`, DSL write, `--split-by-table` | Nav `@relation` fields not in DB |
 | Indexes beyond a field list | Domain `Index` has `unique`, `fulltext`, `vector`. Renderer can emit them if those flags are set | Parser always sets `unique`, `fulltext`, and `vector` to `false` for `@@index` |
-| Index removal | `DropIndex` exists as a migration operation and the renderer emits `REMOVE INDEX` | The differ never emits `DropIndex` when an index disappears |
 | Events, functions | `CreateEvent`, `DropEvent`, `CreateFunction`, `DropFunction` render | No DSL syntax. Nothing in the parser produces them |
 | `db push` | Loads the schema, renders SurrealQL, executes it with the official client | README still calls this a stub. Not re-checked against a live database in this pass |
-| `migrate apply` | Reads each `migration.surql` and executes non-empty scripts | No applied-migration ledger, so a second apply runs the same files again. Down files are never executed. Not re-checked live in this pass |
-| `migrate status` | Lists migration directory names and whether a snapshot exists | Does not know what the database has applied |
 | Codegen | `generate --target rust` and `typescript` emit struct / type shells, including optionals and arrays | Source marks them as stubs. No links, edges, nested objects as real types, or a client |
 
 ## Not started
 
 | Area | Evidence |
 |---|---|
-| Rollback command | Down files are written only |
 | Other providers | README lists MongoDB, Postgres, MySQL, SQLite. Only `renderers::surrealdb` exists |
 | Assertions, vector index syntax, live permissions model | Named in the README as SurrealDB features the DSL should be able to express. Not in the parser |
 

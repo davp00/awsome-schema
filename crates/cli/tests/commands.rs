@@ -44,7 +44,7 @@ fn format_command_prints_schema_without_writing_by_default() {
 }
 
 #[test]
-fn migrate_status_reports_empty_state() {
+fn migrate_status_requires_database_connection() {
     let temp = tempfile::tempdir().expect("tempdir");
     std::fs::write(temp.path().join("awesome.schema"), MINIMAL_SCHEMA).expect("write");
     std::fs::create_dir_all(temp.path().join("migrations")).expect("migrations dir");
@@ -54,8 +54,8 @@ fn migrate_status_reports_empty_state() {
         .current_dir(temp.path())
         .args(["migrate", "status", "--schema", "awesome.schema", "--migrations-dir", "migrations"])
         .assert()
-        .success()
-        .stdout(predicate::str::contains("No migrations found"));
+        .failure()
+        .stderr(predicate::str::contains("database error"));
 }
 
 #[test]

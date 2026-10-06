@@ -8,15 +8,14 @@ Stay on SurrealDB until the schema that the DSL already accepts is what migratio
 
 - SurrealDB 3.3 `LIGHTWEIGHT` relations and `INLINE` edge fields. See [surrealdb-3.3.md](surrealdb-3.3.md).
 
-## 2. Migration lifecycle
+## 2. Migration lifecycle — done
 
-`migrate apply` re-runs every `migration.surql`. Down files are unused.
+Applied migrations are recorded in SurrealDB table `_awesome_migrations` (same ns/db as the app).
 
-- Record applied migrations (database ledger or local state the command can read).
-- Apply only pending migrations.
-- Add a rollback command that runs `migration.down.surql` in reverse order.
-- Teach `migrate status` to report applied vs pending.
-- Emit `DropIndex` (and permission removal) when the diff sees them.
+- `migrate apply` runs only pending ups and stores a checksum.
+- `migrate rollback [--steps N]` runs `migration.down.surql` newest-first, then removes ledger rows.
+- `migrate status` reports applied vs pending (needs a live datasource).
+- Differ emits `DropIndex` and `DropPermission` when indexes/permissions are removed.
 
 ## 3. `db pull` — done (lossy nav fields)
 

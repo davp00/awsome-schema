@@ -5,18 +5,19 @@ use codegen_typescript::TypeScriptGenerator;
 use migrations::SchemaDiffer;
 use renderers::SurrealDbRenderer;
 use schema_core::ports::{
-    DatabaseExecutor, FileSystemPort, MigrationRenderer, MigrationStore, SchemaIntrospector,
-    SchemaRenderer, SchemaSource,
+    DatabaseExecutor, FileSystemPort, MigrationLedger, MigrationRenderer, MigrationStore,
+    SchemaIntrospector, SchemaRenderer, SchemaSource,
 };
 use schema_core::usecases::{CodeGeneratorPort, SchemaDiffPort};
 use schema_core::{
     DatabaseSchema, DbPullUseCase, DbPushUseCase, DomainError, FormatSchemaUseCase,
     GenerateCodeUseCase, InitProjectUseCase, MigrateApplyUseCase, MigrateCreateUseCase,
-    MigrateDevUseCase, MigrateStatusUseCase, ValidateSchemaUseCase,
+    MigrateDevUseCase, MigrateRollbackUseCase, MigrateStatusUseCase, ValidateSchemaUseCase,
 };
 
 use crate::adapters::{
     FsAdapter, MigrationStoreAdapter, SchemaFileSource, SurrealDbExecutor, SurrealDbIntrospector,
+    SurrealDbMigrationLedger,
 };
 
 pub struct AppContext {
@@ -29,6 +30,7 @@ pub struct AppContext {
     pub migrate_create: MigrateCreateUseCase,
     pub migrate_status: MigrateStatusUseCase,
     pub migrate_apply: MigrateApplyUseCase,
+    pub migrate_rollback: MigrateRollbackUseCase,
     pub db_pull: DbPullUseCase,
     pub db_push: DbPushUseCase,
     pub schema_path: String,
@@ -87,6 +89,7 @@ fn build_context_with_introspector(
     let typescript_generator: Arc<dyn CodeGeneratorPort> = Arc::new(TypeScriptGenerator::new());
     let introspector: Arc<dyn SchemaIntrospector> = introspector;
     let database: Arc<dyn DatabaseExecutor> = Arc::new(SurrealDbExecutor);
+    let ledger: Arc<dyn MigrationLedger> = Arc::new(SurrealDbMigrationLedger);
 
     Ok(AppContext {
         schema_source: schema_source.clone(),
@@ -115,11 +118,18 @@ fn build_context_with_introspector(
             migration_store.clone(),
             filesystem.clone(),
         ),
-        migrate_status: MigrateStatusUseCase::new(migration_store.clone()),
+        migrate_status: MigrateStatusUseCase::new(migration_store.clone(), ledger.clone()),
         migrate_apply: MigrateApplyUseCase::new(
+            migration_store.clone(),
+            filesystem.clone(),
+            database.clone(),
+            ledger.clone(),
+        ),
+        migrate_rollback: MigrateRollbackUseCase::new(
             migration_store,
             filesystem.clone(),
             database.clone(),
+            ledger,
         ),
         db_pull: DbPullUseCase::new(introspector),
         db_push: DbPushUseCase::new(schema_source, schema_renderer, database),

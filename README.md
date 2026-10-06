@@ -24,7 +24,7 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 
 SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The current target is **SurrealDB 3.3.0**. The first milestone started on 3.1.5.
 
-Runtime database connectivity (`db pull`, `db push`, `migrate apply`) uses the official SurrealDB client. `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
+Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate status`, `migrate rollback`) uses the official SurrealDB client. Applied migrations are tracked in `_awesome_migrations`. `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
 
 ## Workspace structure
 
@@ -110,6 +110,8 @@ cargo run -p cli -- migrate dev
 cargo run -p cli -- migrate create <name>
 cargo run -p cli -- migrate status
 cargo run -p cli -- migrate apply
+cargo run -p cli -- migrate rollback
+cargo run -p cli -- migrate rollback --steps 2
 
 # Database commands
 cargo run -p cli -- db pull --force
@@ -208,6 +210,8 @@ Migrations work similarly to **TypeORM**:
 2. Domain-level operations are produced (`CreateTable`, `CreateField`, `CreateIndex`, …).
 3. The SurrealDB renderer writes `migration.surql` (up) and `migration.down.surql` (down).
 4. A new `snapshot.json` is saved for the next diff.
+
+`migrate apply` records each successful up in the SurrealDB table `_awesome_migrations` (same namespace/database as the app schema) and skips migrations already listed there. `migrate status` compares local migration folders to that ledger. `migrate rollback [--steps N]` (default 1) runs `migration.down.surql` for the newest applied migrations, then removes those ledger rows. Empty or missing down scripts fail without clearing the ledger.
 
 Down migrations are computed as the reverse schema diff (`current → previous`), so rollback operations mirror the forward migration.
 

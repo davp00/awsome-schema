@@ -80,4 +80,7 @@ pub enum MigrationOperation {
         table: String,
         permission: String,
     },
+    DropPermission {
+        table: String,
+    },
 }

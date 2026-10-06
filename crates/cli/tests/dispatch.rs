@@ -98,21 +98,22 @@ fn dispatch_generate_targets() {
 }
 
 #[test]
-fn dispatch_migrate_create_and_status() {
+fn dispatch_migrate_create() {
     let (temp, cli) = temp_cli(&["migrate", "create", "manual"]);
     commands::dispatch(&cli, &Printer::new()).expect("create");
+    let entries = std::fs::read_dir(temp.path().join("migrations")).expect("read migrations");
+    assert_eq!(entries.count(), 1);
+}
 
-    let cli = Cli::try_parse_from([
-        "awesome-schema",
-        "--schema",
-        temp.path().join("awesome.schema").to_str().expect("schema"),
-        "--migrations-dir",
-        temp.path().join("migrations").to_str().expect("migrations"),
-        "migrate",
-        "status",
-    ])
-    .expect("parse status");
-    commands::dispatch(&cli, &Printer::new()).expect("status");
+#[test]
+fn parses_migrate_rollback_steps() {
+    let (_temp, cli) = temp_cli(&["migrate", "rollback", "--steps", "2"]);
+    match cli.command {
+        cli::app::Commands::Migrate {
+            command: cli::app::MigrateCommands::Rollback { steps },
+        } => assert_eq!(steps, 2),
+        other => panic!("unexpected command: {other:?}"),
+    }
 }
 
 #[test]

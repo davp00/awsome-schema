@@ -65,6 +65,11 @@ pub enum MigrateCommands {
     Status,
     /// Apply pending migrations to the database.
     Apply,
+    /// Roll back the last applied migration(s).
+    Rollback {
+        #[arg(long, default_value_t = 1)]
+        steps: usize,
+    },
 }
 
 #[derive(Debug, Subcommand)]

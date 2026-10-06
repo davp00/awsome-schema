@@ -148,6 +148,42 @@ async fn cli_init_validate_and_migrate_against_surrealdb() {
         .stdout(predicate::str::contains("Applied 1 migrations"));
 
     assert!(table_exists(&endpoint, "user").await);
+
+    project
+        .awesome_schema_cmd()
+        .arg("migrate")
+        .arg("apply")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Applied 0 migrations (1 already applied)"));
+
+    project
+        .awesome_schema_cmd()
+        .arg("migrate")
+        .arg("status")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("[applied]"))
+        .stdout(predicate::str::contains("1 applied, 0 pending"));
+
+    project
+        .awesome_schema_cmd()
+        .arg("migrate")
+        .arg("rollback")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Rolled back 1 migration"));
+
+    assert!(!table_exists(&endpoint, "user").await);
+
+    project
+        .awesome_schema_cmd()
+        .arg("migrate")
+        .arg("status")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("[pending]"))
+        .stdout(predicate::str::contains("0 applied, 1 pending"));
 }
 
 #[tokio::test]

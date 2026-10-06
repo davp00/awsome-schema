@@ -237,6 +237,9 @@ fn render_operation(
         MigrationOperation::UpdatePermission { table, permission } => {
             vec![format!("DEFINE TABLE {table} PERMISSIONS {permission};")]
         }
+        MigrationOperation::DropPermission { table } => {
+            vec![format!("DEFINE TABLE {table} PERMISSIONS NONE;")]
+        }
     };
 
     Ok(lines)
@@ -614,6 +617,9 @@ mod tests {
                     table: "user".to_owned(),
                     permission: "NONE".to_owned(),
                 },
+                MigrationOperation::DropPermission {
+                    table: "user".to_owned(),
+                },
             ],
             naming: NamingConvention::default(),
         };
@@ -628,6 +634,7 @@ mod tests {
             rendered
                 .contains("DEFINE INDEX custom_idx ON user FIELDS email UNIQUE FULLTEXT VECTOR;")
         );
+        assert!(rendered.contains("REMOVE INDEX custom_idx ON user;"));
         assert!(rendered.contains("DEFINE EVENT created ON user WHEN $event = 'CREATE';"));
         assert!(rendered.contains("DEFINE FUNCTION fn::hello() { RETURN 'hi'; };"));
         assert!(rendered.contains("DEFINE TABLE user PERMISSIONS NONE;"));
