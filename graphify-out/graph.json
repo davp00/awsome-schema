@@ -307,6 +307,18 @@
       "source_location": "L15"
     },
     {
+      "id": "crates_cli_src_adapters_introspector_surrealdbintrospector",
+      "label": "SurrealDbIntrospector",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 15,
+      "community_name": "DatabaseSchema",
+      "file_type": "code",
+      "norm_label": "surrealdbintrospector",
+      "source_file": "crates/cli/src/adapters/introspector.rs",
+      "source_location": "L9"
+    },
+    {
       "id": "crates_core_src_domain_schema_databaseschema",
       "label": "DatabaseSchema",
       "_origin": "ast",
@@ -379,18 +391,6 @@
       "source_location": "L3"
     },
     {
-      "id": "crates_cli_src_adapters_schema_source_schemafilesource",
-      "label": "SchemaFileSource",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "schemafilesource",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L8"
-    },
-    {
       "id": "crates_core_src_errors_domainerror",
       "label": "DomainError",
       "_origin": "ast",
@@ -401,66 +401,6 @@
       "norm_label": "domainerror",
       "source_file": "crates/core/src/errors.rs",
       "source_location": "L4"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport",
-      "label": "FileSystemPort",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "filesystemport",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L3"
-    },
-    {
-      "id": "crates_core_src_usecases_init_project_initprojectinput",
-      "label": "InitProjectInput",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "initprojectinput",
-      "source_file": "crates/core/src/usecases/init_project.rs",
-      "source_location": "L7"
-    },
-    {
-      "id": "crates_core_src_usecases_init_project_initprojectoutput",
-      "label": "InitProjectOutput",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "initprojectoutput",
-      "source_file": "crates/core/src/usecases/init_project.rs",
-      "source_location": "L12"
-    },
-    {
-      "id": "crates_core_src_usecases_init_project_initprojectusecase",
-      "label": "InitProjectUseCase",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "initprojectusecase",
-      "source_file": "crates/core/src/usecases/init_project.rs",
-      "source_location": "L17"
-    },
-    {
-      "id": "crates_cli_src_adapters_introspector_surrealdbintrospector",
-      "label": "SurrealDbIntrospector",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 20,
-      "community_name": "DatabaseConfig",
-      "file_type": "code",
-      "norm_label": "surrealdbintrospector",
-      "source_file": "crates/cli/src/adapters/introspector.rs",
-      "source_location": "L9"
     },
     {
       "id": "crates_cli_src_adapters_surrealdb_migration_ledger_surrealdbmigrationledger",
@@ -516,7 +456,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "fieldtype",
       "source_file": "crates/core/src/domain/field.rs",
@@ -528,7 +468,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "computedbacklink",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -540,47 +480,11 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "tableinfo",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
       "source_location": "L11"
-    },
-    {
-      "id": "crates_core_src_domain_field_field",
-      "label": "Field",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "field",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L58"
-    },
-    {
-      "id": "crates_core_src_domain_field_linkstorage",
-      "label": "LinkStorage",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "linkstorage",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L51"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction",
-      "label": "OnDeleteAction",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "ondeleteaction",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L8"
     },
     {
       "id": "crates_core_src_normalize_linkref",
@@ -588,7 +492,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "linkref",
       "source_file": "crates/core/src/normalize.rs",
@@ -617,6 +521,18 @@
       "norm_label": "printer",
       "source_file": "crates/cli/src/output/printer.rs",
       "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_domain_index_index",
+      "label": "Index",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 37,
+      "community_name": "btreemap",
+      "file_type": "code",
+      "norm_label": "index",
+      "source_file": "crates/core/src/domain/index.rs",
+      "source_location": "L8"
     },
     {
       "id": "crates_core_src_domain_migration_relationendpoints",
@@ -677,42 +593,6 @@
       "norm_label": "generator",
       "source_file": "crates/core/src/domain/schema.rs",
       "source_location": "L50"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib_rustgenerator",
-      "label": "RustGenerator",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "rustgenerator",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L5"
-    },
-    {
-      "id": "crates_codegen_src_lib_codegenerator",
-      "label": "CodeGenerator",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "codegenerator",
-      "source_file": "crates/codegen/src/lib.rs",
-      "source_location": "L5"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib_typescriptgenerator",
-      "label": "TypeScriptGenerator",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "typescriptgenerator",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L5"
     },
     {
       "id": "crates_core_src_usecases_generate_code_codegeneratorport",
@@ -787,16 +667,28 @@
       "source_location": "L8"
     },
     {
-      "id": "crates_core_src_domain_index_index",
-      "label": "Index",
+      "id": "crates_core_src_domain_field_field",
+      "label": "Field",
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
-      "norm_label": "index",
-      "source_file": "crates/core/src/domain/index.rs",
-      "source_location": "L8"
+      "norm_label": "field",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L58"
+    },
+    {
+      "id": "crates_core_src_domain_field_linkstorage",
+      "label": "LinkStorage",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 47,
+      "community_name": "Field",
+      "file_type": "code",
+      "norm_label": "linkstorage",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L51"
     },
     {
       "id": "crates_core_src_domain_model_edge",
@@ -804,7 +696,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": "edge",
       "source_file": "crates/core/src/domain/model.rs",
@@ -816,7 +708,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": "model",
       "source_file": "crates/core/src/domain/model.rs",
@@ -828,7 +720,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": "tablemode",
       "source_file": "crates/core/src/domain/model.rs",
@@ -931,6 +823,18 @@
       "source_location": "L28"
     },
     {
+      "id": "crates_core_src_ports_schema_renderer_schemarenderer",
+      "label": "SchemaRenderer",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 55,
+      "community_name": "SchemaSource",
+      "file_type": "code",
+      "norm_label": "schemarenderer",
+      "source_file": "crates/core/src/ports/schema_renderer.rs",
+      "source_location": "L4"
+    },
+    {
       "id": "crates_core_src_ports_schema_source_schemasource",
       "label": "SchemaSource",
       "_origin": "ast",
@@ -943,40 +847,40 @@
       "source_location": "L4"
     },
     {
-      "id": "crates_core_src_usecases_migrate_create_migratecreateinput",
-      "label": "MigrateCreateInput",
+      "id": "crates_core_src_usecases_db_push_dbpushinput",
+      "label": "DbPushInput",
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 55,
       "community_name": "SchemaSource",
       "file_type": "code",
-      "norm_label": "migratecreateinput",
-      "source_file": "crates/core/src/usecases/migrate_create.rs",
-      "source_location": "L8"
+      "norm_label": "dbpushinput",
+      "source_file": "crates/core/src/usecases/db_push.rs",
+      "source_location": "L7"
     },
     {
-      "id": "crates_core_src_usecases_migrate_create_migratecreateoutput",
-      "label": "MigrateCreateOutput",
+      "id": "crates_core_src_usecases_db_push_dbpushoutput",
+      "label": "DbPushOutput",
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 55,
       "community_name": "SchemaSource",
       "file_type": "code",
-      "norm_label": "migratecreateoutput",
-      "source_file": "crates/core/src/usecases/migrate_create.rs",
-      "source_location": "L13"
+      "norm_label": "dbpushoutput",
+      "source_file": "crates/core/src/usecases/db_push.rs",
+      "source_location": "L11"
     },
     {
-      "id": "crates_core_src_usecases_migrate_create_migratecreateusecase",
-      "label": "MigrateCreateUseCase",
+      "id": "crates_core_src_usecases_db_push_dbpushusecase",
+      "label": "DbPushUseCase",
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 55,
       "community_name": "SchemaSource",
       "file_type": "code",
-      "norm_label": "migratecreateusecase",
-      "source_file": "crates/core/src/usecases/migrate_create.rs",
-      "source_location": "L17"
+      "norm_label": "dbpushusecase",
+      "source_file": "crates/core/src/usecases/db_push.rs",
+      "source_location": "L15"
     },
     {
       "id": "crates_core_src_usecases_validate_schema_validateschemainput",
@@ -1013,6 +917,66 @@
       "norm_label": "validateschemausecase",
       "source_file": "crates/core/src/usecases/validate_schema.rs",
       "source_location": "L14"
+    },
+    {
+      "id": "crates_cli_src_adapters_schema_source_schemafilesource",
+      "label": "SchemaFileSource",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "schemafilesource",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
+      "source_location": "L8"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport",
+      "label": "FileSystemPort",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "filesystemport",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L3"
+    },
+    {
+      "id": "crates_core_src_usecases_init_project_initprojectinput",
+      "label": "InitProjectInput",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "initprojectinput",
+      "source_file": "crates/core/src/usecases/init_project.rs",
+      "source_location": "L7"
+    },
+    {
+      "id": "crates_core_src_usecases_init_project_initprojectoutput",
+      "label": "InitProjectOutput",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "initprojectoutput",
+      "source_file": "crates/core/src/usecases/init_project.rs",
+      "source_location": "L12"
+    },
+    {
+      "id": "crates_core_src_usecases_init_project_initprojectusecase",
+      "label": "InitProjectUseCase",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "initprojectusecase",
+      "source_file": "crates/core/src/usecases/init_project.rs",
+      "source_location": "L17"
     },
     {
       "id": "crates_cli_src_app_cli",
@@ -1080,7 +1044,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": "formatschemainput",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -1092,7 +1056,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": "formatschemaoutput",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -1104,7 +1068,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": "formatschemausecase",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -1116,22 +1080,10 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "databaseexecutor",
       "source_file": "crates/core/src/ports/database.rs",
-      "source_location": "L4"
-    },
-    {
-      "id": "crates_core_src_ports_migration_store_migrationstore",
-      "label": "MigrationStore",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 63,
-      "community_name": "MigrationStore",
-      "file_type": "code",
-      "norm_label": "migrationstore",
-      "source_file": "crates/core/src/ports/migration_store.rs",
       "source_location": "L4"
     },
     {
@@ -1140,7 +1092,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migrateapplyinput",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -1152,7 +1104,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migrateapplyoutput",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -1164,7 +1116,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migrateapplyusecase",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -1176,7 +1128,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migraterollbackinput",
       "source_file": "crates/core/src/usecases/migrate_rollback.rs",
@@ -1188,7 +1140,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migraterollbackoutput",
       "source_file": "crates/core/src/usecases/migrate_rollback.rs",
@@ -1200,59 +1152,35 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migraterollbackusecase",
       "source_file": "crates/core/src/usecases/migrate_rollback.rs",
       "source_location": "L19"
     },
     {
-      "id": "crates_core_src_ports_schema_renderer_schemarenderer",
-      "label": "SchemaRenderer",
+      "id": "crates_codegen_src_lib_codegenerator",
+      "label": "CodeGenerator",
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 65,
-      "community_name": "domain.rs",
+      "community_name": "core",
       "file_type": "code",
-      "norm_label": "schemarenderer",
-      "source_file": "crates/core/src/ports/schema_renderer.rs",
-      "source_location": "L4"
+      "norm_label": "codegenerator",
+      "source_file": "crates/codegen/src/lib.rs",
+      "source_location": "L5"
     },
     {
-      "id": "crates_core_src_usecases_db_push_dbpushinput",
-      "label": "DbPushInput",
+      "id": "crates_codegen_typescript_src_lib_typescriptgenerator",
+      "label": "TypeScriptGenerator",
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 65,
-      "community_name": "domain.rs",
+      "community_name": "core",
       "file_type": "code",
-      "norm_label": "dbpushinput",
-      "source_file": "crates/core/src/usecases/db_push.rs",
-      "source_location": "L7"
-    },
-    {
-      "id": "crates_core_src_usecases_db_push_dbpushoutput",
-      "label": "DbPushOutput",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "dbpushoutput",
-      "source_file": "crates/core/src/usecases/db_push.rs",
-      "source_location": "L11"
-    },
-    {
-      "id": "crates_core_src_usecases_db_push_dbpushusecase",
-      "label": "DbPushUseCase",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "dbpushusecase",
-      "source_file": "crates/core/src/usecases/db_push.rs",
-      "source_location": "L15"
+      "norm_label": "typescriptgenerator",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L5"
     },
     {
       "id": "crates_core_src_usecases_migrate_status_migratestatusinput",
@@ -1260,7 +1188,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "migratestatusinput",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
@@ -1272,23 +1200,11 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "migratestatusoutput",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
       "source_location": "L25"
-    },
-    {
-      "id": "crates_core_src_usecases_migrate_status_migratestatususecase",
-      "label": "MigrateStatusUseCase",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 66,
-      "community_name": "migrate_status.rs",
-      "file_type": "code",
-      "norm_label": "migratestatususecase",
-      "source_file": "crates/core/src/usecases/migrate_status.rs",
-      "source_location": "L32"
     },
     {
       "id": "crates_core_src_usecases_migrate_status_migrationapplystate",
@@ -1296,7 +1212,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "migrationapplystate",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
@@ -1308,7 +1224,7 @@
       "_origin": "ast",
       "_rust_declaration_count": 1,
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "migrationstatusrow",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
@@ -1339,6 +1255,90 @@
       "source_location": "L5"
     },
     {
+      "id": "crates_core_src_ports_migration_store_migrationstore",
+      "label": "MigrationStore",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": "migrationstore",
+      "source_file": "crates/core/src/ports/migration_store.rs",
+      "source_location": "L4"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_create_migratecreateinput",
+      "label": "MigrateCreateInput",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": "migratecreateinput",
+      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "source_location": "L8"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_create_migratecreateoutput",
+      "label": "MigrateCreateOutput",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": "migratecreateoutput",
+      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "source_location": "L13"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_create_migratecreateusecase",
+      "label": "MigrateCreateUseCase",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": "migratecreateusecase",
+      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "source_location": "L17"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_status_migratestatususecase",
+      "label": "MigrateStatusUseCase",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": "migratestatususecase",
+      "source_file": "crates/core/src/usecases/migrate_status.rs",
+      "source_location": "L32"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction",
+      "label": "OnDeleteAction",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": "ondeleteaction",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L8"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib_rustgenerator",
+      "label": "RustGenerator",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": "rustgenerator",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L5"
+    },
+    {
       "id": "crates_e2e_tests_surrealdb_workflow_testproject",
       "label": "TestProject",
       "_origin": "ast",
@@ -1349,6 +1349,39 @@
       "norm_label": "testproject",
       "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
       "source_location": "L39"
+    },
+    {
+      "id": "crates_core_tests_errors",
+      "label": "tests/errors.rs",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "tests/errors.rs",
+      "source_file": "crates/core/tests/errors.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_tests_errors_db_pull_use_case_delegates_to_introspector",
+      "label": "db_pull_use_case_delegates_to_introspector()",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "db_pull_use_case_delegates_to_introspector()",
+      "source_file": "crates/core/tests/errors.rs",
+      "source_location": "L19"
+    },
+    {
+      "id": "crates_core_tests_errors_domain_error_codes_cover_all_variants",
+      "label": "domain_error_codes_cover_all_variants()",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "domain_error_codes_cover_all_variants()",
+      "source_file": "crates/core/tests/errors.rs",
+      "source_location": "L4"
     },
     {
       "id": "crates_parser_src_parse",
@@ -1670,6 +1703,17 @@
       "source_location": "L679"
     },
     {
+      "id": "crates_parser_src_parse_resolves_array_model_targets",
+      "label": "resolves_array_model_targets()",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "resolves_array_model_targets()",
+      "source_file": "crates/parser/src/parse.rs",
+      "source_location": "L770"
+    },
+    {
       "id": "crates_parser_src_parse_resolves_record_id_and_builtin_targets",
       "label": "resolves_record_id_and_builtin_targets()",
       "_origin": "ast",
@@ -1681,7 +1725,18 @@
       "source_location": "L764"
     },
     {
-      "id": "crates_parser_src_parse_rs_databaseschema",
+      "id": "crates_parser_src_parse_validate_field_rules",
+      "label": "validate_field_rules()",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "validate_field_rules()",
+      "source_file": "crates/parser/src/parse.rs",
+      "source_location": "L716"
+    },
+    {
+      "id": "databaseschema",
       "label": "DatabaseSchema",
       "_origin": "ast",
       "community": 0,
@@ -1692,7 +1747,7 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_rs_datasource",
+      "id": "datasource",
       "label": "Datasource",
       "_origin": "ast",
       "community": 0,
@@ -1703,7 +1758,7 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_rs_domainerror",
+      "id": "domainerror",
       "label": "DomainError",
       "_origin": "ast",
       "community": 0,
@@ -1714,7 +1769,7 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_rs_edge",
+      "id": "edge",
       "label": "Edge",
       "_origin": "ast",
       "community": 0,
@@ -1725,7 +1780,29 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_rs_generator",
+      "id": "field",
+      "label": "Field",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "field",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "fieldtype",
+      "label": "FieldType",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "fieldtype",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "generator",
       "label": "Generator",
       "_origin": "ast",
       "community": 0,
@@ -1736,7 +1813,29 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_rs_objecttypedefinition",
+      "id": "model",
+      "label": "Model",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "model",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "namingconvention",
+      "label": "NamingConvention",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Parser",
+      "file_type": "code",
+      "norm_label": "namingconvention",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "objecttypedefinition",
       "label": "ObjectTypeDefinition",
       "_origin": "ast",
       "community": 0,
@@ -1747,7 +1846,7 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_rs_objecttypefield",
+      "id": "objecttypefield",
       "label": "ObjectTypeField",
       "_origin": "ast",
       "community": 0,
@@ -1758,15 +1857,15 @@
       "source_location": ""
     },
     {
-      "id": "crates_parser_src_parse_validate_field_rules",
-      "label": "validate_field_rules()",
+      "id": "ondeleteaction",
+      "label": "OnDeleteAction",
       "_origin": "ast",
       "community": 0,
       "community_name": "Parser",
       "file_type": "code",
-      "norm_label": "validate_field_rules()",
-      "source_file": "crates/parser/src/parse.rs",
-      "source_location": "L716"
+      "norm_label": "ondeleteaction",
+      "source_file": "",
+      "source_location": ""
     },
     {
       "id": "token",
@@ -4090,6 +4189,39 @@
       "source_location": "L31"
     },
     {
+      "id": "crates_cli_src_adapters_introspector",
+      "label": "introspector.rs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "DatabaseSchema",
+      "file_type": "code",
+      "norm_label": "introspector.rs",
+      "source_file": "crates/cli/src/adapters/introspector.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_cli_src_adapters_introspector_introspect_async",
+      "label": "introspect_async()",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "DatabaseSchema",
+      "file_type": "code",
+      "norm_label": "introspect_async()",
+      "source_file": "crates/cli/src/adapters/introspector.rs",
+      "source_location": "L26"
+    },
+    {
+      "id": "crates_cli_src_adapters_introspector_surrealdbintrospector_introspect",
+      "label": ".introspect()",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "DatabaseSchema",
+      "file_type": "code",
+      "norm_label": ".introspect()",
+      "source_file": "crates/cli/src/adapters/introspector.rs",
+      "source_location": "L12"
+    },
+    {
       "id": "crates_cli_src_di_appcontext_load_schema",
       "label": ".load_schema()",
       "_origin": "ast",
@@ -4132,6 +4264,17 @@
       "norm_label": "model",
       "source_file": "",
       "source_location": ""
+    },
+    {
+      "id": "crates_core_src_ports_migration_store",
+      "label": "ports/migration_store.rs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "DatabaseSchema",
+      "file_type": "code",
+      "norm_label": "ports/migration_store.rs",
+      "source_file": "crates/core/src/ports/migration_store.rs",
+      "source_location": "L1"
     },
     {
       "id": "crates_core_src_ports_schema_introspector",
@@ -4187,17 +4330,6 @@
       "norm_label": ".new()",
       "source_file": "crates/core/src/usecases/db_pull.rs",
       "source_location": "L21"
-    },
-    {
-      "id": "crates_cli_src_adapters_filesystem",
-      "label": "adapters/filesystem.rs",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "adapters/filesystem.rs",
-      "source_file": "crates/cli/src/adapters/filesystem.rs",
-      "source_location": "L1"
     },
     {
       "id": "crates_cli_src_adapters_filesystem_fsadapter_create_dir_all",
@@ -4275,72 +4407,6 @@
       "norm_label": ".write_string()",
       "source_file": "crates/cli/src/adapters/filesystem.rs",
       "source_location": "L11"
-    },
-    {
-      "id": "crates_cli_src_adapters_schema_source",
-      "label": "adapters/schema_source.rs",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "adapters/schema_source.rs",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_cli_src_adapters_schema_source_list_schema_files",
-      "label": "list_schema_files()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "list_schema_files()",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L67"
-    },
-    {
-      "id": "crates_cli_src_adapters_schema_source_load_directory_schema",
-      "label": "load_directory_schema()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "load_directory_schema()",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L41"
-    },
-    {
-      "id": "crates_cli_src_adapters_schema_source_schemafilesource_load_raw",
-      "label": ".load_raw()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".load_raw()",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L28"
-    },
-    {
-      "id": "crates_cli_src_adapters_schema_source_schemafilesource_load_schema",
-      "label": ".load_schema()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".load_schema()",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L20"
-    },
-    {
-      "id": "crates_cli_src_adapters_schema_source_schemafilesource_new",
-      "label": ".new()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".new()",
-      "source_file": "crates/cli/src/adapters/schema_source.rs",
-      "source_location": "L14"
     },
     {
       "id": "crates_core_src_errors",
@@ -4484,127 +4550,6 @@
       "norm_label": "writefailed",
       "source_file": "crates/core/src/errors.rs",
       "source_location": "L12"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem",
-      "label": "ports/filesystem.rs",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "ports/filesystem.rs",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_create_dir_all",
-      "label": ".create_dir_all()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".create_dir_all()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L6"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_exists",
-      "label": ".exists()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".exists()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L7"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_is_directory",
-      "label": ".is_directory()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".is_directory()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L8"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_list_dir",
-      "label": ".list_dir()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".list_dir()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L9"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_read_to_string",
-      "label": ".read_to_string()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".read_to_string()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L4"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_remove_file",
-      "label": ".remove_file()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".remove_file()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L10"
-    },
-    {
-      "id": "crates_core_src_ports_filesystem_filesystemport_write_string",
-      "label": ".write_string()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".write_string()",
-      "source_file": "crates/core/src/ports/filesystem.rs",
-      "source_location": "L5"
-    },
-    {
-      "id": "crates_core_src_usecases_init_project",
-      "label": "init_project.rs",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": "init_project.rs",
-      "source_file": "crates/core/src/usecases/init_project.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_src_usecases_init_project_initprojectusecase_execute",
-      "label": ".execute()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".execute()",
-      "source_file": "crates/core/src/usecases/init_project.rs",
-      "source_location": "L26"
-    },
-    {
-      "id": "crates_core_src_usecases_init_project_initprojectusecase_new",
-      "label": ".new()",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "DomainError",
-      "file_type": "code",
-      "norm_label": ".new()",
-      "source_file": "crates/core/src/usecases/init_project.rs",
-      "source_location": "L22"
     },
     {
       "id": "crates_parser_src_print_rs_model",
@@ -4957,39 +4902,6 @@
       "norm_label": ".table_name_for_type()",
       "source_file": "crates/core/src/domain/naming.rs",
       "source_location": "L94"
-    },
-    {
-      "id": "crates_cli_src_adapters_introspector",
-      "label": "introspector.rs",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "DatabaseConfig",
-      "file_type": "code",
-      "norm_label": "introspector.rs",
-      "source_file": "crates/cli/src/adapters/introspector.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_cli_src_adapters_introspector_introspect_async",
-      "label": "introspect_async()",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "DatabaseConfig",
-      "file_type": "code",
-      "norm_label": "introspect_async()",
-      "source_file": "crates/cli/src/adapters/introspector.rs",
-      "source_location": "L26"
-    },
-    {
-      "id": "crates_cli_src_adapters_introspector_surrealdbintrospector_introspect",
-      "label": ".introspect()",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "DatabaseConfig",
-      "file_type": "code",
-      "norm_label": ".introspect()",
-      "source_file": "crates/cli/src/adapters/introspector.rs",
-      "source_location": "L12"
     },
     {
       "id": "crates_cli_src_adapters_surrealdb_migration_ledger",
@@ -5516,121 +5428,11 @@
       "type": "package"
     },
     {
-      "id": "crates_codegen_rust_tests_generator",
-      "label": "codegen-rust/tests/generator.rs",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "codegen-rust/tests/generator.rs",
-      "source_file": "crates/codegen-rust/tests/generator.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_codegen_rust_tests_generator_maps_all_field_types_to_rust",
-      "label": "maps_all_field_types_to_rust()",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "maps_all_field_types_to_rust()",
-      "source_file": "crates/codegen-rust/tests/generator.rs",
-      "source_location": "L62"
-    },
-    {
-      "id": "crates_codegen_rust_tests_generator_rs_databaseschema",
-      "label": "DatabaseSchema",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "databaseschema",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "crates_codegen_rust_tests_generator_rust_generator_default_and_language",
-      "label": "rust_generator_default_and_language()",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "rust_generator_default_and_language()",
-      "source_file": "crates/codegen-rust/tests/generator.rs",
-      "source_location": "L53"
-    },
-    {
-      "id": "crates_codegen_rust_tests_generator_schema_with_field",
-      "label": "schema_with_field()",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "schema_with_field()",
-      "source_file": "crates/codegen-rust/tests/generator.rs",
-      "source_location": "L6"
-    },
-    {
-      "id": "crates_codegen_typescript_tests_generator",
-      "label": "codegen-typescript/tests/generator.rs",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "codegen-typescript/tests/generator.rs",
-      "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_codegen_typescript_tests_generator_default_generator_is_constructible",
-      "label": "default_generator_is_constructible()",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "default_generator_is_constructible()",
-      "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L74"
-    },
-    {
-      "id": "crates_codegen_typescript_tests_generator_maps_all_field_types_to_typescript",
-      "label": "maps_all_field_types_to_typescript()",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "maps_all_field_types_to_typescript()",
-      "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L50"
-    },
-    {
-      "id": "crates_codegen_typescript_tests_generator_rs_databaseschema",
-      "label": "DatabaseSchema",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "databaseschema",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "crates_codegen_typescript_tests_generator_schema_with_field",
-      "label": "schema_with_field()",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "FieldType",
-      "file_type": "code",
-      "norm_label": "schema_with_field()",
-      "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L7"
-    },
-    {
       "id": "crates_core_src_domain_field_fieldtype_array",
       "label": "Array",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "array",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5641,7 +5443,7 @@
       "label": ".base_surreal_type_name()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": ".base_surreal_type_name()",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5652,7 +5454,7 @@
       "label": "Bool",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "bool",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5663,7 +5465,7 @@
       "label": "Custom",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "custom",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5674,7 +5476,7 @@
       "label": "Datetime",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "datetime",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5685,7 +5487,7 @@
       "label": "Float",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "float",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5696,7 +5498,7 @@
       "label": "Int",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "int",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5707,7 +5509,7 @@
       "label": ".link_model_name()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": ".link_model_name()",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5718,7 +5520,7 @@
       "label": "Object",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "object",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5729,7 +5531,7 @@
       "label": "RecordId",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "recordid",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5740,7 +5542,7 @@
       "label": "String",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "string",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5751,7 +5553,7 @@
       "label": ".surreal_type_name()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": ".surreal_type_name()",
       "source_file": "crates/core/src/domain/field.rs",
@@ -5762,7 +5564,7 @@
       "label": "introspect.rs",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "introspect.rs",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5773,7 +5575,7 @@
       "label": "edge_name_for_table()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "edge_name_for_table()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5784,7 +5586,7 @@
       "label": "is_relation_table()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "is_relation_table()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5795,7 +5597,7 @@
       "label": "map_database_info()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "map_database_info()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5806,7 +5608,7 @@
       "label": "map_fields()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "map_fields()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5817,7 +5619,7 @@
       "label": "map_indexes()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "map_indexes()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5828,7 +5630,7 @@
       "label": "map_record_links()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "map_record_links()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5839,7 +5641,7 @@
       "label": "map_scalar_type_name()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "map_scalar_type_name()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5850,7 +5652,7 @@
       "label": "maps_reference_and_computed_pair()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "maps_reference_and_computed_pair()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5861,7 +5663,7 @@
       "label": "maps_user_table_from_fixture()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "maps_user_table_from_fixture()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5872,7 +5674,7 @@
       "label": "model_name_for_table()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "model_name_for_table()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5883,7 +5685,7 @@
       "label": "normalize()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "normalize()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5894,7 +5696,7 @@
       "label": "pair_pulled_links()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "pair_pulled_links()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5905,7 +5707,7 @@
       "label": "parse_computed_backlink()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_computed_backlink()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5916,7 +5718,7 @@
       "label": "parse_field_define()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_field_define()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5927,7 +5729,7 @@
       "label": "parse_index_define()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_index_define()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5938,7 +5740,7 @@
       "label": "parse_inner_option_type()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_inner_option_type()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5949,7 +5751,7 @@
       "label": "parse_permissions()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_permissions()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5960,7 +5762,7 @@
       "label": "parse_relation_endpoints()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_relation_endpoints()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5971,7 +5773,7 @@
       "label": "parse_table_mode()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_table_mode()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5982,7 +5784,7 @@
       "label": "parse_type_name()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_type_name()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -5993,7 +5795,7 @@
       "label": "parse_type_tokens()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "parse_type_tokens()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -6004,7 +5806,7 @@
       "label": "preserve_with_user()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "preserve_with_user()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -6015,7 +5817,7 @@
       "label": "read_expression()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "read_expression()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -6026,7 +5828,7 @@
       "label": "DatabaseSchema",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "databaseschema",
       "source_file": "",
@@ -6037,7 +5839,7 @@
       "label": "DomainError",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "domainerror",
       "source_file": "",
@@ -6048,7 +5850,7 @@
       "label": "Index",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "index",
       "source_file": "",
@@ -6059,7 +5861,7 @@
       "label": "TableMode",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "tablemode",
       "source_file": "",
@@ -6070,7 +5872,7 @@
       "label": "table_name_to_pascal()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "table_name_to_pascal()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -6081,7 +5883,7 @@
       "label": "tokenize()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "tokenize()",
       "source_file": "crates/renderers/src/surrealdb/introspect.rs",
@@ -6092,7 +5894,7 @@
       "label": "introspect_mapper.rs",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "introspect_mapper.rs",
       "source_file": "crates/renderers/tests/introspect_mapper.rs",
@@ -6103,7 +5905,7 @@
       "label": "maps_minimal_user_fixture()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "maps_minimal_user_fixture()",
       "source_file": "crates/renderers/tests/introspect_mapper.rs",
@@ -6114,7 +5916,7 @@
       "label": "maps_minimal_user_info_json_fixture()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "maps_minimal_user_info_json_fixture()",
       "source_file": "crates/renderers/tests/introspect_mapper.rs",
@@ -6125,172 +5927,18 @@
       "label": "maps_relation_table_to_edge()",
       "_origin": "ast",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "file_type": "code",
       "norm_label": "maps_relation_table_to_edge()",
       "source_file": "crates/renderers/tests/introspect_mapper.rs",
       "source_location": "L74"
     },
     {
-      "id": "crates_core_src_domain_field_field_has_value_expression",
-      "label": ".has_value_expression()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".has_value_expression()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L95"
-    },
-    {
-      "id": "crates_core_src_domain_field_field_is_computed_link",
-      "label": ".is_computed_link()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".is_computed_link()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L112"
-    },
-    {
-      "id": "crates_core_src_domain_field_field_is_link",
-      "label": ".is_link()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".is_link()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L101"
-    },
-    {
-      "id": "crates_core_src_domain_field_field_is_list_link",
-      "label": ".is_list_link()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".is_list_link()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L107"
-    },
-    {
-      "id": "crates_core_src_domain_field_field_is_stored_link",
-      "label": ".is_stored_link()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".is_stored_link()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L117"
-    },
-    {
-      "id": "crates_core_src_domain_field_linkstorage_computed",
-      "label": "Computed",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "computed",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L53"
-    },
-    {
-      "id": "crates_core_src_domain_field_linkstorage_stored",
-      "label": "Stored",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "stored",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L52"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_as_dsl",
-      "label": ".as_dsl()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".as_dsl()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L18"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_as_surreal",
-      "label": ".as_surreal()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".as_surreal()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L38"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_cascade",
-      "label": "Cascade",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "cascade",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L12"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_ignore",
-      "label": "Ignore",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "ignore",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L10"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_parse",
-      "label": ".parse()",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": ".parse()",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L27"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_reject",
-      "label": "Reject",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "reject",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L13"
-    },
-    {
-      "id": "crates_core_src_domain_field_ondeleteaction_unset",
-      "label": "Unset",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "Field",
-      "file_type": "code",
-      "norm_label": "unset",
-      "source_file": "crates/core/src/domain/field.rs",
-      "source_location": "L11"
-    },
-    {
       "id": "crates_core_src_normalize",
       "label": "normalize.rs",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "normalize.rs",
       "source_file": "crates/core/src/normalize.rs",
@@ -6301,7 +5949,7 @@
       "label": "ensure_on_delete_default()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "ensure_on_delete_default()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6312,7 +5960,7 @@
       "label": "expands_object_type_reference_into_nested_fields()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "expands_object_type_reference_into_nested_fields()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6323,7 +5971,7 @@
       "label": "infer_anonymous_pair_names()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "infer_anonymous_pair_names()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6334,7 +5982,7 @@
       "label": "nested_fields_from_object_body()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "nested_fields_from_object_body()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6345,7 +5993,7 @@
       "label": "nested_fields_from_object_type()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "nested_fields_from_object_type()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6356,7 +6004,7 @@
       "label": "normalize_model_object_types()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "normalize_model_object_types()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6367,7 +6015,7 @@
       "label": "normalize_schema()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "normalize_schema()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6378,7 +6026,7 @@
       "label": "resolve_link_pairs()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "resolve_link_pairs()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6389,7 +6037,7 @@
       "label": "resolve_stored_computed()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "resolve_stored_computed()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6400,7 +6048,7 @@
       "label": "DatabaseSchema",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "databaseschema",
       "source_file": "",
@@ -6411,7 +6059,7 @@
       "label": "DomainError",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "domainerror",
       "source_file": "",
@@ -6422,7 +6070,7 @@
       "label": "ObjectTypeDefinition",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "objecttypedefinition",
       "source_file": "",
@@ -6433,7 +6081,7 @@
       "label": "ObjectTypeField",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "objecttypefield",
       "source_file": "",
@@ -6444,7 +6092,7 @@
       "label": "sample_schema()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "sample_schema()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6455,7 +6103,7 @@
       "label": "set_link_storage()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "set_link_storage()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6466,7 +6114,7 @@
       "label": "should_expand_object_type()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "should_expand_object_type()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6477,7 +6125,7 @@
       "label": "validate_object_type_names()",
       "_origin": "ast",
       "community": 27,
-      "community_name": "Field",
+      "community_name": "normalize.rs",
       "file_type": "code",
       "norm_label": "validate_object_type_names()",
       "source_file": "crates/core/src/normalize.rs",
@@ -6647,6 +6295,17 @@
       "norm_label": "run_pull()",
       "source_file": "crates/cli/src/commands/db.rs",
       "source_location": "L9"
+    },
+    {
+      "id": "crates_cli_src_commands_db_run_push",
+      "label": "run_push()",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "db.rs",
+      "file_type": "code",
+      "norm_label": "run_push()",
+      "source_file": "crates/cli/src/commands/db.rs",
+      "source_location": "L50"
     },
     {
       "id": "crates_cli_src_commands_db_write_single_schema",
@@ -6893,39 +6552,6 @@
       "source_location": "L1"
     },
     {
-      "id": "crates_cli_src_commands_db_run_push",
-      "label": "run_push()",
-      "_origin": "ast",
-      "community": 36,
-      "community_name": "Printer",
-      "file_type": "code",
-      "norm_label": "run_push()",
-      "source_file": "crates/cli/src/commands/db.rs",
-      "source_location": "L50"
-    },
-    {
-      "id": "crates_cli_src_commands_init",
-      "label": "init.rs",
-      "_origin": "ast",
-      "community": 36,
-      "community_name": "Printer",
-      "file_type": "code",
-      "norm_label": "init.rs",
-      "source_file": "crates/cli/src/commands/init.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_cli_src_commands_init_run",
-      "label": "run()",
-      "_origin": "ast",
-      "community": 36,
-      "community_name": "Printer",
-      "file_type": "code",
-      "norm_label": "run()",
-      "source_file": "crates/cli/src/commands/init.rs",
-      "source_location": "L8"
-    },
-    {
       "id": "crates_cli_src_commands_mod",
       "label": "commands/mod.rs",
       "_origin": "ast",
@@ -7102,6 +6728,17 @@
       "source_location": "L1"
     },
     {
+      "id": "crates_core_src_domain_index_index_resolved_name",
+      "label": ".resolved_name()",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "btreemap",
+      "file_type": "code",
+      "norm_label": ".resolved_name()",
+      "source_file": "crates/core/src/domain/index.rs",
+      "source_location": "L18"
+    },
+    {
       "id": "crates_core_src_domain_migration",
       "label": "migration.rs",
       "_origin": "ast",
@@ -7121,6 +6758,17 @@
       "file_type": "code",
       "norm_label": "domain/mod.rs",
       "source_file": "crates/core/src/domain/mod.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_domain_model",
+      "label": "model.rs",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "btreemap",
+      "file_type": "code",
+      "norm_label": "model.rs",
+      "source_file": "crates/core/src/domain/model.rs",
       "source_location": "L1"
     },
     {
@@ -7331,171 +6979,6 @@
       "norm_label": "to_snake_case()",
       "source_file": "crates/core/src/domain/naming.rs",
       "source_location": "L162"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib",
-      "label": "codegen-rust/src/lib.rs",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "codegen-rust/src/lib.rs",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib_map_field_type",
-      "label": "map_field_type()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "map_field_type()",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L57"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib_rustgenerator_default",
-      "label": ".default()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".default()",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L15"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib_rustgenerator_generate",
-      "label": ".generate()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".generate()",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L25"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib_rustgenerator_language",
-      "label": ".language()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".language()",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L21"
-    },
-    {
-      "id": "crates_codegen_rust_src_lib_rustgenerator_new",
-      "label": ".new()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".new()",
-      "source_file": "crates/codegen-rust/src/lib.rs",
-      "source_location": "L9"
-    },
-    {
-      "id": "crates_codegen_src_lib",
-      "label": "codegen/src/lib.rs",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "codegen/src/lib.rs",
-      "source_file": "crates/codegen/src/lib.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_codegen_src_lib_codegenerator_generate",
-      "label": ".generate()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".generate()",
-      "source_file": "crates/codegen/src/lib.rs",
-      "source_location": "L7"
-    },
-    {
-      "id": "crates_codegen_src_lib_codegenerator_language",
-      "label": ".language()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".language()",
-      "source_file": "crates/codegen/src/lib.rs",
-      "source_location": "L6"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib",
-      "label": "codegen-typescript/src/lib.rs",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "codegen-typescript/src/lib.rs",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib_map_field_type",
-      "label": "map_field_type()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": "map_field_type()",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L53"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_default",
-      "label": ".default()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".default()",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L15"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_generate",
-      "label": ".generate()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".generate()",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L25"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_language",
-      "label": ".language()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".language()",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L21"
-    },
-    {
-      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_new",
-      "label": ".new()",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "generate_code.rs",
-      "file_type": "code",
-      "norm_label": ".new()",
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L9"
     },
     {
       "id": "crates_core_src_usecases_generate_code",
@@ -7729,33 +7212,88 @@
       "source_location": "L6"
     },
     {
-      "id": "crates_core_src_domain_index_index_resolved_name",
-      "label": ".resolved_name()",
+      "id": "crates_core_src_domain_field_field_has_value_expression",
+      "label": ".has_value_expression()",
       "_origin": "ast",
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
-      "norm_label": ".resolved_name()",
-      "source_file": "crates/core/src/domain/index.rs",
-      "source_location": "L18"
+      "norm_label": ".has_value_expression()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L95"
     },
     {
-      "id": "crates_core_src_domain_model",
-      "label": "model.rs",
+      "id": "crates_core_src_domain_field_field_is_computed_link",
+      "label": ".is_computed_link()",
       "_origin": "ast",
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
-      "norm_label": "model.rs",
-      "source_file": "crates/core/src/domain/model.rs",
-      "source_location": "L1"
+      "norm_label": ".is_computed_link()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L112"
+    },
+    {
+      "id": "crates_core_src_domain_field_field_is_link",
+      "label": ".is_link()",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "Field",
+      "file_type": "code",
+      "norm_label": ".is_link()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L101"
+    },
+    {
+      "id": "crates_core_src_domain_field_field_is_list_link",
+      "label": ".is_list_link()",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "Field",
+      "file_type": "code",
+      "norm_label": ".is_list_link()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L107"
+    },
+    {
+      "id": "crates_core_src_domain_field_field_is_stored_link",
+      "label": ".is_stored_link()",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "Field",
+      "file_type": "code",
+      "norm_label": ".is_stored_link()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L117"
+    },
+    {
+      "id": "crates_core_src_domain_field_linkstorage_computed",
+      "label": "Computed",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "Field",
+      "file_type": "code",
+      "norm_label": "computed",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L53"
+    },
+    {
+      "id": "crates_core_src_domain_field_linkstorage_stored",
+      "label": "Stored",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "Field",
+      "file_type": "code",
+      "norm_label": "stored",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L52"
     },
     {
       "id": "crates_core_src_domain_model_edge_table_name",
       "label": ".table_name()",
       "_origin": "ast",
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": ".table_name()",
       "source_file": "crates/core/src/domain/model.rs",
@@ -7766,7 +7304,7 @@
       "label": ".table_name()",
       "_origin": "ast",
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": ".table_name()",
       "source_file": "crates/core/src/domain/model.rs",
@@ -7777,7 +7315,7 @@
       "label": "Schemafull",
       "_origin": "ast",
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": "schemafull",
       "source_file": "crates/core/src/domain/model.rs",
@@ -7788,7 +7326,7 @@
       "label": "Schemaless",
       "_origin": "ast",
       "community": 47,
-      "community_name": "model.rs",
+      "community_name": "Field",
       "file_type": "code",
       "norm_label": "schemaless",
       "source_file": "crates/core/src/domain/model.rs",
@@ -7848,6 +7386,72 @@
       "norm_label": ".save_snapshot()",
       "source_file": "crates/cli/src/adapters/migration_store.rs",
       "source_location": "L36"
+    },
+    {
+      "id": "cligeneratetarget",
+      "label": "CliGenerateTarget",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "AppContext",
+      "file_type": "code",
+      "norm_label": "cligeneratetarget",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_cli_src_adapters_filesystem",
+      "label": "adapters/filesystem.rs",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "AppContext",
+      "file_type": "code",
+      "norm_label": "adapters/filesystem.rs",
+      "source_file": "crates/cli/src/adapters/filesystem.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_cli_src_commands_generate",
+      "label": "generate.rs",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "AppContext",
+      "file_type": "code",
+      "norm_label": "generate.rs",
+      "source_file": "crates/cli/src/commands/generate.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_cli_src_commands_generate_run",
+      "label": "run()",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "AppContext",
+      "file_type": "code",
+      "norm_label": "run()",
+      "source_file": "crates/cli/src/commands/generate.rs",
+      "source_location": "L9"
+    },
+    {
+      "id": "crates_cli_src_commands_init",
+      "label": "init.rs",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "AppContext",
+      "file_type": "code",
+      "norm_label": "init.rs",
+      "source_file": "crates/cli/src/commands/init.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_cli_src_commands_init_run",
+      "label": "run()",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "AppContext",
+      "file_type": "code",
+      "norm_label": "run()",
+      "source_file": "crates/cli/src/commands/init.rs",
+      "source_location": "L8"
     },
     {
       "id": "crates_cli_src_commands_migrate",
@@ -7916,61 +7520,6 @@
       "source_location": "L39"
     },
     {
-      "id": "crates_cli_src_di",
-      "label": "di.rs",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "AppContext",
-      "file_type": "code",
-      "norm_label": "di.rs",
-      "source_file": "crates/cli/src/di.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_cli_src_di_appcontext_with_paths",
-      "label": ".with_paths()",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "AppContext",
-      "file_type": "code",
-      "norm_label": ".with_paths()",
-      "source_file": "crates/cli/src/di.rs",
-      "source_location": "L42"
-    },
-    {
-      "id": "crates_cli_src_di_build_context",
-      "label": "build_context()",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "AppContext",
-      "file_type": "code",
-      "norm_label": "build_context()",
-      "source_file": "crates/cli/src/di.rs",
-      "source_location": "L61"
-    },
-    {
-      "id": "crates_cli_src_di_build_context_with_introspector",
-      "label": "build_context_with_introspector()",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "AppContext",
-      "file_type": "code",
-      "norm_label": "build_context_with_introspector()",
-      "source_file": "crates/cli/src/di.rs",
-      "source_location": "L74"
-    },
-    {
-      "id": "crates_cli_src_di_test_context_with_introspector",
-      "label": "test_context_with_introspector()",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "AppContext",
-      "file_type": "code",
-      "norm_label": "test_context_with_introspector()",
-      "source_file": "crates/cli/src/di.rs",
-      "source_location": "L53"
-    },
-    {
       "id": "crates_core_src_ports_migration_renderer",
       "label": "migration_renderer.rs",
       "_origin": "ast",
@@ -8037,6 +7586,28 @@
       "source_location": "L29"
     },
     {
+      "id": "crates_core_src_ports_schema_renderer",
+      "label": "schema_renderer.rs",
+      "_origin": "ast",
+      "community": 55,
+      "community_name": "SchemaSource",
+      "file_type": "code",
+      "norm_label": "schema_renderer.rs",
+      "source_file": "crates/core/src/ports/schema_renderer.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_ports_schema_renderer_schemarenderer_render_schema",
+      "label": ".render_schema()",
+      "_origin": "ast",
+      "community": 55,
+      "community_name": "SchemaSource",
+      "file_type": "code",
+      "norm_label": ".render_schema()",
+      "source_file": "crates/core/src/ports/schema_renderer.rs",
+      "source_location": "L5"
+    },
+    {
       "id": "crates_core_src_ports_schema_source",
       "label": "ports/schema_source.rs",
       "_origin": "ast",
@@ -8070,48 +7641,37 @@
       "source_location": "L5"
     },
     {
-      "id": "crates_core_src_usecases_migrate_create",
-      "label": "migrate_create.rs",
+      "id": "crates_core_src_usecases_db_push",
+      "label": "db_push.rs",
       "_origin": "ast",
       "community": 55,
       "community_name": "SchemaSource",
       "file_type": "code",
-      "norm_label": "migrate_create.rs",
-      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "norm_label": "db_push.rs",
+      "source_file": "crates/core/src/usecases/db_push.rs",
       "source_location": "L1"
     },
     {
-      "id": "crates_core_src_usecases_migrate_create_migratecreateusecase_execute",
+      "id": "crates_core_src_usecases_db_push_dbpushusecase_execute",
       "label": ".execute()",
       "_origin": "ast",
       "community": 55,
       "community_name": "SchemaSource",
       "file_type": "code",
       "norm_label": ".execute()",
-      "source_file": "crates/core/src/usecases/migrate_create.rs",
-      "source_location": "L32"
+      "source_file": "crates/core/src/usecases/db_push.rs",
+      "source_location": "L30"
     },
     {
-      "id": "crates_core_src_usecases_migrate_create_migratecreateusecase_new",
+      "id": "crates_core_src_usecases_db_push_dbpushusecase_new",
       "label": ".new()",
       "_origin": "ast",
       "community": 55,
       "community_name": "SchemaSource",
       "file_type": "code",
       "norm_label": ".new()",
-      "source_file": "crates/core/src/usecases/migrate_create.rs",
-      "source_location": "L24"
-    },
-    {
-      "id": "crates_core_src_usecases_mod",
-      "label": "usecases/mod.rs",
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "SchemaSource",
-      "file_type": "code",
-      "norm_label": "usecases/mod.rs",
-      "source_file": "crates/core/src/usecases/mod.rs",
-      "source_location": "L1"
+      "source_file": "crates/core/src/usecases/db_push.rs",
+      "source_location": "L22"
     },
     {
       "id": "crates_core_src_usecases_validate_schema",
@@ -8147,37 +7707,180 @@
       "source_location": "L19"
     },
     {
-      "id": "cligeneratetarget",
-      "label": "CliGenerateTarget",
+      "id": "crates_cli_src_adapters_schema_source",
+      "label": "adapters/schema_source.rs",
       "_origin": "ast",
       "community": 56,
-      "community_name": "schema_core",
+      "community_name": "FileSystemPort",
       "file_type": "code",
-      "norm_label": "cligeneratetarget",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "crates_cli_src_commands_generate",
-      "label": "generate.rs",
-      "_origin": "ast",
-      "community": 56,
-      "community_name": "schema_core",
-      "file_type": "code",
-      "norm_label": "generate.rs",
-      "source_file": "crates/cli/src/commands/generate.rs",
+      "norm_label": "adapters/schema_source.rs",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
       "source_location": "L1"
     },
     {
-      "id": "crates_cli_src_commands_generate_run",
-      "label": "run()",
+      "id": "crates_cli_src_adapters_schema_source_load_directory_schema",
+      "label": "load_directory_schema()",
       "_origin": "ast",
       "community": 56,
-      "community_name": "schema_core",
+      "community_name": "FileSystemPort",
       "file_type": "code",
-      "norm_label": "run()",
-      "source_file": "crates/cli/src/commands/generate.rs",
+      "norm_label": "load_directory_schema()",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
+      "source_location": "L41"
+    },
+    {
+      "id": "crates_cli_src_adapters_schema_source_schemafilesource_load_raw",
+      "label": ".load_raw()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".load_raw()",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
+      "source_location": "L28"
+    },
+    {
+      "id": "crates_cli_src_adapters_schema_source_schemafilesource_load_schema",
+      "label": ".load_schema()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".load_schema()",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
+      "source_location": "L20"
+    },
+    {
+      "id": "crates_cli_src_adapters_schema_source_schemafilesource_new",
+      "label": ".new()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".new()",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
+      "source_location": "L14"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem",
+      "label": "ports/filesystem.rs",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "ports/filesystem.rs",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_create_dir_all",
+      "label": ".create_dir_all()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".create_dir_all()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L6"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_exists",
+      "label": ".exists()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".exists()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L7"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_is_directory",
+      "label": ".is_directory()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".is_directory()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L8"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_list_dir",
+      "label": ".list_dir()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".list_dir()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
       "source_location": "L9"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_read_to_string",
+      "label": ".read_to_string()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".read_to_string()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L4"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_remove_file",
+      "label": ".remove_file()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".remove_file()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L10"
+    },
+    {
+      "id": "crates_core_src_ports_filesystem_filesystemport_write_string",
+      "label": ".write_string()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".write_string()",
+      "source_file": "crates/core/src/ports/filesystem.rs",
+      "source_location": "L5"
+    },
+    {
+      "id": "crates_core_src_usecases_init_project",
+      "label": "init_project.rs",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": "init_project.rs",
+      "source_file": "crates/core/src/usecases/init_project.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_usecases_init_project_initprojectusecase_execute",
+      "label": ".execute()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".execute()",
+      "source_file": "crates/core/src/usecases/init_project.rs",
+      "source_location": "L26"
+    },
+    {
+      "id": "crates_core_src_usecases_init_project_initprojectusecase_new",
+      "label": ".new()",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": "FileSystemPort",
+      "file_type": "code",
+      "norm_label": ".new()",
+      "source_file": "crates/core/src/usecases/init_project.rs",
+      "source_location": "L22"
     },
     {
       "id": "crates_core_src_domain_naming_rs_model",
@@ -8686,6 +8389,17 @@
       "source_location": "L19"
     },
     {
+      "id": "crates_cli_src_adapters_schema_source_list_schema_files",
+      "label": "list_schema_files()",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "format.rs",
+      "file_type": "code",
+      "norm_label": "list_schema_files()",
+      "source_file": "crates/cli/src/adapters/schema_source.rs",
+      "source_location": "L67"
+    },
+    {
       "id": "crates_cli_src_commands_format",
       "label": "format.rs",
       "_origin": "ast",
@@ -8712,7 +8426,7 @@
       "label": "format_schema.rs",
       "_origin": "ast",
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": "format_schema.rs",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -8723,7 +8437,7 @@
       "label": ".execute()",
       "_origin": "ast",
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": ".execute()",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -8734,7 +8448,7 @@
       "label": ".new()",
       "_origin": "ast",
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": ".new()",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -8745,7 +8459,7 @@
       "label": "normalize_whitespace()",
       "_origin": "ast",
       "community": 61,
-      "community_name": "format_schema.rs",
+      "community_name": "ports",
       "file_type": "code",
       "norm_label": "normalize_whitespace()",
       "source_file": "crates/core/src/usecases/format_schema.rs",
@@ -8767,7 +8481,7 @@
       "label": "database.rs",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "database.rs",
       "source_file": "crates/core/src/ports/database.rs",
@@ -8778,62 +8492,18 @@
       "label": ".execute_script()",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": ".execute_script()",
       "source_file": "crates/core/src/ports/database.rs",
       "source_location": "L5"
     },
     {
-      "id": "crates_core_src_ports_migration_store",
-      "label": "ports/migration_store.rs",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "MigrationStore",
-      "file_type": "code",
-      "norm_label": "ports/migration_store.rs",
-      "source_file": "crates/core/src/ports/migration_store.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_src_ports_migration_store_migrationstore_list_migrations",
-      "label": ".list_migrations()",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "MigrationStore",
-      "file_type": "code",
-      "norm_label": ".list_migrations()",
-      "source_file": "crates/core/src/ports/migration_store.rs",
-      "source_location": "L11"
-    },
-    {
-      "id": "crates_core_src_ports_migration_store_migrationstore_load_last_snapshot",
-      "label": ".load_last_snapshot()",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "MigrationStore",
-      "file_type": "code",
-      "norm_label": ".load_last_snapshot()",
-      "source_file": "crates/core/src/ports/migration_store.rs",
-      "source_location": "L5"
-    },
-    {
-      "id": "crates_core_src_ports_migration_store_migrationstore_save_snapshot",
-      "label": ".save_snapshot()",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "MigrationStore",
-      "file_type": "code",
-      "norm_label": ".save_snapshot()",
-      "source_file": "crates/core/src/ports/migration_store.rs",
-      "source_location": "L6"
-    },
-    {
       "id": "crates_core_src_usecases_migrate_apply",
       "label": "migrate_apply.rs",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migrate_apply.rs",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -8844,7 +8514,7 @@
       "label": "checksum_of()",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "checksum_of()",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -8855,7 +8525,7 @@
       "label": ".execute()",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": ".execute()",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -8866,7 +8536,7 @@
       "label": ".new()",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": ".new()",
       "source_file": "crates/core/src/usecases/migrate_apply.rs",
@@ -8877,7 +8547,7 @@
       "label": "migrate_rollback.rs",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": "migrate_rollback.rs",
       "source_file": "crates/core/src/usecases/migrate_rollback.rs",
@@ -8888,7 +8558,7 @@
       "label": ".execute()",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": ".execute()",
       "source_file": "crates/core/src/usecases/migrate_rollback.rs",
@@ -8899,11 +8569,22 @@
       "label": ".new()",
       "_origin": "ast",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "file_type": "code",
       "norm_label": ".new()",
       "source_file": "crates/core/src/usecases/migrate_rollback.rs",
       "source_location": "L27"
+    },
+    {
+      "id": "crates_core_src_usecases_mod",
+      "label": "usecases/mod.rs",
+      "_origin": "ast",
+      "community": 63,
+      "community_name": "usecases/mod.rs",
+      "file_type": "code",
+      "norm_label": "usecases/mod.rs",
+      "source_file": "crates/core/src/usecases/mod.rs",
+      "source_location": "L1"
     },
     {
       "id": "crates_parser_src_parse_rs_model",
@@ -8917,10 +8598,109 @@
       "source_location": ""
     },
     {
+      "id": "crates_codegen_src_lib",
+      "label": "codegen/src/lib.rs",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": "codegen/src/lib.rs",
+      "source_file": "crates/codegen/src/lib.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_codegen_src_lib_codegenerator_generate",
+      "label": ".generate()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": ".generate()",
+      "source_file": "crates/codegen/src/lib.rs",
+      "source_location": "L7"
+    },
+    {
+      "id": "crates_codegen_src_lib_codegenerator_language",
+      "label": ".language()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": ".language()",
+      "source_file": "crates/codegen/src/lib.rs",
+      "source_location": "L6"
+    },
+    {
+      "id": "crates_codegen_typescript_src_lib",
+      "label": "codegen-typescript/src/lib.rs",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": "codegen-typescript/src/lib.rs",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_codegen_typescript_src_lib_map_field_type",
+      "label": "map_field_type()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": "map_field_type()",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L53"
+    },
+    {
+      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_default",
+      "label": ".default()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": ".default()",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L15"
+    },
+    {
+      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_generate",
+      "label": ".generate()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": ".generate()",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L25"
+    },
+    {
+      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_language",
+      "label": ".language()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": ".language()",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L21"
+    },
+    {
+      "id": "crates_codegen_typescript_src_lib_typescriptgenerator_new",
+      "label": ".new()",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": "core",
+      "file_type": "code",
+      "norm_label": ".new()",
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L9"
+    },
+    {
       "id": "crates_core_src_lib",
       "label": "core/src/lib.rs",
       "_origin": "ast",
-      "community": 65,
+      "community": 66,
       "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "core/src/lib.rs",
@@ -8928,143 +8708,11 @@
       "source_location": "L1"
     },
     {
-      "id": "crates_core_src_ports_schema_renderer",
-      "label": "schema_renderer.rs",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "schema_renderer.rs",
-      "source_file": "crates/core/src/ports/schema_renderer.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_src_ports_schema_renderer_schemarenderer_render_schema",
-      "label": ".render_schema()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": ".render_schema()",
-      "source_file": "crates/core/src/ports/schema_renderer.rs",
-      "source_location": "L5"
-    },
-    {
-      "id": "crates_core_src_usecases_db_push",
-      "label": "db_push.rs",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "db_push.rs",
-      "source_file": "crates/core/src/usecases/db_push.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_src_usecases_db_push_dbpushusecase_execute",
-      "label": ".execute()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": ".execute()",
-      "source_file": "crates/core/src/usecases/db_push.rs",
-      "source_location": "L30"
-    },
-    {
-      "id": "crates_core_src_usecases_db_push_dbpushusecase_new",
-      "label": ".new()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": ".new()",
-      "source_file": "crates/core/src/usecases/db_push.rs",
-      "source_location": "L22"
-    },
-    {
-      "id": "crates_core_tests_domain",
-      "label": "domain.rs",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "domain.rs",
-      "source_file": "crates/core/tests/domain.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_tests_domain_model_and_edge_table_names_use_naming_convention",
-      "label": "model_and_edge_table_names_use_naming_convention()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "model_and_edge_table_names_use_naming_convention()",
-      "source_file": "crates/core/tests/domain.rs",
-      "source_location": "L33"
-    },
-    {
-      "id": "crates_core_tests_domain_resolved_name_builds_default_from_fields",
-      "label": "resolved_name_builds_default_from_fields()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "resolved_name_builds_default_from_fields()",
-      "source_file": "crates/core/tests/domain.rs",
-      "source_location": "L20"
-    },
-    {
-      "id": "crates_core_tests_domain_resolved_name_uses_explicit_index_name",
-      "label": "resolved_name_uses_explicit_index_name()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "resolved_name_uses_explicit_index_name()",
-      "source_file": "crates/core/tests/domain.rs",
-      "source_location": "L6"
-    },
-    {
-      "id": "crates_core_tests_errors",
-      "label": "tests/errors.rs",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "tests/errors.rs",
-      "source_file": "crates/core/tests/errors.rs",
-      "source_location": "L1"
-    },
-    {
-      "id": "crates_core_tests_errors_db_pull_use_case_delegates_to_introspector",
-      "label": "db_pull_use_case_delegates_to_introspector()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "db_pull_use_case_delegates_to_introspector()",
-      "source_file": "crates/core/tests/errors.rs",
-      "source_location": "L19"
-    },
-    {
-      "id": "crates_core_tests_errors_domain_error_codes_cover_all_variants",
-      "label": "domain_error_codes_cover_all_variants()",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "domain.rs",
-      "file_type": "code",
-      "norm_label": "domain_error_codes_cover_all_variants()",
-      "source_file": "crates/core/tests/errors.rs",
-      "source_location": "L4"
-    },
-    {
       "id": "crates_core_src_usecases_migrate_status",
       "label": "migrate_status.rs",
       "_origin": "ast",
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "migrate_status.rs",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
@@ -9075,29 +8723,18 @@
       "label": ".execute()",
       "_origin": "ast",
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": ".execute()",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
       "source_location": "L42"
     },
     {
-      "id": "crates_core_src_usecases_migrate_status_migratestatususecase_new",
-      "label": ".new()",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "migrate_status.rs",
-      "file_type": "code",
-      "norm_label": ".new()",
-      "source_file": "crates/core/src/usecases/migrate_status.rs",
-      "source_location": "L38"
-    },
-    {
       "id": "crates_core_src_usecases_migrate_status_migrationapplystate_applied",
       "label": "Applied",
       "_origin": "ast",
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "applied",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
@@ -9108,11 +8745,55 @@
       "label": "Pending",
       "_origin": "ast",
       "community": 66,
-      "community_name": "migrate_status.rs",
+      "community_name": "domain.rs",
       "file_type": "code",
       "norm_label": "pending",
       "source_file": "crates/core/src/usecases/migrate_status.rs",
       "source_location": "L11"
+    },
+    {
+      "id": "crates_core_tests_domain",
+      "label": "domain.rs",
+      "_origin": "ast",
+      "community": 66,
+      "community_name": "domain.rs",
+      "file_type": "code",
+      "norm_label": "domain.rs",
+      "source_file": "crates/core/tests/domain.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_tests_domain_model_and_edge_table_names_use_naming_convention",
+      "label": "model_and_edge_table_names_use_naming_convention()",
+      "_origin": "ast",
+      "community": 66,
+      "community_name": "domain.rs",
+      "file_type": "code",
+      "norm_label": "model_and_edge_table_names_use_naming_convention()",
+      "source_file": "crates/core/tests/domain.rs",
+      "source_location": "L33"
+    },
+    {
+      "id": "crates_core_tests_domain_resolved_name_builds_default_from_fields",
+      "label": "resolved_name_builds_default_from_fields()",
+      "_origin": "ast",
+      "community": 66,
+      "community_name": "domain.rs",
+      "file_type": "code",
+      "norm_label": "resolved_name_builds_default_from_fields()",
+      "source_file": "crates/core/tests/domain.rs",
+      "source_location": "L20"
+    },
+    {
+      "id": "crates_core_tests_domain_resolved_name_uses_explicit_index_name",
+      "label": "resolved_name_uses_explicit_index_name()",
+      "_origin": "ast",
+      "community": 66,
+      "community_name": "domain.rs",
+      "file_type": "code",
+      "norm_label": "resolved_name_uses_explicit_index_name()",
+      "source_file": "crates/core/tests/domain.rs",
+      "source_location": "L6"
     },
     {
       "id": "crates_core_src_domain_naming_namingcase_camelcase",
@@ -9256,6 +8937,446 @@
       "norm_label": ".execute_script()",
       "source_file": "crates/cli/src/adapters/surrealdb_executor.rs",
       "source_location": "L8"
+    },
+    {
+      "id": "crates_core_src_ports_migration_store_migrationstore_list_migrations",
+      "label": ".list_migrations()",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": ".list_migrations()",
+      "source_file": "crates/core/src/ports/migration_store.rs",
+      "source_location": "L11"
+    },
+    {
+      "id": "crates_core_src_ports_migration_store_migrationstore_load_last_snapshot",
+      "label": ".load_last_snapshot()",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": ".load_last_snapshot()",
+      "source_file": "crates/core/src/ports/migration_store.rs",
+      "source_location": "L5"
+    },
+    {
+      "id": "crates_core_src_ports_migration_store_migrationstore_save_snapshot",
+      "label": ".save_snapshot()",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": ".save_snapshot()",
+      "source_file": "crates/core/src/ports/migration_store.rs",
+      "source_location": "L6"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_create",
+      "label": "migrate_create.rs",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": "migrate_create.rs",
+      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_create_migratecreateusecase_execute",
+      "label": ".execute()",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": ".execute()",
+      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "source_location": "L32"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_create_migratecreateusecase_new",
+      "label": ".new()",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": ".new()",
+      "source_file": "crates/core/src/usecases/migrate_create.rs",
+      "source_location": "L24"
+    },
+    {
+      "id": "crates_core_src_usecases_migrate_status_migratestatususecase_new",
+      "label": ".new()",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "MigrationStore",
+      "file_type": "code",
+      "norm_label": ".new()",
+      "source_file": "crates/core/src/usecases/migrate_status.rs",
+      "source_location": "L38"
+    },
+    {
+      "id": "crates_cli_src_di",
+      "label": "di.rs",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "di.rs",
+      "file_type": "code",
+      "norm_label": "di.rs",
+      "source_file": "crates/cli/src/di.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_cli_src_di_appcontext_with_paths",
+      "label": ".with_paths()",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "di.rs",
+      "file_type": "code",
+      "norm_label": ".with_paths()",
+      "source_file": "crates/cli/src/di.rs",
+      "source_location": "L42"
+    },
+    {
+      "id": "crates_cli_src_di_build_context",
+      "label": "build_context()",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "di.rs",
+      "file_type": "code",
+      "norm_label": "build_context()",
+      "source_file": "crates/cli/src/di.rs",
+      "source_location": "L61"
+    },
+    {
+      "id": "crates_cli_src_di_build_context_with_introspector",
+      "label": "build_context_with_introspector()",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "di.rs",
+      "file_type": "code",
+      "norm_label": "build_context_with_introspector()",
+      "source_file": "crates/cli/src/di.rs",
+      "source_location": "L74"
+    },
+    {
+      "id": "crates_cli_src_di_test_context_with_introspector",
+      "label": "test_context_with_introspector()",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "di.rs",
+      "file_type": "code",
+      "norm_label": "test_context_with_introspector()",
+      "source_file": "crates/cli/src/di.rs",
+      "source_location": "L53"
+    },
+    {
+      "id": "crates_renderers_src_lib",
+      "label": "renderers/src/lib.rs",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "di.rs",
+      "file_type": "code",
+      "norm_label": "renderers/src/lib.rs",
+      "source_file": "crates/renderers/src/lib.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_as_dsl",
+      "label": ".as_dsl()",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": ".as_dsl()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L18"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_as_surreal",
+      "label": ".as_surreal()",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": ".as_surreal()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L38"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_cascade",
+      "label": "Cascade",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": "cascade",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L12"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_ignore",
+      "label": "Ignore",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": "ignore",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L10"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_parse",
+      "label": ".parse()",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": ".parse()",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L27"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_reject",
+      "label": "Reject",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": "reject",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L13"
+    },
+    {
+      "id": "crates_core_src_domain_field_ondeleteaction_unset",
+      "label": "Unset",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "OnDeleteAction",
+      "file_type": "code",
+      "norm_label": "unset",
+      "source_file": "crates/core/src/domain/field.rs",
+      "source_location": "L11"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib",
+      "label": "codegen-rust/src/lib.rs",
+      "_origin": "ast",
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": "codegen-rust/src/lib.rs",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib_map_field_type",
+      "label": "map_field_type()",
+      "_origin": "ast",
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": "map_field_type()",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L57"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib_rustgenerator_default",
+      "label": ".default()",
+      "_origin": "ast",
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": ".default()",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L15"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib_rustgenerator_generate",
+      "label": ".generate()",
+      "_origin": "ast",
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": ".generate()",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L25"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib_rustgenerator_language",
+      "label": ".language()",
+      "_origin": "ast",
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": ".language()",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L21"
+    },
+    {
+      "id": "crates_codegen_rust_src_lib_rustgenerator_new",
+      "label": ".new()",
+      "_origin": "ast",
+      "community": 73,
+      "community_name": "RustGenerator",
+      "file_type": "code",
+      "norm_label": ".new()",
+      "source_file": "crates/codegen-rust/src/lib.rs",
+      "source_location": "L9"
+    },
+    {
+      "id": "crates_codegen_rust_tests_generator",
+      "label": "codegen-rust/tests/generator.rs",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "codegen-rust/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "codegen-rust/tests/generator.rs",
+      "source_file": "crates/codegen-rust/tests/generator.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_codegen_rust_tests_generator_maps_all_field_types_to_rust",
+      "label": "maps_all_field_types_to_rust()",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "codegen-rust/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "maps_all_field_types_to_rust()",
+      "source_file": "crates/codegen-rust/tests/generator.rs",
+      "source_location": "L62"
+    },
+    {
+      "id": "crates_codegen_rust_tests_generator_rs_databaseschema",
+      "label": "DatabaseSchema",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "codegen-rust/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "databaseschema",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_codegen_rust_tests_generator_rust_generator_default_and_language",
+      "label": "rust_generator_default_and_language()",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "codegen-rust/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "rust_generator_default_and_language()",
+      "source_file": "crates/codegen-rust/tests/generator.rs",
+      "source_location": "L53"
+    },
+    {
+      "id": "crates_codegen_rust_tests_generator_schema_with_field",
+      "label": "schema_with_field()",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "codegen-rust/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "schema_with_field()",
+      "source_file": "crates/codegen-rust/tests/generator.rs",
+      "source_location": "L6"
+    },
+    {
+      "id": "crates_codegen_typescript_tests_generator",
+      "label": "codegen-typescript/tests/generator.rs",
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "codegen-typescript/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "codegen-typescript/tests/generator.rs",
+      "source_file": "crates/codegen-typescript/tests/generator.rs",
+      "source_location": "L1"
+    },
+    {
+      "id": "crates_codegen_typescript_tests_generator_default_generator_is_constructible",
+      "label": "default_generator_is_constructible()",
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "codegen-typescript/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "default_generator_is_constructible()",
+      "source_file": "crates/codegen-typescript/tests/generator.rs",
+      "source_location": "L74"
+    },
+    {
+      "id": "crates_codegen_typescript_tests_generator_maps_all_field_types_to_typescript",
+      "label": "maps_all_field_types_to_typescript()",
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "codegen-typescript/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "maps_all_field_types_to_typescript()",
+      "source_file": "crates/codegen-typescript/tests/generator.rs",
+      "source_location": "L50"
+    },
+    {
+      "id": "crates_codegen_typescript_tests_generator_rs_databaseschema",
+      "label": "DatabaseSchema",
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "codegen-typescript/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "databaseschema",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_codegen_typescript_tests_generator_schema_with_field",
+      "label": "schema_with_field()",
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "codegen-typescript/tests/generator.rs",
+      "file_type": "code",
+      "norm_label": "schema_with_field()",
+      "source_file": "crates/codegen-typescript/tests/generator.rs",
+      "source_location": "L7"
+    },
+    {
+      "id": "crates_e2e_tests_surrealdb_workflow_rs_tempdir",
+      "label": "TempDir",
+      "_origin": "ast",
+      "community": 76,
+      "community_name": "TempDir",
+      "file_type": "code",
+      "norm_label": "tempdir",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_databaseschema",
+      "label": "DatabaseSchema",
+      "_origin": "ast",
+      "community": 77,
+      "community_name": "DatabaseSchema",
+      "file_type": "code",
+      "norm_label": "databaseschema",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_datasource",
+      "label": "Datasource",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "Datasource",
+      "file_type": "code",
+      "norm_label": "datasource",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_domainerror",
+      "label": "DomainError",
+      "_origin": "ast",
+      "community": 79,
+      "community_name": "DomainError",
+      "file_type": "code",
+      "norm_label": "domainerror",
+      "source_file": "",
+      "source_location": ""
     },
     {
       "id": "client",
@@ -9423,6 +9544,17 @@
       "source_location": "L272"
     },
     {
+      "id": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "label": "cli_db_push_and_pull_preserves_record_references()",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "surrealdb_workflow.rs",
+      "file_type": "code",
+      "norm_label": "cli_db_push_and_pull_preserves_record_references()",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L416"
+    },
+    {
       "id": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_relation_edge",
       "label": "cli_db_push_and_pull_preserves_relation_edge()",
       "_origin": "ast",
@@ -9443,6 +9575,17 @@
       "norm_label": "cli_db_push_applies_schema_to_surrealdb()",
       "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
       "source_location": "L190"
+    },
+    {
+      "id": "crates_e2e_tests_surrealdb_workflow_cli_generate_emits_reference_and_computed_link",
+      "label": "cli_generate_emits_reference_and_computed_link()",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "surrealdb_workflow.rs",
+      "file_type": "code",
+      "norm_label": "cli_generate_emits_reference_and_computed_link()",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L372"
     },
     {
       "id": "crates_e2e_tests_surrealdb_workflow_cli_generate_outputs_schema_sql",
@@ -9489,6 +9632,17 @@
       "source_location": "L72"
     },
     {
+      "id": "crates_e2e_tests_surrealdb_workflow_field_define",
+      "label": "field_define()",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "surrealdb_workflow.rs",
+      "file_type": "code",
+      "norm_label": "field_define()",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L503"
+    },
+    {
       "id": "crates_e2e_tests_surrealdb_workflow_minimal_schema",
       "label": "MINIMAL_SCHEMA",
       "_origin": "ast",
@@ -9508,18 +9662,7 @@
       "file_type": "code",
       "norm_label": "parser_rejects_record_id_syntax_in_e2e_crate()",
       "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
-      "source_location": "L372"
-    },
-    {
-      "id": "crates_e2e_tests_surrealdb_workflow_rs_tempdir",
-      "label": "TempDir",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "surrealdb_workflow.rs",
-      "file_type": "code",
-      "norm_label": "tempdir",
-      "source_file": "",
-      "source_location": ""
+      "source_location": "L524"
     },
     {
       "id": "crates_e2e_tests_surrealdb_workflow_schema_with_endpoint",
@@ -9610,17 +9753,6 @@
       "source_location": "L52"
     },
     {
-      "id": "crates_renderers_src_lib",
-      "label": "renderers/src/lib.rs",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "surrealdb_workflow.rs",
-      "file_type": "code",
-      "norm_label": "renderers/src/lib.rs",
-      "source_file": "crates/renderers/src/lib.rs",
-      "source_location": "L1"
-    },
-    {
       "id": "surreal",
       "label": "Surreal",
       "_origin": "ast",
@@ -9639,6 +9771,61 @@
       "community_name": "surrealdb_workflow.rs",
       "file_type": "code",
       "norm_label": "surrealdb",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "tempdir",
+      "label": "TempDir",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "surrealdb_workflow.rs",
+      "file_type": "code",
+      "norm_label": "tempdir",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_edge",
+      "label": "Edge",
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "Edge",
+      "file_type": "code",
+      "norm_label": "edge",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_generator",
+      "label": "Generator",
+      "_origin": "ast",
+      "community": 81,
+      "community_name": "Generator",
+      "file_type": "code",
+      "norm_label": "generator",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_objecttypedefinition",
+      "label": "ObjectTypeDefinition",
+      "_origin": "ast",
+      "community": 82,
+      "community_name": "ObjectTypeDefinition",
+      "file_type": "code",
+      "norm_label": "objecttypedefinition",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "crates_parser_src_parse_rs_objecttypefield",
+      "label": "ObjectTypeField",
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "ObjectTypeField",
+      "file_type": "code",
+      "norm_label": "objecttypefield",
       "source_file": "",
       "source_location": ""
     },
@@ -9673,7 +9860,7 @@
       "file_type": "code",
       "norm_label": "parses_bare_identifier_value_in_datasource()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L348"
+      "source_location": "L350"
     },
     {
       "id": "crates_parser_tests_coverage_parses_custom_lowercase_field_type",
@@ -9706,7 +9893,7 @@
       "file_type": "code",
       "norm_label": "parses_edge_custom_attribute()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L315"
+      "source_location": "L317"
     },
     {
       "id": "crates_parser_tests_coverage_parses_edge_schemaless_and_permissions",
@@ -9728,7 +9915,7 @@
       "file_type": "code",
       "norm_label": "parses_empty_index_field_list()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L255"
+      "source_location": "L257"
     },
     {
       "id": "crates_parser_tests_coverage_parses_explicit_link_target",
@@ -9750,7 +9937,7 @@
       "file_type": "code",
       "norm_label": "parses_expression_with_multiple_arguments()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L267"
+      "source_location": "L269"
     },
     {
       "id": "crates_parser_tests_coverage_parses_field_custom_attribute",
@@ -9761,7 +9948,7 @@
       "file_type": "code",
       "norm_label": "parses_field_custom_attribute()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L328"
+      "source_location": "L330"
     },
     {
       "id": "crates_parser_tests_coverage_parses_flexible_object_and_nested_subdocument_fields",
@@ -9772,7 +9959,7 @@
       "file_type": "code",
       "norm_label": "parses_flexible_object_and_nested_subdocument_fields()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L360"
+      "source_location": "L362"
     },
     {
       "id": "crates_parser_tests_coverage_parses_generator_and_datasource_extras",
@@ -9794,7 +9981,7 @@
       "file_type": "code",
       "norm_label": "parses_index_with_multiple_fields()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L334"
+      "source_location": "L336"
     },
     {
       "id": "crates_parser_tests_coverage_parses_inline_flexible_object_block",
@@ -9805,7 +9992,7 @@
       "file_type": "code",
       "norm_label": "parses_inline_flexible_object_block()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L394"
+      "source_location": "L396"
     },
     {
       "id": "crates_parser_tests_coverage_parses_model_attribute_without_value",
@@ -9816,7 +10003,7 @@
       "file_type": "code",
       "norm_label": "parses_model_attribute_without_value()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L243"
+      "source_location": "L245"
     },
     {
       "id": "crates_parser_tests_coverage_parses_named_link_pair_and_on_delete",
@@ -9838,7 +10025,7 @@
       "file_type": "code",
       "norm_label": "parses_reusable_object_type_reference()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L415"
+      "source_location": "L417"
     },
     {
       "id": "crates_parser_tests_coverage_parses_schemaless_table_and_custom_attributes",
@@ -9871,7 +10058,7 @@
       "file_type": "code",
       "norm_label": "rejects_flexible_on_non_object_field()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L382"
+      "source_location": "L384"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_id_outside_model",
@@ -9893,7 +10080,7 @@
       "file_type": "code",
       "norm_label": "rejects_inline_object_body_on_non_object_field()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L436"
+      "source_location": "L438"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_invalid_datasource_value_token",
@@ -9904,7 +10091,7 @@
       "file_type": "code",
       "norm_label": "rejects_invalid_datasource_value_token()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L291"
+      "source_location": "L293"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_invalid_expression_in_attribute",
@@ -9915,7 +10102,7 @@
       "file_type": "code",
       "norm_label": "rejects_invalid_expression_in_attribute()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L354"
+      "source_location": "L356"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_link_and_relation_on_same_field",
@@ -9926,7 +10113,7 @@
       "file_type": "code",
       "norm_label": "rejects_link_and_relation_on_same_field()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L236"
+      "source_location": "L238"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_link_without_type",
@@ -9948,7 +10135,7 @@
       "file_type": "code",
       "norm_label": "rejects_missing_closing_brace()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L309"
+      "source_location": "L311"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_missing_equals_in_datasource",
@@ -9959,7 +10146,7 @@
       "file_type": "code",
       "norm_label": "rejects_missing_equals_in_datasource()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L285"
+      "source_location": "L287"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_missing_identifier_in_model",
@@ -9970,7 +10157,7 @@
       "file_type": "code",
       "norm_label": "rejects_missing_identifier_in_model()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L303"
+      "source_location": "L305"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_nested_field_with_id",
@@ -9981,7 +10168,7 @@
       "file_type": "code",
       "norm_label": "rejects_nested_field_with_id()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L388"
+      "source_location": "L390"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_non_literal_datasource_value",
@@ -10003,7 +10190,7 @@
       "file_type": "code",
       "norm_label": "rejects_non_string_datasource_value()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L279"
+      "source_location": "L281"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_readonly_without_value_or_default",
@@ -10025,7 +10212,7 @@
       "file_type": "code",
       "norm_label": "rejects_unexpected_expression_token()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L297"
+      "source_location": "L299"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_unexpected_token_in_attribute",
@@ -10036,7 +10223,7 @@
       "file_type": "code",
       "norm_label": "rejects_unexpected_token_in_attribute()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L273"
+      "source_location": "L275"
     },
     {
       "id": "crates_parser_tests_coverage_rejects_unexpected_top_level_declaration",
@@ -10113,7 +10300,7 @@
       "file_type": "code",
       "norm_label": "rejects_unknown_type_reference()",
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L450"
+      "source_location": "L452"
     },
     {
       "id": "agents_skills_rust_best_practices_skill_testing",
@@ -11836,22 +12023,6 @@
       "source_url": null
     },
     {
-      "id": "docs_roadmap_status_db_pull",
-      "label": "db pull Not Implemented",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 38,
-      "community_name": "DomainError",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "db pull not implemented",
-      "rationale": "SurrealDbIntrospector returns DomainError::NotImplemented. The CLI test db_pull.rs and the e2e test db_pull_is_not_implemented_yet expect that failure, so the stub is intentional and covered.",
-      "source_file": "docs/roadmap/status.md",
-      "source_location": null,
-      "source_url": null
-    },
-    {
       "id": "agents_skills_rust_best_practices_references_chapter_02_cargo_clippy",
       "label": "cargo clippy",
       "_origin": "semantic",
@@ -12817,6 +12988,22 @@
       "file_type": "concept",
       "norm_label": "codegen stub gap",
       "rationale": "generate --target rust and typescript emit struct or type shells with optionals and arrays, but not links, edges, or nested objects as real types, and no client. The source still marks them as stubs.",
+      "source_file": "docs/roadmap/status.md",
+      "source_location": null,
+      "source_url": null
+    },
+    {
+      "id": "docs_roadmap_status_db_pull",
+      "label": "db pull Not Implemented",
+      "_origin": "semantic",
+      "author": null,
+      "captured_at": null,
+      "community": 50,
+      "community_name": "Status Check 2026-10-06",
+      "contributor": null,
+      "file_type": "concept",
+      "norm_label": "db pull not implemented",
+      "rationale": "SurrealDbIntrospector returns DomainError::NotImplemented. The CLI test db_pull.rs and the e2e test db_pull_is_not_implemented_yet expect that failure, so the stub is intentional and covered.",
       "source_file": "docs/roadmap/status.md",
       "source_location": null,
       "source_url": null
@@ -13837,18 +14024,6 @@
       "type": "external"
     },
     {
-      "id": "default_schema_template",
-      "label": "default_schema_template",
-      "_origin": "semantic",
-      "community": 16,
-      "community_name": "DomainError",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "default_schema_template",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "error",
       "label": "error",
       "_origin": "semantic",
@@ -13857,18 +14032,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "error",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "renderers",
-      "label": "renderers",
-      "_origin": "semantic",
-      "community": 20,
-      "community_name": "DatabaseConfig",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "renderers",
       "source_file": "",
       "type": "external"
     },
@@ -13901,7 +14064,7 @@
       "label": "collections",
       "_origin": "semantic",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "external": true,
       "file_type": "concept",
       "norm_label": "collections",
@@ -13909,26 +14072,14 @@
       "type": "external"
     },
     {
-      "id": "core",
-      "label": "core",
+      "id": "renderers",
+      "label": "renderers",
       "_origin": "semantic",
       "community": 24,
-      "community_name": "FieldType",
+      "community_name": "introspect.rs",
       "external": true,
       "file_type": "concept",
-      "norm_label": "core",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "rustgenerator",
-      "label": "rustgenerator",
-      "_origin": "semantic",
-      "community": 24,
-      "community_name": "FieldType",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "rustgenerator",
+      "norm_label": "renderers",
       "source_file": "",
       "type": "external"
     },
@@ -14037,30 +14188,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "appcontext",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "initprojectinput",
-      "label": "initprojectinput",
-      "_origin": "semantic",
-      "community": 36,
-      "community_name": "Printer",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "initprojectinput",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "result",
-      "label": "result",
-      "_origin": "semantic",
-      "community": 36,
-      "community_name": "Printer",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "result",
       "source_file": "",
       "type": "external"
     },
@@ -14197,38 +14324,62 @@
       "type": "external"
     },
     {
-      "id": "adapters",
-      "label": "adapters",
+      "id": "generatetarget_as_cligeneratetarget",
+      "label": "generatetarget_as_cligeneratetarget",
       "_origin": "semantic",
       "community": 5,
       "community_name": "AppContext",
       "external": true,
       "file_type": "concept",
-      "norm_label": "adapters",
+      "norm_label": "generatetarget_as_cligeneratetarget",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "schemadiffer",
-      "label": "schemadiffer",
+      "id": "initprojectinput",
+      "label": "initprojectinput",
       "_origin": "semantic",
       "community": 5,
       "community_name": "AppContext",
       "external": true,
       "file_type": "concept",
-      "norm_label": "schemadiffer",
+      "norm_label": "initprojectinput",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "typescriptgenerator",
-      "label": "typescriptgenerator",
+      "id": "result",
+      "label": "result",
       "_origin": "semantic",
       "community": 5,
       "community_name": "AppContext",
       "external": true,
       "file_type": "concept",
-      "norm_label": "typescriptgenerator",
+      "norm_label": "result",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "schema_core",
+      "label": "schema_core",
+      "_origin": "semantic",
+      "community": 5,
+      "community_name": "AppContext",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "schema_core",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "utc",
+      "label": "utc",
+      "_origin": "semantic",
+      "community": 51,
+      "community_name": "migrate_dev.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "utc",
       "source_file": "",
       "type": "external"
     },
@@ -14257,50 +14408,14 @@
       "type": "external"
     },
     {
-      "id": "db_pull",
-      "label": "db_pull",
-      "_origin": "semantic",
-      "community": 55,
-      "community_name": "SchemaSource",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "db_pull",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "utc",
-      "label": "utc",
-      "_origin": "semantic",
-      "community": 55,
-      "community_name": "SchemaSource",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "utc",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "generatetarget_as_cligeneratetarget",
-      "label": "generatetarget_as_cligeneratetarget",
+      "id": "default_schema_template",
+      "label": "default_schema_template",
       "_origin": "semantic",
       "community": 56,
-      "community_name": "schema_core",
+      "community_name": "FileSystemPort",
       "external": true,
       "file_type": "concept",
-      "norm_label": "generatetarget_as_cligeneratetarget",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "schema_core",
-      "label": "schema_core",
-      "_origin": "semantic",
-      "community": 56,
-      "community_name": "schema_core",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "schema_core",
+      "norm_label": "default_schema_template",
       "source_file": "",
       "type": "external"
     },
@@ -14341,11 +14456,23 @@
       "type": "external"
     },
     {
+      "id": "ports",
+      "label": "ports",
+      "_origin": "semantic",
+      "community": 61,
+      "community_name": "ports",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ports",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "btreeset",
       "label": "btreeset",
       "_origin": "semantic",
       "community": 63,
-      "community_name": "MigrationStore",
+      "community_name": "usecases/mod.rs",
       "external": true,
       "file_type": "concept",
       "norm_label": "btreeset",
@@ -14353,26 +14480,86 @@
       "type": "external"
     },
     {
-      "id": "domainerror",
-      "label": "domainerror",
+      "id": "db_pull",
+      "label": "db_pull",
       "_origin": "semantic",
-      "community": 65,
-      "community_name": "domain.rs",
+      "community": 63,
+      "community_name": "usecases/mod.rs",
       "external": true,
       "file_type": "concept",
-      "norm_label": "domainerror",
+      "norm_label": "db_pull",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "ports",
-      "label": "ports",
+      "id": "core",
+      "label": "core",
       "_origin": "semantic",
       "community": 65,
-      "community_name": "domain.rs",
+      "community_name": "core",
       "external": true,
       "file_type": "concept",
-      "norm_label": "ports",
+      "norm_label": "core",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "adapters",
+      "label": "adapters",
+      "_origin": "semantic",
+      "community": 71,
+      "community_name": "di.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "adapters",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "schemadiffer",
+      "label": "schemadiffer",
+      "_origin": "semantic",
+      "community": 71,
+      "community_name": "di.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "schemadiffer",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "surrealdbrenderer",
+      "label": "surrealdbrenderer",
+      "_origin": "semantic",
+      "community": 71,
+      "community_name": "di.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "surrealdbrenderer",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "rustgenerator",
+      "label": "rustgenerator",
+      "_origin": "semantic",
+      "community": 74,
+      "community_name": "codegen-rust/tests/generator.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "rustgenerator",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "typescriptgenerator",
+      "label": "typescriptgenerator",
+      "_origin": "semantic",
+      "community": 75,
+      "community_name": "codegen-typescript/tests/generator.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "typescriptgenerator",
       "source_file": "",
       "type": "external"
     },
@@ -14421,18 +14608,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "root",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "surrealdbrenderer",
-      "label": "surrealdbrenderer",
-      "_origin": "semantic",
-      "community": 8,
-      "community_name": "surrealdb_workflow.rs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "surrealdbrenderer",
       "source_file": "",
       "type": "external"
     },
@@ -16659,6 +16834,78 @@
       "weight": 1.0
     },
     {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "target": "crates_e2e_tests_surrealdb_workflow_start_surrealdb",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L417",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_new",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L447",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_write_schema",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L448",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_awesome_schema_cmd",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L450",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "target": "crates_e2e_tests_surrealdb_workflow_field_define",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L461",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_path",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L490",
+      "weight": 1.0
+    },
+    {
       "source": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_relation_edge",
       "target": "crates_e2e_tests_surrealdb_workflow_start_surrealdb",
       "relation": "calls",
@@ -16776,6 +17023,42 @@
       "context": "call",
       "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
       "source_location": "L198",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_generate_emits_reference_and_computed_link",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_new",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L397",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_generate_emits_reference_and_computed_link",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_write_schema",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L398",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow_cli_generate_emits_reference_and_computed_link",
+      "target": "crates_e2e_tests_surrealdb_workflow_testproject_awesome_schema_cmd",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L400",
       "weight": 1.0
     },
     {
@@ -20716,7 +20999,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field_type",
-      "target": "crates_core_src_domain_field_fieldtype_model",
+      "target": "model",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -21436,7 +21719,7 @@
     },
     {
       "source": "crates_e2e_tests_surrealdb_workflow_testproject",
-      "target": "crates_e2e_tests_surrealdb_workflow_rs_tempdir",
+      "target": "tempdir",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24064,7 +24347,7 @@
     },
     {
       "source": "crates_parser_src_parse_parse_index_fields",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24076,7 +24359,7 @@
     },
     {
       "source": "crates_parser_src_parse_parse_schema",
-      "target": "crates_parser_src_parse_rs_databaseschema",
+      "target": "databaseschema",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24088,7 +24371,7 @@
     },
     {
       "source": "crates_parser_src_parse_parse_schema",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24100,7 +24383,7 @@
     },
     {
       "source": "crates_parser_src_parse_parsedfieldattributes",
-      "target": "crates_core_src_domain_field_ondeleteaction",
+      "target": "ondeleteaction",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24124,7 +24407,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_expect",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24136,7 +24419,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_expect_identifier",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24160,7 +24443,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_datasource",
-      "target": "crates_parser_src_parse_rs_datasource",
+      "target": "datasource",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24172,7 +24455,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_datasource",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24184,7 +24467,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_document",
-      "target": "crates_parser_src_parse_rs_databaseschema",
+      "target": "databaseschema",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24196,7 +24479,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_document",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24208,7 +24491,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_edge",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24220,7 +24503,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_edge",
-      "target": "crates_parser_src_parse_rs_edge",
+      "target": "edge",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24232,7 +24515,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_expression",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24244,7 +24527,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field",
-      "target": "crates_core_src_domain_field_field",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24256,7 +24539,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "field",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24268,7 +24551,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field_attribute",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24276,18 +24559,6 @@
       "context": "generic_arg",
       "source_file": "crates/parser/src/parse.rs",
       "source_location": "L564",
-      "weight": 1.0
-    },
-    {
-      "source": "crates_parser_src_parse_parser_parse_field_attributes",
-      "target": "crates_core_src_domain_field_fieldtype",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "generic_arg",
-      "source_file": "crates/parser/src/parse.rs",
-      "source_location": "L418",
       "weight": 1.0
     },
     {
@@ -24304,7 +24575,19 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field_attributes",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "generic_arg",
+      "source_file": "crates/parser/src/parse.rs",
+      "source_location": "L418",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_parser_src_parse_parser_parse_field_attributes",
+      "target": "fieldtype",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24316,7 +24599,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field_path",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24328,7 +24611,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field_type",
-      "target": "crates_core_src_domain_field_fieldtype",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24340,7 +24623,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_field_type",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "fieldtype",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24352,7 +24635,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_generator",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24364,7 +24647,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_generator",
-      "target": "crates_parser_src_parse_rs_generator",
+      "target": "generator",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24376,7 +24659,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_inline_object_fields",
-      "target": "crates_core_src_domain_field_field",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24388,7 +24671,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_inline_object_fields",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "field",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24400,7 +24683,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_model",
-      "target": "crates_core_src_domain_field_fieldtype_model",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24412,7 +24695,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_model",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "model",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24424,7 +24707,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_model_attribute",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24436,7 +24719,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_naming",
-      "target": "crates_core_src_domain_naming_namingconvention",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24448,7 +24731,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_naming",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "namingconvention",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24460,7 +24743,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_object_type",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24472,7 +24755,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_object_type",
-      "target": "crates_parser_src_parse_rs_objecttypedefinition",
+      "target": "objecttypedefinition",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24484,7 +24767,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_object_type_body",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24496,7 +24779,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_object_type_body",
-      "target": "crates_parser_src_parse_rs_objecttypefield",
+      "target": "objecttypefield",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24508,7 +24791,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_object_type_field",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24520,7 +24803,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_object_type_field",
-      "target": "crates_parser_src_parse_rs_objecttypefield",
+      "target": "objecttypefield",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24532,7 +24815,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_value",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24544,7 +24827,7 @@
     },
     {
       "source": "crates_parser_src_parse_validate_field_rules",
-      "target": "crates_core_src_domain_field_fieldtype",
+      "target": "domainerror",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -24556,7 +24839,7 @@
     },
     {
       "source": "crates_parser_src_parse_validate_field_rules",
-      "target": "crates_parser_src_parse_rs_domainerror",
+      "target": "fieldtype",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -28036,7 +28319,7 @@
     },
     {
       "source": "crates_parser_src_parse",
-      "target": "crates_core_src_domain_field_fieldtype",
+      "target": "fieldtype",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -29788,7 +30071,7 @@
     },
     {
       "source": "crates_parser_src_parse_link_target_from_type",
-      "target": "crates_core_src_domain_field_fieldtype",
+      "target": "fieldtype",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -29836,7 +30119,7 @@
     },
     {
       "source": "crates_parser_src_parse_parser_parse_inline_object_fields",
-      "target": "crates_core_src_domain_field_fieldtype",
+      "target": "fieldtype",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -34676,7 +34959,7 @@
     },
     {
       "source": "crates_e2e_tests_surrealdb_workflow",
-      "target": "crates_e2e_tests_surrealdb_workflow_parser_rejects_record_id_syntax_in_e2e_crate",
+      "target": "crates_e2e_tests_surrealdb_workflow_cli_generate_emits_reference_and_computed_link",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -34694,6 +34977,39 @@
       "confidence_score": 1.0,
       "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
       "source_location": "L39",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow",
+      "target": "crates_e2e_tests_surrealdb_workflow_cli_db_push_and_pull_preserves_record_references",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L416",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow",
+      "target": "crates_e2e_tests_surrealdb_workflow_field_define",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L503",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_e2e_tests_surrealdb_workflow",
+      "target": "crates_e2e_tests_surrealdb_workflow_parser_rejects_record_id_syntax_in_e2e_crate",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/e2e/tests/surrealdb_workflow.rs",
+      "source_location": "L524",
       "weight": 1.0
     },
     {
@@ -35313,6 +35629,17 @@
       "weight": 1.0
     },
     {
+      "source": "crates_parser_src_parse",
+      "target": "crates_parser_src_parse_resolves_array_model_targets",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/parser/src/parse.rs",
+      "source_location": "L770",
+      "weight": 1.0
+    },
+    {
       "source": "crates_parser_src_print",
       "target": "crates_parser_src_print_print_object_type_field",
       "relation": "contains",
@@ -35650,7 +35977,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L236",
+      "source_location": "L238",
       "weight": 1.0
     },
     {
@@ -35661,7 +35988,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L243",
+      "source_location": "L245",
       "weight": 1.0
     },
     {
@@ -35672,7 +35999,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -35683,7 +36010,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L267",
+      "source_location": "L269",
       "weight": 1.0
     },
     {
@@ -35694,7 +36021,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L273",
+      "source_location": "L275",
       "weight": 1.0
     },
     {
@@ -35705,7 +36032,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L279",
+      "source_location": "L281",
       "weight": 1.0
     },
     {
@@ -35716,7 +36043,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L285",
+      "source_location": "L287",
       "weight": 1.0
     },
     {
@@ -35738,7 +36065,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L291",
+      "source_location": "L293",
       "weight": 1.0
     },
     {
@@ -35749,7 +36076,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L297",
+      "source_location": "L299",
       "weight": 1.0
     },
     {
@@ -35760,7 +36087,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L303",
+      "source_location": "L305",
       "weight": 1.0
     },
     {
@@ -35771,7 +36098,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L309",
+      "source_location": "L311",
       "weight": 1.0
     },
     {
@@ -35782,7 +36109,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L315",
+      "source_location": "L317",
       "weight": 1.0
     },
     {
@@ -35793,7 +36120,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L328",
+      "source_location": "L330",
       "weight": 1.0
     },
     {
@@ -35804,7 +36131,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L334",
+      "source_location": "L336",
       "weight": 1.0
     },
     {
@@ -35815,7 +36142,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L348",
+      "source_location": "L350",
       "weight": 1.0
     },
     {
@@ -35826,7 +36153,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L354",
+      "source_location": "L356",
       "weight": 1.0
     },
     {
@@ -35837,7 +36164,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L360",
+      "source_location": "L362",
       "weight": 1.0
     },
     {
@@ -35848,7 +36175,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L382",
+      "source_location": "L384",
       "weight": 1.0
     },
     {
@@ -35859,7 +36186,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L388",
+      "source_location": "L390",
       "weight": 1.0
     },
     {
@@ -35870,7 +36197,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L394",
+      "source_location": "L396",
       "weight": 1.0
     },
     {
@@ -35881,7 +36208,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L415",
+      "source_location": "L417",
       "weight": 1.0
     },
     {
@@ -35892,7 +36219,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L436",
+      "source_location": "L438",
       "weight": 1.0
     },
     {
@@ -35914,7 +36241,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/parser/tests/coverage.rs",
-      "source_location": "L450",
+      "source_location": "L452",
       "weight": 1.0
     },
     {
@@ -43836,5 +44163,5 @@
       "source_file": ".agents/skills/rust-best-practices/references/chapter_06.md"
     }
   ],
-  "built_at_commit": "3babc027948494df17fe554614245f4c88542f8b"
+  "built_at_commit": "72ffb64f2599cc2003b73934d41ef57ed4023e3f"
 }

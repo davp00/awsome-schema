@@ -456,9 +456,9 @@
     "semantic_hash": "4d33c02e8ed334f7dc1fa1cd322aa33c"
   },
   "crates/e2e/tests/surrealdb_workflow.rs": {
-    "mtime": 1791306353.9034367,
-    "seen": 1791307356.449744,
-    "ast_hash": "7eb3b03260ecd747454b8b69539aceec",
+    "mtime": 1791313933.7412622,
+    "seen": 1791314134.487118,
+    "ast_hash": "d30e2f73ca7db4638fc3883575efe877",
     "semantic_hash": ""
   },
   "crates/migrations/Cargo.toml": {
@@ -492,15 +492,15 @@
     "semantic_hash": ""
   },
   "crates/parser/src/parse.rs": {
-    "mtime": 1791313160.2893195,
-    "seen": 1791313802.563989,
-    "ast_hash": "ad40765da7d3f25997b14ee9a4427e94",
+    "mtime": 1791313968.1079671,
+    "seen": 1791314134.4871209,
+    "ast_hash": "048f4ffae15229886bce481ca3cec735",
     "semantic_hash": ""
   },
   "crates/parser/tests/coverage.rs": {
-    "mtime": 1791313232.881009,
-    "seen": 1791313802.563989,
-    "ast_hash": "20a1f9f3cc19cd45b9ecdabe622a4c79",
+    "mtime": 1791313969.150254,
+    "seen": 1791314134.4871218,
+    "ast_hash": "1f2e6c820e659e5b478fc1ac9c4b3a0a",
     "semantic_hash": ""
   },
   "crates/renderers/Cargo.toml": {
@@ -672,9 +672,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791313305.9697475,
-    "seen": 1791313802.564003,
-    "ast_hash": "7833a15a39ce002ad9ab6946336c12ae",
+    "mtime": 1791313995.4367309,
+    "seen": 1791314134.487136,
+    "ast_hash": "b65dd70fd57fdd92975b837f2fbff2cf",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
