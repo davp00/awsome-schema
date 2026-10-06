@@ -30,7 +30,7 @@ keywords = ["schema", "database", "migration", "orm", "codegen"]
 categories = ["database", "command-line-utilities", "development-tools"]
 
 [workspace.lints.rust]
-future-incompatible = { level = "deny", priority = 1 }
+future_incompatible = { level = "deny", priority = 1 }
 nonstandard_style = { level = "deny", priority = 2 }
 unsafe_code = { level = "forbid", priority = 3 }
 
