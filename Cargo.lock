@@ -2408,6 +2408,7 @@ name = "renderers"
 version = "0.1.0"
 dependencies = [
  "core",
+ "serde_json",
 ]
 
 [[package]]

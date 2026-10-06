@@ -53,6 +53,19 @@ impl FileSystemPort for MemoryFs {
         self.files.lock().expect("lock").contains_key(path)
             || self.dirs.lock().expect("lock").iter().any(|dir| dir == path)
     }
+
+    fn is_directory(&self, path: &str) -> bool {
+        self.dirs.lock().expect("lock").iter().any(|dir| dir == path)
+    }
+
+    fn list_dir(&self, _path: &str) -> Result<Vec<String>, DomainError> {
+        Ok(Vec::new())
+    }
+
+    fn remove_file(&self, path: &str) -> Result<(), DomainError> {
+        self.files.lock().expect("lock").remove(path);
+        Ok(())
+    }
 }
 
 struct StaticSchemaSource {
@@ -237,7 +250,7 @@ fn format_schema_trims_trailing_blank_lines() {
         Arc::new(StaticSchemaSource { schema, raw: "model User {\n  id @id\n}\n\n".to_owned() });
     let fs = Arc::new(MemoryFs::new());
     let use_case = FormatSchemaUseCase::new(source, fs, "awesome.schema".to_owned());
-    let output = use_case.execute(FormatSchemaInput { write_back: true }).expect("format");
+    let output = use_case.execute(FormatSchemaInput { write_back: true, schema_files: vec!["awesome.schema".into()] }).expect("format");
 
     assert!(output.written);
     assert_eq!(output.formatted, "model User {\n  id @id\n}\n");
@@ -427,7 +440,7 @@ fn format_schema_without_write_back() {
         Arc::new(StaticSchemaSource { schema, raw: "model User {\n  id @id\n}\n\n".to_owned() });
     let fs = Arc::new(MemoryFs::new());
     let use_case = FormatSchemaUseCase::new(source, fs, "awesome.schema".to_owned());
-    let output = use_case.execute(FormatSchemaInput { write_back: false }).expect("format");
+    let output = use_case.execute(FormatSchemaInput { write_back: false, schema_files: vec!["awesome.schema".into()] }).expect("format");
 
     assert!(!output.written);
     assert_eq!(output.formatted, "model User {\n  id @id\n}\n");

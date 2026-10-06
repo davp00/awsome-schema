@@ -15,6 +15,30 @@ model User {
 }
 "#;
 
+
+fn temp_cli_with_schema(schema: &str, args: &[&str]) -> (tempfile::TempDir, Cli) {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let schema_path = temp.path().join("awesome.schema");
+    std::fs::write(&schema_path, schema).expect("write schema");
+    let migrations = temp.path().join("migrations");
+    std::fs::create_dir_all(&migrations).expect("migrations");
+
+    let schema_path = schema_path.to_string_lossy().into_owned();
+    let migrations_path = migrations.to_string_lossy().into_owned();
+
+    let mut command_argv = vec![
+        "awesome-schema",
+        "--schema",
+        schema_path.as_str(),
+        "--migrations-dir",
+        migrations_path.as_str(),
+    ];
+    command_argv.extend(args);
+
+    let cli = Cli::try_parse_from(command_argv).expect("parse cli");
+    (temp, cli)
+}
+
 fn temp_cli(args: &[&str]) -> (tempfile::TempDir, Cli) {
     let temp = tempfile::tempdir().expect("tempdir");
     let schema = temp.path().join("awesome.schema");
@@ -98,10 +122,30 @@ fn dispatch_migrate_dev_creates_migration() {
 }
 
 #[test]
-fn dispatch_db_pull_returns_not_implemented() {
+fn dispatch_db_pull_refuses_overwrite_without_force() {
     let (_temp, cli) = temp_cli(&["db", "pull"]);
     let error = commands::dispatch(&cli, &Printer::new()).expect_err("pull");
-    assert!(error.to_string().contains("not implemented"));
+    assert!(error.to_string().contains("refusing to overwrite"));
+}
+
+#[test]
+fn dispatch_db_pull_reports_connection_error_without_server() {
+    let schema = r#"datasource db {
+  provider = "surrealdb"
+  url      = "127.0.0.1:1"
+  namespace = "test"
+  database  = "main"
+}
+
+model User {
+  id    @id
+  email string @unique
+}
+"#;
+    let (_temp, cli) = temp_cli_with_schema(schema, &["db", "pull", "--force"]);
+    let error = commands::dispatch(&cli, &Printer::new()).expect_err("pull");
+    let message = error.to_string().to_lowercase();
+    assert!(message.contains("database") || message.contains("connect") || message.contains("pull failed"));
 }
 
 #[test]
@@ -112,12 +156,22 @@ fn dispatch_db_push_returns_connection_error_without_server() {
 }
 
 #[test]
-fn introspector_returns_not_implemented() {
+fn introspector_reports_connection_errors() {
     use cli::adapters::SurrealDbIntrospector;
     use schema_core::ports::SchemaIntrospector;
 
-    let error = SurrealDbIntrospector.introspect().expect_err("not implemented");
-    assert!(matches!(error, schema_core::DomainError::NotImplemented(_)));
+    let preserve = schema_core::DatabaseSchema::empty();
+    let config = schema_core::DatabaseConfig {
+        endpoint: "ws://127.0.0.1:1".into(),
+        namespace: "test".into(),
+        database: "main".into(),
+        username: "root".into(),
+        password: "root".into(),
+    };
+    let error = SurrealDbIntrospector
+        .introspect(&config, &preserve)
+        .expect_err("connection");
+    assert!(matches!(error, schema_core::DomainError::DatabaseError(_)));
 }
 
 #[test]
@@ -249,4 +303,32 @@ fn migration_store_lists_and_snapshots() {
     let schema = source.load_schema().expect("schema");
     store.save_snapshot(&schema, &migrations.join("001_test").to_string_lossy()).expect("snapshot");
     assert!(store.load_last_snapshot().expect("snapshot").is_some());
+}
+
+#[test]
+fn schema_directory_loads_merged_schema() {
+    use cli::adapters::SchemaFileSource;
+    use schema_core::{FileSystemPort, SchemaSource};
+
+    let temp = tempfile::tempdir().expect("tempdir");
+    let schema_dir = temp.path().join("schema");
+    std::fs::create_dir_all(schema_dir.join("tables")).expect("tables");
+    std::fs::write(
+        schema_dir.join("_config.awesome.schema"),
+        r#"datasource db { provider = "surrealdb" url = "127.0.0.1:8000" }
+"#,
+    )
+    .expect("config");
+    std::fs::write(
+        schema_dir.join("tables/user.awesome.schema"),
+        "model User { id @id email string }
+",
+    )
+    .expect("user");
+
+    let fs = cli::adapters::FsAdapter;
+    let source = SchemaFileSource::new(std::sync::Arc::new(fs), schema_dir.to_string_lossy().into_owned());
+    let schema = source.load_schema().expect("load");
+    assert_eq!(schema.models.len(), 1);
+    assert_eq!(schema.models[0].name, "User");
 }

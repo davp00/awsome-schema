@@ -197,13 +197,35 @@ async fn cli_init_creates_project_files() {
 }
 
 #[tokio::test]
-async fn db_pull_is_not_implemented_yet() {
-    let project = TestProject::new();
-    project.write_schema(MINIMAL_SCHEMA);
+async fn cli_db_pull_overwrites_schema_after_push() {
+    let Some((_container, endpoint)) = start_surrealdb().await else {
+        return;
+    };
 
-    project.awesome_schema_cmd().arg("db").arg("pull").assert().failure().stderr(
-        predicate::str::contains("not implemented").or(predicate::str::contains("NOT_IMPLEMENTED")),
-    );
+    let project = TestProject::new();
+    project.write_schema(&schema_with_endpoint(&endpoint));
+
+    project
+        .awesome_schema_cmd()
+        .arg("db")
+        .arg("push")
+        .assert()
+        .success();
+
+    project
+        .awesome_schema_cmd()
+        .arg("db")
+        .arg("pull")
+        .arg("--force")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Pulled"));
+
+    project
+        .awesome_schema_cmd()
+        .arg("validate")
+        .assert()
+        .success();
 }
 
 #[test]

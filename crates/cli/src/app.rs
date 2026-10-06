@@ -70,7 +70,14 @@ pub enum MigrateCommands {
 #[derive(Debug, Subcommand)]
 pub enum DbCommands {
     /// Pull schema from the database.
-    Pull,
+    Pull {
+        /// Write one file per model/edge under schema/tables/.
+        #[arg(long)]
+        split_by_table: bool,
+        /// Overwrite existing schema files.
+        #[arg(long)]
+        force: bool,
+    },
     /// Push schema to the database.
     Push,
 }

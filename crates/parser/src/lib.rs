@@ -12,10 +12,12 @@
 
 mod lexer;
 mod parse;
+mod print;
 
 use core::{DatabaseSchema, DomainError};
 
 pub use parse::parse_schema;
+pub use print::{print_config_blocks, print_edge_block, print_model_block, print_schema};
 
 /// Parse an `awesome.schema` source string into a database-agnostic schema model.
 pub fn parse(source: &str) -> Result<DatabaseSchema, DomainError> {

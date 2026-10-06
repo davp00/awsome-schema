@@ -48,7 +48,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 
 | Area | Evidence |
 |---|---|
-| `db pull` | `SurrealDbIntrospector` returns `DomainError::NotImplemented`. CLI test `db_pull.rs` expects that. E2e test `db_pull_is_not_implemented_yet` expects failure |
+| `db pull` | Introspects via `INFO FOR DB` / `INFO FOR TABLE`, merges with on-disk config blocks, writes DSL (`--force`, optional `--split-by-table`) | partial — `@relation` / edge endpoints still lossy |
 | Rollback command | Down files are written only |
 | Other providers | README lists MongoDB, Postgres, MySQL, SQLite. Only `renderers::surrealdb` exists |
 | Assertions, vector index syntax, live permissions model | Named in the README as SurrealDB features the DSL should be able to express. Not in the parser |

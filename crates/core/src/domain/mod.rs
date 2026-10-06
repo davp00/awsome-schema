@@ -16,4 +16,4 @@ pub use model::{Edge, Model, TableMode};
 pub use naming::{NamingCase, NamingContext, NamingConvention};
 pub use object_type::{ObjectTypeDefinition, ObjectTypeField};
 pub use relation::Relation;
-pub use schema::{DatabaseSchema, Datasource, Generator};
+pub use schema::{merge_pulled_schema, DatabaseSchema, Datasource, Generator};

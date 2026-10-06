@@ -1,0 +1,16 @@
+{
+  "tables": {
+    "user": "DEFINE TABLE user SCHEMAFULL;"
+  },
+  "table_info": {
+    "user": {
+      "fields": {
+        "email": "DEFINE FIELD email ON user TYPE string;",
+        "id": "DEFINE FIELD id ON user TYPE record<user>;"
+      },
+      "indexes": {
+        "user_email_unique": "DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;"
+      }
+    }
+  }
+}

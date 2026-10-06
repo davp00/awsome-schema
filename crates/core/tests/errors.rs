@@ -23,11 +23,20 @@ fn db_pull_use_case_delegates_to_introspector() {
 
     struct Stub;
     impl SchemaIntrospector for Stub {
-        fn introspect(&self) -> Result<core::DatabaseSchema, DomainError> {
+        fn introspect(
+            &self,
+            _config: &core::DatabaseConfig,
+            _preserve: &core::DatabaseSchema,
+        ) -> Result<core::DatabaseSchema, DomainError> {
             Ok(core::DatabaseSchema::empty())
         }
     }
 
-    let output = DbPullUseCase::new(Arc::new(Stub)).execute(DbPullInput).expect("pull");
+    let mut preserve = core::DatabaseSchema::empty();
+    preserve.datasource.provider = "surrealdb".into();
+    preserve.datasource.url = Some("127.0.0.1:1".into());
+    let output = DbPullUseCase::new(Arc::new(Stub))
+        .execute(DbPullInput { preserve })
+        .expect("pull");
     assert!(output.schema.models.is_empty());
 }

@@ -26,7 +26,7 @@ pub fn dispatch(cli: &Cli, printer: &Printer) -> Result<()> {
             MigrateCommands::Apply => migrate::run_apply(&context, printer),
         },
         Commands::Db { command } => match command {
-            DbCommands::Pull => db::run_pull(&context, printer),
+            DbCommands::Pull { split_by_table, force } => db::run_pull(&context, *split_by_table, *force, printer),
             DbCommands::Push => db::run_push(&context, printer),
         },
     }

@@ -5,6 +5,7 @@ use crate::ports::{FileSystemPort, SchemaSource};
 
 pub struct FormatSchemaInput {
     pub write_back: bool,
+    pub schema_files: Vec<String>,
 }
 
 pub struct FormatSchemaOutput {
@@ -29,6 +30,18 @@ impl FormatSchemaUseCase {
 
     pub fn execute(&self, port: FormatSchemaInput) -> Result<FormatSchemaOutput, DomainError> {
         let _schema = self.schema_source.load_schema()?;
+
+        if port.schema_files.len() > 1 {
+            if port.write_back {
+                for path in &port.schema_files {
+                    let raw = self.filesystem.read_to_string(path)?;
+                    let formatted = normalize_whitespace(&raw);
+                    self.filesystem.write_string(path, &formatted)?;
+                }
+            }
+            return Ok(FormatSchemaOutput { formatted: String::new(), written: port.write_back });
+        }
+
         let raw = self.schema_source.load_raw()?;
         let formatted = normalize_whitespace(&raw);
 
@@ -50,5 +63,7 @@ fn normalize_whitespace(input: &str) -> String {
         lines.pop();
     }
 
-    if lines.is_empty() { String::new() } else { format!("{}\n", lines.join("\n")) }
+    if lines.is_empty() { String::new() } else { format!("{}
+", lines.join("
+")) }
 }

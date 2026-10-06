@@ -27,7 +27,7 @@ The introspector is the remaining explicit stub.
 
 - Read `INFO FOR DB` / `INFO FOR TABLE` from SurrealDB.
 - Map tables, fields, indexes, and relation tables back into `DatabaseSchema`.
-- Decide how a pulled schema is written (`awesome.schema`, a snapshot, or both).
+- Pull writes `awesome.schema` by default, or `schema/_config.awesome.schema` + `schema/tables/*.awesome.schema` with `--split-by-table`.
 
 ## 4. Index kinds the domain already has
 

@@ -12,6 +12,7 @@ pub mod app;
 pub mod commands;
 pub mod di;
 pub mod output;
+pub mod schema_layout;
 
 use clap::Parser;
 

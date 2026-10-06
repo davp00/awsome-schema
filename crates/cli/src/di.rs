@@ -33,6 +33,7 @@ pub struct AppContext {
     pub db_push: DbPushUseCase,
     pub schema_path: String,
     pub migrations_dir: String,
+    pub filesystem: Arc<dyn FileSystemPort>,
 }
 
 impl AppContext {
@@ -124,5 +125,6 @@ fn build_context_with_introspector(
         db_push: DbPushUseCase::new(schema_source, schema_renderer, database),
         schema_path,
         migrations_dir,
+        filesystem,
     })
 }

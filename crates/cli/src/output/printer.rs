@@ -24,6 +24,10 @@ impl Printer {
         eprintln!("error: {message}");
     }
 
+    pub fn warn(&self, message: &str) {
+        eprintln!("warning: {message}");
+    }
+
     pub fn plain(&self, message: &str) {
         println!("{message}");
     }

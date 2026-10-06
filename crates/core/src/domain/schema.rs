@@ -52,3 +52,16 @@ pub struct Generator {
     pub output: String,
     pub extra: BTreeMap<String, String>,
 }
+
+/// Keep connection and DSL-only blocks from disk; replace models and edges from introspection.
+#[must_use]
+pub fn merge_pulled_schema(preserve: &DatabaseSchema, pulled: &DatabaseSchema) -> DatabaseSchema {
+    DatabaseSchema {
+        datasource: preserve.datasource.clone(),
+        naming: preserve.naming.clone(),
+        generators: preserve.generators.clone(),
+        object_types: preserve.object_types.clone(),
+        models: pulled.models.clone(),
+        edges: pulled.edges.clone(),
+    }
+}

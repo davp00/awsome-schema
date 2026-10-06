@@ -724,3 +724,7 @@ mod tests {
         assert!(migration.contains("DEFINE FIELD id ON user TYPE record<user>;"));
     }
 }
+
+mod introspect;
+
+pub use introspect::{map_database_info, TableInfo};

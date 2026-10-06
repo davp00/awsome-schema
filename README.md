@@ -69,6 +69,23 @@ cargo check --workspace
 cargo test --workspace
 ```
 
+### Database pull and push
+
+`db push` applies the rendered SurrealQL from your schema file. `db pull` introspects the live database and rewrites your DSL.
+
+```bash
+# Pull into awesome.schema (requires --force to overwrite a non-empty file)
+cargo run -p cli -- db pull --force
+
+# Pull one model/edge per file under schema/
+cargo run -p cli -- db pull --split-by-table --force
+
+# Point commands at a split schema directory
+cargo run -p cli -- --schema schema validate
+```
+
+Pull preserves `datasource`, `naming`, `generator`, and reusable `type` blocks from disk. `@relation`, edge endpoints, and other DSL-only details may be lossy until relation rendering catches up.
+
 ### CLI usage
 
 ```bash
