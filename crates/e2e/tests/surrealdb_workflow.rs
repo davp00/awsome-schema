@@ -54,11 +54,15 @@ impl TestProject {
     }
 
     fn awesome_schema_cmd(&self) -> Command {
+        self.awesome_schema_cmd_with_schema("awesome.schema")
+    }
+
+    fn awesome_schema_cmd_with_schema(&self, schema: &str) -> Command {
         let mut command = Command::cargo_bin("awesome-schema").expect("binary");
         command
             .current_dir(self.root.path())
             .arg("--schema")
-            .arg("awesome.schema")
+            .arg(schema)
             .arg("--migrations-dir")
             .arg("migrations");
         command
@@ -226,6 +230,46 @@ async fn cli_db_pull_overwrites_schema_after_push() {
         .arg("validate")
         .assert()
         .success();
+}
+
+#[tokio::test]
+async fn cli_db_pull_split_by_table_writes_schema_directory() {
+    let Some((_container, endpoint)) = start_surrealdb().await else {
+        return;
+    };
+
+    let project = TestProject::new();
+    project.write_schema(&schema_with_endpoint(&endpoint));
+
+    project.awesome_schema_cmd().arg("db").arg("push").assert().success();
+
+    project
+        .awesome_schema_cmd()
+        .arg("db")
+        .arg("pull")
+        .arg("--split-by-table")
+        .arg("--force")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Pulled").and(predicate::str::contains("schema")));
+
+    assert!(Path::new(&project.path("schema/_config.awesome.schema")).exists());
+    assert!(Path::new(&project.path("schema/tables/user.awesome.schema")).exists());
+
+    let config = fs::read_to_string(project.path("schema/_config.awesome.schema")).expect("config");
+    assert!(config.contains("datasource db"));
+    assert!(config.contains(&format!("\"{endpoint}\"")));
+
+    let user = fs::read_to_string(project.path("schema/tables/user.awesome.schema")).expect("user");
+    assert!(user.contains("model User"));
+    assert!(user.contains("@id"));
+
+    project
+        .awesome_schema_cmd_with_schema("schema")
+        .arg("validate")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Schema is valid"));
 }
 
 #[test]
