@@ -24,10 +24,10 @@
     "semantic_hash": "250dda7e866372135217483d13b8702d"
   },
   "Cargo.toml": {
-    "mtime": 1791296670.8412235,
-    "seen": 1791298873.143883,
-    "ast_hash": "7c2859ba527c0c1b66ea7d26e74a03b3",
-    "semantic_hash": "7c2859ba527c0c1b66ea7d26e74a03b3"
+    "mtime": 1791299974.560586,
+    "seen": 1791303422.065598,
+    "ast_hash": "d2c06ee25d6b9814f87edb18d7258d45",
+    "semantic_hash": ""
   },
   "crates/cli/Cargo.toml": {
     "mtime": 1791294398.658085,
@@ -456,10 +456,10 @@
     "semantic_hash": "4d33c02e8ed334f7dc1fa1cd322aa33c"
   },
   "crates/e2e/tests/surrealdb_workflow.rs": {
-    "mtime": 1791296710.5306778,
-    "seen": 1791298873.143905,
-    "ast_hash": "fa7dc6994f29805818f99cc8d2e64c5b",
-    "semantic_hash": "fa7dc6994f29805818f99cc8d2e64c5b"
+    "mtime": 1791299982.3331885,
+    "seen": 1791303422.06563,
+    "ast_hash": "5b124819a4f5ee2de6d1b3d42e739a77",
+    "semantic_hash": ""
   },
   "crates/migrations/Cargo.toml": {
     "mtime": 1791294398.6664233,
