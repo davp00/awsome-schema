@@ -1,3 +1,9 @@
 /target/
 /awesome.schema
 /migrations/
+
+# Local graphify state. The published graph stays tracked.
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/cache/
+graphify-out/cost.json
