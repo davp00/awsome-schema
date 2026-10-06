@@ -34,8 +34,9 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 
 | Area | What works | Gap |
 |---|---|---|
-| `edge` blocks | Parsed (`in`, `out`, fields, table mode) and rendered as `DEFINE TABLE` plus fields | Not `TYPE RELATION IN … OUT …`. `in` / `out` are stored and never emitted. `migrate dev` diffs models only, so edge changes produce no operations |
-| `@relation` | Parsed, for example `posts Post[] @relation("user_posts")` | Renderer skips any field with `relation_name`. The example `posts` field does not appear in SurrealQL |
+| `edge` blocks | Parsed and rendered as `DEFINE TABLE … TYPE RELATION IN … OUT …`; differ create/alter/drop; edge permissions | `LIGHTWEIGHT` / `INLINE` not modeled |
+| `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen) | Not restored by `db pull` |
+| `db pull` | `INFO FOR DB` / `INFO FOR TABLE`, DSL write, `--split-by-table` | Nav `@relation` fields not in DB |
 | Indexes beyond a field list | Domain `Index` has `unique`, `fulltext`, `vector`. Renderer can emit them if those flags are set | Parser always sets `unique`, `fulltext`, and `vector` to `false` for `@@index` |
 | Index removal | `DropIndex` exists as a migration operation and the renderer emits `REMOVE INDEX` | The differ never emits `DropIndex` when an index disappears |
 | Events, functions | `CreateEvent`, `DropEvent`, `CreateFunction`, `DropFunction` render | No DSL syntax. Nothing in the parser produces them |
@@ -48,11 +49,10 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 
 | Area | Evidence |
 |---|---|
-| `db pull` | Introspects via `INFO FOR DB` / `INFO FOR TABLE`, merges with on-disk config blocks, writes DSL (`--force`, optional `--split-by-table`) | partial — `@relation` / edge endpoints still lossy |
 | Rollback command | Down files are written only |
 | Other providers | README lists MongoDB, Postgres, MySQL, SQLite. Only `renderers::surrealdb` exists |
 | Assertions, vector index syntax, live permissions model | Named in the README as SurrealDB features the DSL should be able to express. Not in the parser |
 
 ## README drift
 
-The README still says `db push` and `migrate apply` are stubs. The code and `crates/e2e/tests/surrealdb_workflow.rs` treat both as real commands. `db pull` is still a stub, and that part of the README is accurate.
+Older README lines may still call `db push` / `migrate apply` stubs; both execute against SurrealDB. Prefer the Database pull and push section.

@@ -84,10 +84,16 @@ fn render_model_schema(model: &Model, naming: &NamingContext<'_>) -> Vec<String>
 
 fn render_edge_schema(edge: &Edge, naming: &NamingContext<'_>) -> Vec<String> {
     let table = naming.map_table_name(&edge.name, &edge.attributes);
-    let mut lines = vec![render_define_table(&table, edge.table_mode)];
+    let in_table = naming.table_name_for_type(&edge.in_model);
+    let out_table = naming.table_name_for_type(&edge.out_model);
+    let mut lines = vec![render_define_relation_table(&table, &in_table, &out_table, edge.table_mode)];
 
     for field in &edge.fields {
         lines.push(render_define_field(&table, field, naming));
+    }
+
+    if let Some(permission) = &edge.permissions {
+        lines.push(format!("DEFINE TABLE {table} PERMISSIONS {permission};"));
     }
 
     lines
@@ -99,6 +105,32 @@ fn render_define_table(name: &str, mode: TableMode) -> String {
         TableMode::Schemaless => "SCHEMALESS",
     };
     format!("DEFINE TABLE {name} {mode_name};")
+}
+
+fn render_define_relation_table(
+    name: &str,
+    in_table: &str,
+    out_table: &str,
+    mode: TableMode,
+) -> String {
+    let mode_name = match mode {
+        TableMode::Schemafull => "SCHEMAFULL",
+        TableMode::Schemaless => "SCHEMALESS",
+    };
+    format!("DEFINE TABLE {name} TYPE RELATION IN {in_table} OUT {out_table} {mode_name};")
+}
+
+fn render_define_table_op(
+    name: &str,
+    mode: TableMode,
+    relation: Option<&core::RelationEndpoints>,
+) -> String {
+    match relation {
+        Some(endpoints) => {
+            render_define_relation_table(name, &endpoints.in_table, &endpoints.out_table, mode)
+        }
+        None => render_define_table(name, mode),
+    }
 }
 
 fn render_define_field(table: &str, field: &Field, naming: &NamingContext<'_>) -> String {
@@ -166,11 +198,13 @@ fn render_operation(
     naming: &NamingContext<'_>,
 ) -> Result<Vec<String>, DomainError> {
     let lines = match operation {
-        MigrationOperation::CreateTable { name, mode } => {
-            vec![render_define_table(name, *mode)]
+        MigrationOperation::CreateTable { name, mode, relation } => {
+            vec![render_define_table_op(name, *mode, relation.as_ref())]
         }
         MigrationOperation::DropTable { name } => vec![format!("REMOVE TABLE {name};")],
-        MigrationOperation::AlterTable { name, mode } => vec![render_define_table(name, *mode)],
+        MigrationOperation::AlterTable { name, mode, relation } => {
+            vec![render_define_table_op(name, *mode, relation.as_ref())]
+        }
         MigrationOperation::CreateField { table, field } => {
             vec![render_define_field(table, field, naming)]
         }
@@ -451,6 +485,7 @@ mod tests {
                 MigrationOperation::CreateTable {
                     name: "user".to_owned(),
                     mode: TableMode::Schemafull,
+                    relation: None,
                 },
                 MigrationOperation::CreateField {
                     table: "user".to_owned(),
@@ -537,6 +572,7 @@ mod tests {
                 MigrationOperation::AlterTable {
                     name: "user".to_owned(),
                     mode: TableMode::Schemaless,
+                    relation: None,
                 },
                 MigrationOperation::DropField {
                     table: "user".to_owned(),
@@ -666,7 +702,7 @@ mod tests {
                         readonly: false,
                         flexible: false,
                         link_target: None,
-                        relation_name: Some("user_posts".to_owned()),
+                        relation_name: Some("Likes".to_owned()),
                         attributes: BTreeMap::new(),
                     },
                 ],
@@ -707,7 +743,9 @@ mod tests {
         };
 
         let rendered = SurrealDbRenderer::new().render_schema(&schema).expect("render");
-        assert!(rendered.contains("DEFINE TABLE likes SCHEMAFULL;"));
+        assert!(rendered.contains(
+            "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"
+        ));
         assert!(rendered.contains("DEFINE FIELD score ON likes TYPE int;"));
         assert!(rendered.contains("DEFINE TABLE user PERMISSIONS FULL;"));
         assert!(!rendered.contains("posts"));
@@ -722,6 +760,28 @@ mod tests {
         };
         let migration = SurrealDbRenderer::new().render_migration(&alter_plan).expect("alter");
         assert!(migration.contains("DEFINE FIELD id ON user TYPE record<user>;"));
+    }
+
+    #[test]
+    fn renders_relation_create_table_migration() {
+        let plan = MigrationPlan {
+            name: "create_likes".to_owned(),
+            operations: vec![MigrationOperation::CreateTable {
+                name: "likes".to_owned(),
+                mode: TableMode::Schemafull,
+                relation: Some(core::RelationEndpoints {
+                    in_table: "user".to_owned(),
+                    out_table: "post".to_owned(),
+                }),
+            }],
+            naming: NamingConvention::default(),
+        };
+
+        let rendered =
+            SurrealDbRenderer::new().render_migration(&plan).expect("migration should render");
+        assert!(rendered.contains(
+            "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"
+        ));
     }
 }
 

@@ -18,6 +18,6 @@ DEFINE FIELD author ON post TYPE record<user>;
 DEFINE FIELD created_at ON post TYPE datetime VALUE time::now() READONLY;
 DEFINE FIELD updated_at ON post TYPE datetime VALUE time::now();
 DEFINE INDEX post_title_idx ON post FIELDS title;
-DEFINE TABLE likes SCHEMAFULL;
+DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;
 DEFINE FIELD created_at ON likes TYPE datetime VALUE time::now() READONLY;
 DEFINE FIELD updated_at ON likes TYPE datetime VALUE time::now();

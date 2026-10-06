@@ -83,6 +83,38 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
                 edge.name
             )));
         }
+
+        if !schema.models.iter().any(|model| model.name == edge.in_model) {
+            return Err(DomainError::ValidationError(format!(
+                "edge `{}` in model `{}` does not exist",
+                edge.name, edge.in_model
+            )));
+        }
+        if !schema.models.iter().any(|model| model.name == edge.out_model) {
+            return Err(DomainError::ValidationError(format!(
+                "edge `{}` out model `{}` does not exist",
+                edge.name, edge.out_model
+            )));
+        }
+    }
+
+    for model in &schema.models {
+        for field in &model.fields {
+            let Some(relation_name) = &field.relation_name else {
+                continue;
+            };
+            let matches_edge = schema.edges.iter().any(|edge| {
+                edge.name == *relation_name
+                    || edge.table_name(&schema.naming) == *relation_name
+                    || edge.attributes.get("map").is_some_and(|mapped| mapped == relation_name)
+            });
+            if !matches_edge {
+                return Err(DomainError::ValidationError(format!(
+                    "model `{}` field `{}` @relation(\"{relation_name}\") must name an existing edge",
+                    model.name, field.name
+                )));
+            }
+        }
     }
 
     Ok(())
@@ -213,6 +245,96 @@ mod tests {
             attributes: BTreeMap::new(),
         });
         validate_schema(&schema).expect("valid edge");
+    }
+
+    #[test]
+    fn rejects_edge_with_unknown_endpoint_model() {
+        let mut schema = sample_schema();
+        schema.edges.push(Edge {
+            name: "Likes".to_owned(),
+            in_model: "User".to_owned(),
+            out_model: "Missing".to_owned(),
+            fields: Vec::new(),
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: BTreeMap::new(),
+        });
+        let error = validate_schema(&schema).expect_err("unknown out");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_relation_field_without_matching_edge() {
+        let mut schema = sample_schema();
+        schema.models[0].fields.push(Field {
+            name: "posts".to_owned(),
+            field_type: FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            relation_name: Some("Missing".to_owned()),
+            attributes: BTreeMap::new(),
+        });
+        let error = validate_schema(&schema).expect_err("missing edge");
+        assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn accepts_relation_field_naming_existing_edge() {
+        let mut schema = sample_schema();
+        schema.models.push(Model {
+            name: "Post".to_owned(),
+            fields: vec![Field {
+                name: "id".to_owned(),
+                field_type: FieldType::RecordId("Post".to_owned()),
+                optional: false,
+                unique: false,
+                is_id: true,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                flexible: false,
+                link_target: None,
+                relation_name: None,
+                attributes: BTreeMap::new(),
+            }],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: Vec::new(),
+            attributes: BTreeMap::new(),
+        });
+        schema.edges.push(Edge {
+            name: "Likes".to_owned(),
+            in_model: "User".to_owned(),
+            out_model: "Post".to_owned(),
+            fields: Vec::new(),
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: BTreeMap::new(),
+        });
+        schema.models[0].fields.push(Field {
+            name: "posts".to_owned(),
+            field_type: FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            relation_name: Some("Likes".to_owned()),
+            attributes: BTreeMap::new(),
+        });
+        validate_schema(&schema).expect("relation names edge");
     }
 
     #[test]

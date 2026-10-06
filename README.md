@@ -24,7 +24,7 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 
 SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The current target is **SurrealDB 3.3.0**. The first milestone started on 3.1.5.
 
-Runtime database connectivity (`db pull`, `db push`, `migrate apply`) is intentionally stubbed—this milestone focuses on **parsing, validation, diffing, and SurrealQL rendering**.
+Runtime database connectivity (`db pull`, `db push`, `migrate apply`) uses the official SurrealDB client. `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
 
 ## Workspace structure
 
@@ -84,7 +84,7 @@ cargo run -p cli -- db pull --split-by-table --force
 cargo run -p cli -- --schema schema validate
 ```
 
-Pull preserves `datasource`, `naming`, `generator`, and reusable `type` blocks from disk. `@relation`, edge endpoints, and other DSL-only details may be lossy until relation rendering catches up.
+Pull preserves `datasource`, `naming`, `generator`, and reusable `type` blocks from disk. `@relation` navigation fields are not stored in SurrealDB, so pull does not recreate them.
 
 ### CLI usage
 
@@ -109,10 +109,10 @@ cargo run -p cli -- generate --target typescript
 cargo run -p cli -- migrate dev
 cargo run -p cli -- migrate create <name>
 cargo run -p cli -- migrate status
-cargo run -p cli -- migrate apply   # stub — requires DB connectivity
+cargo run -p cli -- migrate apply
 
-# Database commands (stubs)
-cargo run -p cli -- db pull
+# Database commands
+cargo run -p cli -- db pull --force
 cargo run -p cli -- db push
 ```
 
@@ -184,7 +184,7 @@ model User {
   email     string @unique
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
-  posts     Post[] @relation("user_posts")
+  posts     Post[] @relation("Likes")
 
   @@table(schemafull)
 }

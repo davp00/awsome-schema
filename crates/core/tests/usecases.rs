@@ -158,6 +158,7 @@ impl SchemaDiffPort for StaticDiff {
             operations: vec![MigrationOperation::CreateTable {
                 name: "user".to_owned(),
                 mode: TableMode::Schemafull,
+                relation: None,
             }],
             naming: NamingConvention::default(),
         }

@@ -69,3 +69,42 @@ fn maps_minimal_user_info_json_fixture() {
     let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
     assert_eq!(pulled.models[0].name, "User");
 }
+
+#[test]
+fn maps_relation_table_to_edge() {
+    let mut preserve = DatabaseSchema::empty();
+    preserve.datasource.provider = "surrealdb".into();
+    preserve.naming.tables = NamingCase::SnakeCase;
+    preserve.models.push(Model {
+        name: "User".into(),
+        fields: vec![],
+        table_mode: TableMode::Schemafull,
+        permissions: None,
+        indexes: vec![],
+        attributes: BTreeMap::new(),
+    });
+    preserve.models.push(Model {
+        name: "Post".into(),
+        fields: vec![],
+        table_mode: TableMode::Schemafull,
+        permissions: None,
+        indexes: vec![],
+        attributes: BTreeMap::new(),
+    });
+
+    let mut tables = BTreeMap::new();
+    tables.insert(
+        "likes".into(),
+        "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;".into(),
+    );
+    let mut info = TableInfo::default();
+    info.fields.insert("score".into(), "DEFINE FIELD score ON likes TYPE int;".into());
+    let mut table_infos = BTreeMap::new();
+    table_infos.insert("likes".into(), info);
+
+    let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+    assert_eq!(pulled.edges.len(), 1);
+    assert_eq!(pulled.edges[0].name, "Likes");
+    assert_eq!(pulled.edges[0].in_model, "User");
+    assert_eq!(pulled.edges[0].out_model, "Post");
+}

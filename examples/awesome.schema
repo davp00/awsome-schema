@@ -34,7 +34,7 @@ model User {
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
 
-  posts     Post[] @relation("user_posts")
+  posts     Post[] @relation("Likes")
 
   @@table(schemafull)
   @@permissions("FULL")

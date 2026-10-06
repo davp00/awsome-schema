@@ -11,7 +11,7 @@ pub mod schema;
 pub use database_config::{DatabaseConfig, ws_connection_address};
 pub use field::{Field, FieldType};
 pub use index::Index;
-pub use migration::{MigrationOperation, MigrationPlan};
+pub use migration::{MigrationOperation, MigrationPlan, RelationEndpoints};
 pub use model::{Edge, Model, TableMode};
 pub use naming::{NamingCase, NamingContext, NamingConvention};
 pub use object_type::{ObjectTypeDefinition, ObjectTypeField};

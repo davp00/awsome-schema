@@ -163,7 +163,7 @@ naming { tables = "snake_case" }"#,
 
         let posts = user.fields.iter().find(|field| field.name == "posts").unwrap();
         assert!(matches!(posts.field_type, FieldType::Array(_)));
-        assert_eq!(posts.relation_name.as_deref(), Some("user_posts"));
+        assert_eq!(posts.relation_name.as_deref(), Some("Likes"));
 
         let created = user.fields.iter().find(|field| field.name == "createdAt").unwrap();
         assert_eq!(created.value_expression.as_deref(), Some("time::now()"));

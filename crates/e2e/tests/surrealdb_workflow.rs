@@ -272,6 +272,66 @@ async fn cli_db_pull_split_by_table_writes_schema_directory() {
         .stdout(predicate::str::contains("Schema is valid"));
 }
 
+#[tokio::test]
+async fn cli_db_push_and_pull_preserves_relation_edge() {
+    let Some((_container, endpoint)) = start_surrealdb().await else {
+        return;
+    };
+
+    let schema = format!(
+        r#"datasource db {{
+  provider = "surrealdb"
+  url      = "{endpoint}"
+  namespace = "test"
+  database  = "main"
+}}
+
+naming {{
+  tables = "snake_case"
+}}
+
+model User {{
+  id @id
+  @@table(schemafull)
+}}
+
+model Post {{
+  id @id
+  @@table(schemafull)
+}}
+
+edge Likes {{
+  in  User
+  out Post
+  score int
+  @@table(schemafull)
+}}
+"#
+    );
+
+    let project = TestProject::new();
+    project.write_schema(&schema);
+
+    project.awesome_schema_cmd().arg("db").arg("push").assert().success();
+    assert!(table_exists(&endpoint, "likes").await);
+
+    project
+        .awesome_schema_cmd()
+        .arg("db")
+        .arg("pull")
+        .arg("--force")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Pulled"));
+
+    let pulled = fs::read_to_string(project.path("awesome.schema")).expect("pulled schema");
+    assert!(pulled.contains("edge Likes"));
+    assert!(pulled.contains("in  User") || pulled.contains("in User"));
+    assert!(pulled.contains("out Post") || pulled.contains("out Post"));
+
+    project.awesome_schema_cmd().arg("validate").assert().success();
+}
+
 #[test]
 fn parser_rejects_record_id_syntax_in_e2e_crate() {
     let error = parser::parse(r"model User { id RecordId<User> @id }").expect_err("reject");
