@@ -131,6 +131,23 @@ fn print_model(out: &mut String, model: &Model) {
         if index.unique {
             let _ = write!(out, " @unique");
         }
+        if index.fulltext {
+            if let Some(analyzer) = &index.fulltext_analyzer {
+                let _ = write!(out, " @fulltext(\"{analyzer}\")");
+            } else {
+                let _ = write!(out, " @fulltext");
+            }
+        }
+        if index.vector {
+            if let Some(dimension) = index.vector_dimension {
+                let _ = write!(out, " @vector({dimension})");
+            } else {
+                let _ = write!(out, " @vector");
+            }
+            if let Some(dist) = index.vector_dist {
+                let _ = write!(out, " @dist({})", dist.as_dsl());
+            }
+        }
         let _ = writeln!(out);
     }
     let _ = writeln!(out, "}}\n");

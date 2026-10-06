@@ -104,6 +104,7 @@ impl<'a> Lexer<'a> {
             }
             '"' => Token::StringLiteral(self.read_string()?),
             _ if ch.is_ascii_alphabetic() || ch == '_' => Token::Identifier(self.read_identifier()),
+            _ if ch.is_ascii_digit() => Token::Identifier(self.read_number()),
             _ => return Err(format!("unexpected character `{ch}` at byte {}", self.position)),
         };
 
@@ -141,6 +142,14 @@ impl<'a> Lexer<'a> {
             } else {
                 break;
             }
+        }
+        self.input[start..self.position].to_owned()
+    }
+
+    fn read_number(&mut self) -> String {
+        let start = self.position;
+        while !self.is_at_end() && self.peek_char().is_ascii_digit() {
+            self.advance();
         }
         self.input[start..self.position].to_owned()
     }
@@ -210,6 +219,12 @@ mod tests {
                 Token::Eof
             ] if first == "metadata" && second == "user_id"
         ));
+    }
+
+    #[test]
+    fn tokenizes_numeric_literals_as_identifiers() {
+        let tokens = Lexer::new("@vector(1536)").tokenize().expect("tokenize");
+        assert!(tokens.iter().any(|token| matches!(token, Token::Identifier(n) if n == "1536")));
     }
 
     #[test]

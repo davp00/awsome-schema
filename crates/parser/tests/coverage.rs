@@ -1,6 +1,6 @@
 use core::{DomainError, FieldType, LinkStorage, NamingCase, OnDeleteAction, TableMode};
 
-use parser::parse;
+use parser::{parse, print_schema};
 
 #[test]
 fn parses_generator_and_datasource_extras() {
@@ -279,7 +279,7 @@ fn rejects_unexpected_token_in_attribute() {
 
 #[test]
 fn rejects_non_string_datasource_value() {
-    let error = parse(r"datasource db { provider = 1 }").expect_err("bad value");
+    let error = parse(r"datasource db { provider = ] }").expect_err("bad value");
     assert!(matches!(error, DomainError::ParseError(_)));
 }
 
@@ -291,13 +291,13 @@ fn rejects_missing_equals_in_datasource() {
 
 #[test]
 fn rejects_invalid_datasource_value_token() {
-    let error = parse(r"datasource db { provider = 123 }").expect_err("bad value");
+    let error = parse(r"datasource db { provider = { }").expect_err("bad value");
     assert!(matches!(error, DomainError::ParseError(_)));
 }
 
 #[test]
 fn rejects_unexpected_expression_token() {
-    let error = parse(r"model User { id @id x string @default(123) }").expect_err("bad expr");
+    let error = parse(r"model User { id @id x string @default([) }").expect_err("bad expr");
     assert!(matches!(error, DomainError::ParseError(_)));
 }
 
@@ -347,15 +347,115 @@ fn parses_index_with_multiple_fields() {
 }
 
 #[test]
+fn parses_index_unique_fulltext_and_vector() {
+    let schema = parse(
+        r#"model Doc {
+  id @id
+  email string
+  title string
+  embedding float
+  @@index([email]) @unique
+  @@index([title]) @fulltext("english")
+  @@index([embedding]) @vector(1536) @dist(Cosine)
+}"#,
+    )
+    .expect("parse");
+    let indexes = &schema.models[0].indexes;
+    assert!(indexes[0].unique);
+    assert!(!indexes[0].fulltext);
+    assert!(!indexes[0].vector);
+
+    assert!(indexes[1].fulltext);
+    assert_eq!(indexes[1].fulltext_analyzer.as_deref(), Some("english"));
+    assert!(!indexes[1].unique);
+
+    assert!(indexes[2].vector);
+    assert_eq!(indexes[2].vector_dimension, Some(1536));
+    assert_eq!(indexes[2].vector_dist, Some(core::VectorDist::Cosine));
+    assert!(!indexes[2].unique);
+}
+
+#[test]
+fn prints_index_kinds_round_trip() {
+    let source = r#"model Doc {
+  id @id
+  email string
+  title string
+  embedding float
+  @@index([email]) @unique
+  @@index([title]) @fulltext("english")
+  @@index([embedding]) @vector(1536) @dist(Cosine)
+}
+"#;
+    let schema = parse(source).expect("parse");
+    let printed = print_schema(&schema);
+    let again = parse(&printed).expect("reparse");
+    assert_eq!(schema.models[0].indexes, again.models[0].indexes);
+}
+
+#[test]
+fn rejects_index_unique_with_fulltext() {
+    let error = parse(
+        r#"model Doc {
+  id @id
+  title string
+  @@index([title]) @unique @fulltext("english")
+}"#,
+    )
+    .expect_err("combo");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
+fn rejects_index_vector_without_dimension() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  embedding float
+  @@index([embedding]) @vector
+}",
+    )
+    .expect_err("missing dim");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
+fn rejects_index_dist_without_vector() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  embedding float
+  @@index([embedding]) @dist(Cosine)
+}",
+    )
+    .expect_err("dist alone");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
+fn rejects_index_vector_with_multiple_fields() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  a float
+  b float
+  @@index([a, b]) @vector(3)
+}",
+    )
+    .expect_err("multi field vector");
+    assert!(matches!(error, DomainError::ParseError(_)));
+}
+
+#[test]
 fn parses_bare_identifier_value_in_datasource() {
     let schema = parse("datasource db { provider = surrealdb }").expect("parse");
     assert_eq!(schema.datasource.provider, "surrealdb");
 }
 
 #[test]
-fn rejects_invalid_expression_in_attribute() {
-    let error = parse(r"model User { id @id x string @default(1) }").expect_err("bad expr");
-    assert!(matches!(error, DomainError::ParseError(_)));
+fn parses_numeric_default_expression() {
+    let schema = parse(r"model User { id @id x int @default(1) }").expect("parse");
+    assert_eq!(schema.models[0].fields[1].default_value.as_deref(), Some("1"));
 }
 
 #[test]

@@ -24,6 +24,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Nested objects | `@flexible`, dotted paths, inline `{ ... }`, reusable `type` | parser + renderer tests |
 | Naming | `naming { tables, fields }`. Omitted `fields` keeps declared names | parser + naming tests |
 | Indexes (basic) | `@@index([fields])` and `@unique` render `DEFINE INDEX` | renderer tests |
+| Index kinds | `@@index` `@unique` / `@fulltext("…")` / `@vector(N)` `@dist(…)` → UNIQUE, FULLTEXT ANALYZER BM25, HNSW | parser + renderer + introspect |
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e test exists |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` — 7 tests |
@@ -41,7 +42,6 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | `edge` blocks | Parsed and rendered as `DEFINE TABLE … TYPE RELATION IN … OUT …`; differ create/alter/drop; edge permissions | `LIGHTWEIGHT` / `INLINE` not modeled |
 | `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen) | Not restored by `db pull` |
 | `db pull` | `INFO FOR DB` / `INFO FOR TABLE`, DSL write, `--split-by-table` | Nav `@relation` fields not in DB |
-| Indexes beyond a field list | Domain `Index` has `unique`, `fulltext`, `vector`. Renderer can emit them if those flags are set | Parser always sets `unique`, `fulltext`, and `vector` to `false` for `@@index` |
 | Events, functions | `CreateEvent`, `DropEvent`, `CreateFunction`, `DropFunction` render | No DSL syntax. Nothing in the parser produces them |
 | `db push` | Loads the schema, renders SurrealQL, executes it with the official client | README still calls this a stub. Not re-checked against a live database in this pass |
 | Codegen | `generate --target rust` and `typescript` emit struct / type shells, including optionals and arrays | Source marks them as stubs. No links, edges, nested objects as real types, or a client |
@@ -51,7 +51,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Area | Evidence |
 |---|---|
 | Other providers | README lists MongoDB, Postgres, MySQL, SQLite. Only `renderers::surrealdb` exists |
-| Assertions, vector index syntax, live permissions model | Named in the README as SurrealDB features the DSL should be able to express. Not in the parser |
+| Assertions, live permissions model | Named in the README as SurrealDB features the DSL should be able to express. Not in the parser |
 
 ## README drift
 

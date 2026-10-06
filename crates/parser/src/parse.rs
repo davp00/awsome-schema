@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use core::{
     DatabaseSchema, Datasource, DomainError, Edge, Field, FieldType, Generator, Index, Model,
-    NamingCase, NamingConvention, ObjectTypeDefinition, ObjectTypeField, TableMode,
+    NamingCase, NamingConvention, ObjectTypeDefinition, ObjectTypeField, TableMode, VectorDist,
     nested_fields_from_object_body, normalize_schema,
 };
 
@@ -190,13 +190,10 @@ impl Parser {
                         };
                     }
                     "permissions" => permissions = Some(attr.1),
-                    "index" => indexes.push(Index {
-                        name: None,
-                        fields: parse_index_fields(&attr.1)?,
-                        unique: false,
-                        fulltext: false,
-                        vector: false,
-                    }),
+                    "index" => {
+                        let fields = parse_index_fields(&attr.1)?;
+                        indexes.push(self.parse_index_attrs(fields)?);
+                    }
                     other => {
                         attributes.insert(other.to_owned(), attr.1);
                     }
@@ -570,6 +567,103 @@ impl Parser {
         } else {
             Ok((name, String::new()))
         }
+    }
+
+    fn parse_index_attrs(&mut self, fields: Vec<String>) -> Result<Index, DomainError> {
+        let mut unique = false;
+        let mut fulltext = false;
+        let mut fulltext_analyzer = None;
+        let mut vector = false;
+        let mut vector_dimension = None;
+        let mut vector_dist = None;
+
+        while self.is_at(Token::At)
+            && !matches!(self.tokens.get(self.position + 1), Some(Token::At))
+        {
+            self.advance();
+            let (name, value) = self.parse_field_attribute()?;
+            match name.as_str() {
+                "unique" => unique = true,
+                "fulltext" => {
+                    if value.is_empty() {
+                        return Err(DomainError::ParseError(
+                            "@@index @fulltext requires an analyzer name".to_owned(),
+                        ));
+                    }
+                    fulltext = true;
+                    fulltext_analyzer = Some(value);
+                }
+                "vector" => {
+                    if value.is_empty() {
+                        return Err(DomainError::ParseError(
+                            "@@index @vector requires a positive dimension".to_owned(),
+                        ));
+                    }
+                    let dimension: u32 = value.parse().map_err(|_| {
+                        DomainError::ParseError(format!(
+                            "@@index @vector expects a positive integer dimension, got `{value}`"
+                        ))
+                    })?;
+                    if dimension == 0 {
+                        return Err(DomainError::ParseError(
+                            "@@index @vector requires a positive dimension".to_owned(),
+                        ));
+                    }
+                    vector = true;
+                    vector_dimension = Some(dimension);
+                }
+                "dist" => {
+                    if value.is_empty() {
+                        return Err(DomainError::ParseError(
+                            "@@index @dist requires Euclidean, Cosine, or Manhattan".to_owned(),
+                        ));
+                    }
+                    let Some(dist) = VectorDist::parse(&value) else {
+                        return Err(DomainError::ParseError(format!(
+                            "@@index @dist expects Euclidean, Cosine, or Manhattan, got `{value}`"
+                        )));
+                    };
+                    vector_dist = Some(dist);
+                }
+                other => {
+                    return Err(DomainError::ParseError(format!(
+                        "unknown @@index attribute `@{other}`"
+                    )));
+                }
+            }
+        }
+
+        if fulltext && vector {
+            return Err(DomainError::ParseError(
+                "@@index cannot combine @fulltext and @vector".to_owned(),
+            ));
+        }
+        if unique && (fulltext || vector) {
+            return Err(DomainError::ParseError(
+                "@@index @unique cannot combine with @fulltext or @vector".to_owned(),
+            ));
+        }
+        if vector_dist.is_some() && !vector {
+            return Err(DomainError::ParseError(
+                "@@index @dist requires @vector".to_owned(),
+            ));
+        }
+        if vector && fields.len() != 1 {
+            return Err(DomainError::ParseError(
+                "@@index @vector requires exactly one field".to_owned(),
+            ));
+        }
+
+        Ok(Index {
+            name: None,
+            fields,
+            unique,
+            fulltext,
+            fulltext_analyzer,
+            vector,
+            vector_dimension,
+            vector_dist,
+        })
     }
 
     fn parse_model_attribute(&mut self) -> Result<(String, String), DomainError> {

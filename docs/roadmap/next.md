@@ -25,13 +25,13 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 
 `@link` always emits SurrealDB `REFERENCE` (default `ON DELETE IGNORE`). Prisma-style pairs share `@link("Name")`; the list side becomes `COMPUTED <~(table FIELD field)`. Use `@onDelete(Cascade|Unset|Reject|Ignore)` on the stored side. Dual-array many-to-many stays on `edge`.
 
-## 5. Index kinds the domain already has
+## 5. Index kinds — done
 
-`Index.unique`, `fulltext`, and `vector` exist and the renderer can emit them. The parser never sets them.
+`@@index([fields])` accepts trailing `@unique`, `@fulltext("analyzer")`, `@vector(N)`, and optional `@dist(Euclidean|Cosine|Manhattan)`.
 
-- Extend `@@index` so those flags can be written in the DSL.
-- Cover them in differ and renderer tests once the parser produces them.
-- A vector index on 3.3 is `HNSW DIMENSION … DIST …`, not the bare `VECTOR` keyword the renderer appends today.
+- Full-text renders `FULLTEXT ANALYZER … BM25` (analyzer must already exist in the DB).
+- Vector indexes render `HNSW DIMENSION … DIST …` (default Euclidean).
+- Differ recreates indexes when params change.
 
 ## 6. Client generators
 

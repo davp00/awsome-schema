@@ -645,7 +645,10 @@ mod tests {
             fields: vec!["email".to_owned()],
             unique: false,
             fulltext: false,
+            fulltext_analyzer: None,
             vector: false,
+            vector_dimension: None,
+            vector_dist: None,
         });
 
         let plan = diff_schemas(Some(&target_schema()), &updated, "alter_user");
@@ -670,7 +673,10 @@ mod tests {
             fields: vec!["email".to_owned()],
             unique: false,
             fulltext: false,
+            fulltext_analyzer: None,
             vector: false,
+            vector_dimension: None,
+            vector_dist: None,
         });
 
         let plan = diff_schemas(Some(&previous), &target_schema(), "drop_index");

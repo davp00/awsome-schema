@@ -209,10 +209,13 @@ fn render_define_index(table: &str, index: &Index, naming: &NamingContext<'_>) -
         line.push_str(" UNIQUE");
     }
     if index.fulltext {
-        line.push_str(" FULLTEXT");
+        let analyzer = index.fulltext_analyzer.as_deref().unwrap_or("english");
+        line.push_str(&format!(" FULLTEXT ANALYZER {analyzer} BM25"));
     }
     if index.vector {
-        line.push_str(" VECTOR");
+        let dimension = index.vector_dimension.unwrap_or(0);
+        let dist = index.vector_dist.unwrap_or_default().as_surreal();
+        line.push_str(&format!(" HNSW DIMENSION {dimension} DIST {dist}"));
     }
     line.push(';');
     line
@@ -655,8 +658,11 @@ mod tests {
                         name: Some("custom_idx".to_owned()),
                         fields: vec!["email".to_owned()],
                         unique: true,
-                        fulltext: true,
-                        vector: true,
+                        fulltext: false,
+                        fulltext_analyzer: None,
+                        vector: false,
+                        vector_dimension: None,
+                        vector_dist: None,
                     },
                 },
                 MigrationOperation::DropIndex {
@@ -698,14 +704,75 @@ mod tests {
         assert!(rendered.contains("REMOVE TABLE legacy;"));
         assert!(rendered.contains("DEFINE TABLE user SCHEMALESS;"));
         assert!(rendered.contains("REMOVE FIELD legacy ON user;"));
-        assert!(
-            rendered
-                .contains("DEFINE INDEX custom_idx ON user FIELDS email UNIQUE FULLTEXT VECTOR;")
-        );
+        assert!(rendered.contains("DEFINE INDEX custom_idx ON user FIELDS email UNIQUE;"));
         assert!(rendered.contains("REMOVE INDEX custom_idx ON user;"));
         assert!(rendered.contains("DEFINE EVENT created ON user WHEN $event = 'CREATE';"));
         assert!(rendered.contains("DEFINE FUNCTION fn::hello() { RETURN 'hi'; };"));
         assert!(rendered.contains("DEFINE TABLE user PERMISSIONS NONE;"));
+    }
+
+    #[test]
+    fn renders_fulltext_and_hnsw_indexes() {
+        use core::{Index, MigrationOperation, MigrationPlan, VectorDist};
+
+        let plan = MigrationPlan {
+            name: "indexes".to_owned(),
+            operations: vec![
+                MigrationOperation::CreateIndex {
+                    table: "doc".to_owned(),
+                    index: Index {
+                        name: Some("doc_title_idx".to_owned()),
+                        fields: vec!["title".to_owned()],
+                        unique: false,
+                        fulltext: true,
+                        fulltext_analyzer: Some("english".to_owned()),
+                        vector: false,
+                        vector_dimension: None,
+                        vector_dist: None,
+                    },
+                },
+                MigrationOperation::CreateIndex {
+                    table: "doc".to_owned(),
+                    index: Index {
+                        name: Some("doc_embedding_idx".to_owned()),
+                        fields: vec!["embedding".to_owned()],
+                        unique: false,
+                        fulltext: false,
+                        fulltext_analyzer: None,
+                        vector: true,
+                        vector_dimension: Some(1536),
+                        vector_dist: Some(VectorDist::Cosine),
+                    },
+                },
+                MigrationOperation::CreateIndex {
+                    table: "doc".to_owned(),
+                    index: Index {
+                        name: Some("doc_vec_default_idx".to_owned()),
+                        fields: vec!["vec".to_owned()],
+                        unique: false,
+                        fulltext: false,
+                        fulltext_analyzer: None,
+                        vector: true,
+                        vector_dimension: Some(3),
+                        vector_dist: None,
+                    },
+                },
+            ],
+            naming: NamingConvention::default(),
+        };
+
+        let rendered =
+            SurrealDbRenderer::new().render_migration(&plan).expect("migration should render");
+
+        assert!(rendered.contains(
+            "DEFINE INDEX doc_title_idx ON doc FIELDS title FULLTEXT ANALYZER english BM25;"
+        ));
+        assert!(rendered.contains(
+            "DEFINE INDEX doc_embedding_idx ON doc FIELDS embedding HNSW DIMENSION 1536 DIST COSINE;"
+        ));
+        assert!(rendered.contains(
+            "DEFINE INDEX doc_vec_default_idx ON doc FIELDS vec HNSW DIMENSION 3 DIST EUCLIDEAN;"
+        ));
     }
 
     #[test]
@@ -800,7 +867,10 @@ mod tests {
                     fields: vec!["email".to_owned()],
                     unique: false,
                     fulltext: false,
+                    fulltext_analyzer: None,
                     vector: false,
+                    vector_dimension: None,
+                    vector_dist: None,
                 }],
                 attributes: BTreeMap::new(),
             }],

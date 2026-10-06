@@ -9,7 +9,10 @@ fn resolved_name_uses_explicit_index_name() {
         fields: vec!["email".to_owned()],
         unique: false,
         fulltext: false,
+        fulltext_analyzer: None,
         vector: false,
+        vector_dimension: None,
+        vector_dist: None,
     };
     let naming =
         NamingConvention { tables: NamingCase::SnakeCase, fields: Some(NamingCase::SnakeCase) };
@@ -23,7 +26,10 @@ fn resolved_name_builds_default_from_fields() {
         fields: vec!["createdAt".to_owned()],
         unique: false,
         fulltext: false,
+        fulltext_analyzer: None,
         vector: false,
+        vector_dimension: None,
+        vector_dist: None,
     };
     let naming = NamingConvention::default();
     assert_eq!(index.resolved_name("user", &naming), "user_createdAt_idx");

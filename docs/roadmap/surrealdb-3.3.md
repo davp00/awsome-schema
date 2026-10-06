@@ -20,7 +20,8 @@ These still match `DEFINE FIELD` on 3.3.0. No renderer change was required.
 - `FLEXIBLE` immediately after `TYPE`
 - `DEFAULT`, `DEFAULT ALWAYS`, `VALUE`, `READONLY`
 - `SCHEMAFULL` / `SCHEMALESS`
-- `DEFINE INDEX … UNIQUE` and `FULLTEXT` (3.x name; 2.x called this `SEARCH ANALYZER`)
+- `DEFINE INDEX … UNIQUE` and `FULLTEXT ANALYZER … BM25` (3.x name; 2.x called this `SEARCH ANALYZER`)
+- `DEFINE INDEX … HNSW DIMENSION … DIST …` for vector indexes
 - Raw `PERMISSIONS`
 
 `@value` and `@updated` stay `VALUE`. `COMPUTED` is a separate clause (evaluated on read, must be read-only). We do not emit it.
@@ -38,7 +39,7 @@ These belong on the graph-edge and index work in [next.md](next.md). They do not
 - `TYPE RELATION IN … OUT …`, plus `LIGHTWEIGHT` (record-less `in`/`out` only; no fields, indexes, events, or `SCHEMAFULL`).
 - `INLINE` on a relation field, so a filtered traversal such as `->(likes WHERE score > 5)` can be answered from the adjacency entry.
 - `INLINE EDGES` and `INLINE REFERENCES` on a vertex table.
-- Vector indexes are `HNSW DIMENSION … DIST …` (or DiskANN), not a bare `VECTOR` keyword. The renderer still appends `VECTOR` when `Index.vector` is set. The parser never sets that flag, so current schemas do not emit it.
+- Vector indexes are `HNSW DIMENSION … DIST …` (or DiskANN). The renderer emits HNSW when `Index.vector` is set (via `@@index([f]) @vector(N)`). DiskANN is not modeled.
 - Full-text `SEGMENT` tokenizer (Chinese, Japanese, Korean).
 - `DEFINE ACCESS … CONTEXT` and `AUDIENCE`.
 - `SELECT … FOR UPDATE`.

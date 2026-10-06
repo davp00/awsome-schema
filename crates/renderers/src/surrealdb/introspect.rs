@@ -4,6 +4,7 @@ use std::collections::{BTreeMap};
 
 use core::{
     DatabaseSchema, DomainError, Edge, Field, FieldType, Index, Model, NamingConvention, TableMode,
+    VectorDist,
 };
 
 /// Per-table payload from `INFO FOR TABLE`.
@@ -396,6 +397,7 @@ fn parse_index_define(define: &str) -> Result<Index, DomainError> {
         let token = &tokens[idx];
         if token.eq_ignore_ascii_case("unique")
             || token.eq_ignore_ascii_case("fulltext")
+            || token.eq_ignore_ascii_case("hnsw")
             || token.eq_ignore_ascii_case("vector")
         {
             break;
@@ -403,10 +405,45 @@ fn parse_index_define(define: &str) -> Result<Index, DomainError> {
         fields.push(token.clone());
         idx += 1;
     }
+
     let unique = tokens.iter().any(|t| t.eq_ignore_ascii_case("unique"));
     let fulltext = tokens.iter().any(|t| t.eq_ignore_ascii_case("fulltext"));
-    let vector = tokens.iter().any(|t| t.eq_ignore_ascii_case("vector"));
-    Ok(Index { name, fields, unique, fulltext, vector })
+    let vector = tokens.iter().any(|t| t.eq_ignore_ascii_case("hnsw"));
+
+    let mut fulltext_analyzer = None;
+    if fulltext {
+        if let Some(analyzer_pos) = tokens.iter().position(|t| t.eq_ignore_ascii_case("analyzer")) {
+            if let Some(analyzer) = tokens.get(analyzer_pos + 1) {
+                fulltext_analyzer = Some(analyzer.clone());
+            }
+        }
+    }
+
+    let mut vector_dimension = None;
+    let mut vector_dist = None;
+    if vector {
+        if let Some(dim_pos) = tokens.iter().position(|t| t.eq_ignore_ascii_case("dimension")) {
+            if let Some(raw) = tokens.get(dim_pos + 1) {
+                vector_dimension = raw.parse::<u32>().ok();
+            }
+        }
+        if let Some(dist_pos) = tokens.iter().position(|t| t.eq_ignore_ascii_case("dist")) {
+            if let Some(raw) = tokens.get(dist_pos + 1) {
+                vector_dist = VectorDist::parse(raw);
+            }
+        }
+    }
+
+    Ok(Index {
+        name,
+        fields,
+        unique,
+        fulltext,
+        fulltext_analyzer,
+        vector,
+        vector_dimension,
+        vector_dist,
+    })
 }
 
 fn parse_type_tokens(
@@ -613,6 +650,49 @@ mod tests {
         assert!(email.unique);
         let id = user.fields.iter().find(|f| f.name == "id").unwrap();
         assert!(id.is_id);
+    }
+
+    #[test]
+    fn maps_fulltext_and_hnsw_indexes() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("doc".into(), "DEFINE TABLE doc SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "id".into(),
+            "DEFINE FIELD id ON doc TYPE record<doc>;".into(),
+        );
+        info.fields.insert(
+            "title".into(),
+            "DEFINE FIELD title ON doc TYPE string;".into(),
+        );
+        info.fields.insert(
+            "embedding".into(),
+            "DEFINE FIELD embedding ON doc TYPE array<float>;".into(),
+        );
+        info.indexes.insert(
+            "doc_title_idx".into(),
+            "DEFINE INDEX doc_title_idx ON doc FIELDS title FULLTEXT ANALYZER english BM25;".into(),
+        );
+        info.indexes.insert(
+            "doc_embedding_idx".into(),
+            "DEFINE INDEX doc_embedding_idx ON doc FIELDS embedding HNSW DIMENSION 1536 DIST COSINE;"
+                .into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("doc".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let doc = &pulled.models[0];
+        let fulltext = doc
+            .indexes
+            .iter()
+            .find(|i| i.fulltext)
+            .expect("fulltext index");
+        assert_eq!(fulltext.fulltext_analyzer.as_deref(), Some("english"));
+        let vector = doc.indexes.iter().find(|i| i.vector).expect("vector index");
+        assert_eq!(vector.vector_dimension, Some(1536));
+        assert_eq!(vector.vector_dist, Some(VectorDist::Cosine));
     }
 
     #[test]
