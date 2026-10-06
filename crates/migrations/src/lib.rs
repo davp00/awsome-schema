@@ -340,6 +340,10 @@ mod tests {
                     readonly: false,
                     flexible: false,
                     link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 },
@@ -355,6 +359,10 @@ mod tests {
                     readonly: false,
                     flexible: false,
                     link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 },
@@ -381,6 +389,10 @@ mod tests {
                 readonly: false,
                 flexible: false,
                 link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -408,6 +420,10 @@ mod tests {
                 readonly: false,
                 flexible: false,
                 link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -495,6 +511,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: Some("Likes".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -561,6 +581,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -595,6 +619,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -695,5 +723,38 @@ mod tests {
     #[test]
     fn schema_differ_default_is_constructible() {
         assert!(SchemaDiffer.diff(None, &target_schema(), "init").operations.len() > 1);
+    }
+
+    #[test]
+    fn detects_on_delete_change_as_alter_field() {
+        let mut previous = target_schema();
+        previous.models[0].fields.push(Field {
+            name: "author".to_owned(),
+            field_type: FieldType::Model("User".to_owned()),
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: Some("User".to_owned()),
+            link_name: Some("Self".to_owned()),
+            on_delete: Some(core::OnDeleteAction::Ignore),
+            link_storage: Some(core::LinkStorage::Stored),
+            link_opposite_field: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+
+        let mut updated = previous.clone();
+        updated.models[0].fields.last_mut().unwrap().on_delete = Some(core::OnDeleteAction::Cascade);
+
+        let plan = diff_schemas(Some(&previous), &updated, "on_delete");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::AlterField { field, .. } if field.name == "author"
+        )));
     }
 }

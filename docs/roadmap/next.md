@@ -21,7 +21,11 @@ Applied migrations are recorded in SurrealDB table `_awesome_migrations` (same n
 
 Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optional `--split-by-table`). `@relation` fields are not in the database, so pull does not recreate them.
 
-## 4. Index kinds the domain already has
+## 4. Record references — done
+
+`@link` always emits SurrealDB `REFERENCE` (default `ON DELETE IGNORE`). Prisma-style pairs share `@link("Name")`; the list side becomes `COMPUTED <~(table FIELD field)`. Use `@onDelete(Cascade|Unset|Reject|Ignore)` on the stored side. Dual-array many-to-many stays on `edge`.
+
+## 5. Index kinds the domain already has
 
 `Index.unique`, `fulltext`, and `vector` exist and the renderer can emit them. The parser never sets them.
 
@@ -29,11 +33,11 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 - Cover them in differ and renderer tests once the parser produces them.
 - A vector index on 3.3 is `HNSW DIMENSION … DIST …`, not the bare `VECTOR` keyword the renderer appends today.
 
-## 5. Client generators
+## 6. Client generators
 
 Replace the Rust and TypeScript stubs after the schema and migrations match SurrealDB. Generated types should follow links, optionals, nested objects, and edges.
 
-## 6. Later
+## 7. Later
 
 - Events and functions in the DSL (operations already render).
 - Assertions and a richer permissions model than a raw string.

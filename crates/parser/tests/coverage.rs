@@ -1,4 +1,4 @@
-use core::{DomainError, FieldType, NamingCase, TableMode};
+use core::{DomainError, FieldType, LinkStorage, NamingCase, OnDeleteAction, TableMode};
 
 use parser::parse;
 
@@ -203,6 +203,40 @@ fn parses_explicit_link_target() {
     let schema = parse("model Post { id @id author User @link(User) }").expect("parse");
     let author = schema.models[0].fields.iter().find(|f| f.name == "author").unwrap();
     assert_eq!(author.link_target.as_deref(), Some("User"));
+    assert_eq!(author.link_name.as_deref(), Some("User"));
+    assert_eq!(author.link_storage, Some(LinkStorage::Stored));
+}
+
+#[test]
+fn parses_named_link_pair_and_on_delete() {
+    let schema = parse(
+        r#"
+model User {
+  id @id
+  posts Post[] @link("PostAuthor")
+}
+model Post {
+  id @id
+  author User @link("PostAuthor") @onDelete(Cascade)
+}
+"#,
+    )
+    .expect("parse");
+    let user = schema.models.iter().find(|m| m.name == "User").unwrap();
+    let post = schema.models.iter().find(|m| m.name == "Post").unwrap();
+    let posts = user.fields.iter().find(|f| f.name == "posts").unwrap();
+    let author = post.fields.iter().find(|f| f.name == "author").unwrap();
+    assert_eq!(posts.link_storage, Some(LinkStorage::Computed));
+    assert_eq!(author.link_storage, Some(LinkStorage::Stored));
+    assert_eq!(author.on_delete, Some(OnDeleteAction::Cascade));
+    assert_eq!(posts.link_opposite_field.as_deref(), Some("author"));
+}
+
+#[test]
+fn rejects_link_and_relation_on_same_field() {
+    let error = parse("model User { id @id posts Post[] @link @relation(\"Likes\") }")
+        .expect_err("both");
+    assert!(matches!(error, DomainError::ParseError(_)));
 }
 
 #[test]

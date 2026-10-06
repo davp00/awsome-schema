@@ -341,6 +341,8 @@ impl Parser {
             readonly,
             flexible,
             link_target,
+            link_name,
+            on_delete,
             relation_name,
             attributes,
         } = self.parse_field_attributes(&name, field_type.as_ref(), optional)?;
@@ -383,6 +385,10 @@ impl Parser {
                 readonly,
                 flexible,
                 link_target,
+                link_name,
+                on_delete,
+                link_storage: None,
+                link_opposite_field: None,
                 relation_name,
                 attributes,
             },
@@ -423,6 +429,9 @@ impl Parser {
         let mut readonly = false;
         let mut flexible = false;
         let mut link_target = None;
+        let mut link_name = None;
+        let mut on_delete = None;
+        let mut has_link = false;
         let mut relation_name = None;
         let mut attributes = BTreeMap::new();
 
@@ -443,22 +452,48 @@ impl Parser {
                 "readonly" => readonly = true,
                 "flexible" => flexible = true,
                 "link" => {
-                    link_target = Some(if attr.1.is_empty() {
-                        let Some(ft) = field_type else {
-                            return Err(DomainError::ParseError(format!(
-                                "field `{name}` @link requires a type when no target is given"
-                            )));
-                        };
-                        link_target_from_type(ft)
-                    } else {
-                        attr.1
-                    });
+                    has_link = true;
+                    if !attr.1.is_empty() {
+                        link_name = Some(attr.1);
+                    }
+                    if let Some(ft) = field_type {
+                        link_target = Some(link_target_from_type(ft));
+                    }
+                }
+                "onDelete" => {
+                    let Some(action) = core::OnDeleteAction::parse(&attr.1) else {
+                        return Err(DomainError::ParseError(format!(
+                            "field `{name}` @onDelete expects Ignore, Unset, Cascade, or Reject"
+                        )));
+                    };
+                    on_delete = Some(action);
                 }
                 "relation" => relation_name = Some(attr.1),
                 other => {
                     attributes.insert(other.to_owned(), attr.1);
                 }
             }
+        }
+
+        if has_link && link_target.is_none() {
+            let Some(ft) = field_type else {
+                return Err(DomainError::ParseError(format!(
+                    "field `{name}` @link requires a type when no target is given"
+                )));
+            };
+            link_target = Some(link_target_from_type(ft));
+        }
+
+        if has_link && relation_name.is_some() {
+            return Err(DomainError::ParseError(format!(
+                "field `{name}` cannot use both @link and @relation"
+            )));
+        }
+
+        if on_delete.is_some() && !has_link {
+            return Err(DomainError::ParseError(format!(
+                "field `{name}` @onDelete requires @link"
+            )));
         }
 
         if matches!(field_type, Some(FieldType::Model(_))) && !optional {
@@ -475,6 +510,8 @@ impl Parser {
             readonly,
             flexible,
             link_target,
+            link_name,
+            on_delete,
             relation_name,
             attributes,
         })
@@ -663,6 +700,8 @@ struct ParsedFieldAttributes {
     readonly: bool,
     flexible: bool,
     link_target: Option<String>,
+    link_name: Option<String>,
+    on_delete: Option<core::OnDeleteAction>,
     relation_name: Option<String>,
     attributes: BTreeMap<String, String>,
 }

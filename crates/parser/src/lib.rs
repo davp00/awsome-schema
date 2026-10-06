@@ -163,7 +163,16 @@ naming { tables = "snake_case" }"#,
 
         let posts = user.fields.iter().find(|field| field.name == "posts").unwrap();
         assert!(matches!(posts.field_type, FieldType::Array(_)));
-        assert_eq!(posts.relation_name.as_deref(), Some("Likes"));
+        assert_eq!(posts.link_name.as_deref(), Some("PostAuthor"));
+        assert_eq!(posts.link_storage, Some(core::LinkStorage::Computed));
+
+        let liked = user.fields.iter().find(|field| field.name == "liked").unwrap();
+        assert_eq!(liked.relation_name.as_deref(), Some("Likes"));
+
+        let post = schema.models.iter().find(|m| m.name == "Post").unwrap();
+        let author = post.fields.iter().find(|f| f.name == "author").unwrap();
+        assert_eq!(author.link_storage, Some(core::LinkStorage::Stored));
+        assert_eq!(author.on_delete, Some(core::OnDeleteAction::Cascade));
 
         let created = user.fields.iter().find(|field| field.name == "createdAt").unwrap();
         assert_eq!(created.value_expression.as_deref(), Some("time::now()"));

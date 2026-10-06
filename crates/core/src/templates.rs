@@ -20,7 +20,8 @@ model User {
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
 
-  posts     Post[] @relation("Likes")
+  posts     Post[] @link("PostAuthor")
+  liked     Post[] @relation("Likes")
 
   @@table(schemafull)
   @@permissions("FULL")
@@ -30,7 +31,7 @@ model Post {
   id        @id
   title     string
   content   string
-  author    User @link
+  author    User @link("PostAuthor") @onDelete(Cascade)
   createdAt datetime @value(time::now()) @readonly
   updatedAt datetime @updated(time::now())
 

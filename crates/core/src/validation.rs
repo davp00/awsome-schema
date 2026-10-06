@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::domain::{DatabaseSchema, FieldType};
 use crate::errors::DomainError;
 
@@ -117,6 +119,97 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
         }
     }
 
+    validate_links(schema)?;
+
+    Ok(())
+}
+
+fn validate_links(schema: &DatabaseSchema) -> Result<(), DomainError> {
+    use crate::domain::LinkStorage;
+
+    for model in &schema.models {
+        for field in &model.fields {
+            if field.link_target.is_some() && field.relation_name.is_some() {
+                return Err(DomainError::ValidationError(format!(
+                    "model `{}` field `{}` cannot use both @link and @relation",
+                    model.name, field.name
+                )));
+            }
+
+            let Some(target) = &field.link_target else {
+                if field.on_delete.is_some() {
+                    return Err(DomainError::ValidationError(format!(
+                        "model `{}` field `{}` @onDelete requires @link",
+                        model.name, field.name
+                    )));
+                }
+                continue;
+            };
+
+            if !schema.models.iter().any(|candidate| candidate.name == *target) {
+                return Err(DomainError::ValidationError(format!(
+                    "model `{}` field `{}` @link targets unknown model `{target}`",
+                    model.name, field.name
+                )));
+            }
+
+            if field.field_type.link_model_name().is_none() {
+                return Err(DomainError::ValidationError(format!(
+                    "model `{}` field `{}` @link requires a model type (or model[])",
+                    model.name, field.name
+                )));
+            }
+
+            match field.link_storage {
+                Some(LinkStorage::Computed) if field.on_delete.is_some() => {
+                    return Err(DomainError::ValidationError(format!(
+                        "model `{}` field `{}` is a computed @link and cannot use @onDelete",
+                        model.name, field.name
+                    )));
+                }
+                Some(LinkStorage::Stored) | None => {}
+                Some(LinkStorage::Computed) => {}
+            }
+        }
+    }
+
+    // Named pairs: both sides exist when name is used twice; unpaired names with only computed are invalid
+    let mut named: BTreeMap<&str, Vec<(&str, &str, Option<LinkStorage>, bool)>> = BTreeMap::new();
+    for model in &schema.models {
+        for field in &model.fields {
+            let Some(name) = field.link_name.as_deref() else {
+                continue;
+            };
+            named.entry(name).or_default().push((
+                model.name.as_str(),
+                field.name.as_str(),
+                field.link_storage,
+                field.is_list_link(),
+            ));
+        }
+    }
+
+    for (name, sides) in named {
+        if sides.len() == 2 {
+            let stored_count =
+                sides.iter().filter(|(_, _, storage, _)| *storage == Some(LinkStorage::Stored)).count();
+            if stored_count != 1 {
+                return Err(DomainError::ValidationError(format!(
+                    "@link(\"{name}\") must resolve to exactly one stored side"
+                )));
+            }
+            if sides.iter().all(|(_, _, _, is_list)| *is_list) {
+                return Err(DomainError::ValidationError(format!(
+                    "@link(\"{name}\") cannot be many-to-many on both sides; use an edge instead"
+                )));
+            }
+        } else if sides.len() > 2 {
+            return Err(DomainError::ValidationError(format!(
+                "@link(\"{name}\") is used on more than two fields"
+            )));
+        }
+    }
+
     Ok(())
 }
 
@@ -153,6 +246,10 @@ mod tests {
                     readonly: false,
                     flexible: false,
                     link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 }],
@@ -278,6 +375,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: Some("Missing".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -302,6 +403,10 @@ mod tests {
                 readonly: false,
                 flexible: false,
                 link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -331,6 +436,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: Some("Likes".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -353,6 +462,10 @@ mod tests {
                 readonly: false,
                 flexible: true,
                 link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             },
@@ -368,6 +481,10 @@ mod tests {
                 readonly: false,
                 flexible: false,
                 link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             },
@@ -390,6 +507,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -412,6 +533,10 @@ mod tests {
             readonly: false,
             flexible: true,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });

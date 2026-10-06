@@ -2,6 +2,57 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+/// Referential action when a linked record is deleted (provider-neutral).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum OnDeleteAction {
+    #[default]
+    Ignore,
+    Unset,
+    Cascade,
+    Reject,
+}
+
+impl OnDeleteAction {
+    #[must_use]
+    pub fn as_dsl(self) -> &'static str {
+        match self {
+            Self::Ignore => "Ignore",
+            Self::Unset => "Unset",
+            Self::Cascade => "Cascade",
+            Self::Reject => "Reject",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.to_ascii_lowercase().as_str() {
+            "ignore" => Some(Self::Ignore),
+            "unset" => Some(Self::Unset),
+            "cascade" => Some(Self::Cascade),
+            "reject" => Some(Self::Reject),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn as_surreal(self) -> &'static str {
+        match self {
+            Self::Ignore => "IGNORE",
+            Self::Unset => "UNSET",
+            Self::Cascade => "CASCADE",
+            Self::Reject => "REJECT",
+        }
+    }
+}
+
+/// Whether a `@link` field stores the foreign key or is a computed opposite side.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LinkStorage {
+    Stored,
+    Computed,
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Field {
@@ -22,6 +73,18 @@ pub struct Field {
     #[serde(default)]
     pub flexible: bool,
     pub link_target: Option<String>,
+    /// Prisma-style relation pair name shared by both sides of a `@link`.
+    #[serde(default)]
+    pub link_name: Option<String>,
+    /// Delete policy on the stored side of a reference (default Ignore when stored).
+    #[serde(default)]
+    pub on_delete: Option<OnDeleteAction>,
+    /// Resolved by normalize: stored FK vs computed opposite.
+    #[serde(default)]
+    pub link_storage: Option<LinkStorage>,
+    /// On a computed side: DSL name of the stored field on the opposite model.
+    #[serde(default)]
+    pub link_opposite_field: Option<String>,
     pub relation_name: Option<String>,
     pub attributes: BTreeMap<String, String>,
 }
@@ -31,6 +94,28 @@ impl Field {
     #[must_use]
     pub const fn has_value_expression(&self) -> bool {
         self.value_expression.is_some()
+    }
+
+    /// Whether this field is a record reference (`@link`).
+    #[must_use]
+    pub fn is_link(&self) -> bool {
+        self.link_target.is_some()
+    }
+
+    /// Whether the link type is an array of records (many side).
+    #[must_use]
+    pub fn is_list_link(&self) -> bool {
+        matches!(self.field_type, FieldType::Array(_))
+    }
+
+    #[must_use]
+    pub fn is_computed_link(&self) -> bool {
+        matches!(self.link_storage, Some(LinkStorage::Computed))
+    }
+
+    #[must_use]
+    pub fn is_stored_link(&self) -> bool {
+        matches!(self.link_storage, Some(LinkStorage::Stored))
     }
 }
 
@@ -71,6 +156,19 @@ impl FieldType {
             Self::Custom(value) => value.clone(),
         }
     }
+
+    /// Model name for a link field type (`User` or `User[]`).
+    #[must_use]
+    pub fn link_model_name(&self) -> Option<&str> {
+        match self {
+            Self::Model(name) => Some(name.as_str()),
+            Self::Array(inner) => match inner.as_ref() {
+                Self::Model(name) => Some(name.as_str()),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -91,6 +189,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -112,5 +214,14 @@ mod tests {
         assert_eq!(FieldType::RecordId("User".into()).base_surreal_type_name(), "record<User>");
         assert_eq!(FieldType::Model("Post".into()).base_surreal_type_name(), "record<Post>");
         assert_eq!(FieldType::Custom("geometry".into()).base_surreal_type_name(), "geometry");
+    }
+
+    #[test]
+    fn on_delete_parses_and_formats() {
+        assert_eq!(OnDeleteAction::parse("Cascade"), Some(OnDeleteAction::Cascade));
+        assert_eq!(OnDeleteAction::parse("CASCADE"), Some(OnDeleteAction::Cascade));
+        assert_eq!(OnDeleteAction::parse("cascade"), Some(OnDeleteAction::Cascade));
+        assert_eq!(OnDeleteAction::Cascade.as_surreal(), "CASCADE");
+        assert_eq!(OnDeleteAction::Unset.as_dsl(), "Unset");
     }
 }

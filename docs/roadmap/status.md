@@ -20,7 +20,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | `format` | Formats the DSL; `--write` saves it | CLI command + use case tests |
 | Parse | `datasource`, `naming`, `generator`, `model`, `edge`, `type`, field attributes in the example schema | `crates/parser` — 58 tests |
 | Field assignments | `@default`, `@defaultAlways`, `@value`, `@updated`, `@readonly` render as `DEFAULT`, `DEFAULT ALWAYS`, `VALUE`, `READONLY` | `crates/renderers` |
-| Ids and links | `id @id` becomes `record<table>`. `User @link` becomes `record<user>`. Optionals use `option<T>` | parser + renderer tests |
+| Ids and links | `id @id` → `record<table>`. `@link` → `REFERENCE` (+ `@onDelete`); opposite `Post[] @link("Name")` → `COMPUTED <~` | parser + renderer + introspect tests |
 | Nested objects | `@flexible`, dotted paths, inline `{ ... }`, reusable `type` | parser + renderer tests |
 | Naming | `naming { tables, fields }`. Omitted `fields` keeps declared names | parser + naming tests |
 | Indexes (basic) | `@@index([fields])` and `@unique` render `DEFINE INDEX` | renderer tests |

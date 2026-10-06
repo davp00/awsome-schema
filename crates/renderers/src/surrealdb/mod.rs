@@ -66,7 +66,7 @@ fn render_model_schema(model: &Model, naming: &NamingContext<'_>) -> Vec<String>
             continue;
         }
         lines.push(render_define_field(&table, field, naming));
-        if field.unique {
+        if field.unique && !field.is_computed_link() {
             lines.push(render_unique_index(&table, field, naming));
         }
     }
@@ -135,6 +135,11 @@ fn render_define_table_op(
 
 fn render_define_field(table: &str, field: &Field, naming: &NamingContext<'_>) -> String {
     let field_name = naming.field_name(field);
+
+    if field.is_computed_link() {
+        return render_computed_link(table, field, naming);
+    }
+
     let mut line = format!(
         "DEFINE FIELD {field_name} ON {table} TYPE {}",
         naming.surreal_type_name(&field.field_type, field.optional)
@@ -142,6 +147,12 @@ fn render_define_field(table: &str, field: &Field, naming: &NamingContext<'_>) -
 
     if field.flexible {
         line.push_str(" FLEXIBLE");
+    }
+
+    if field.is_stored_link() || field.is_link() {
+        line.push_str(" REFERENCE");
+        let action = field.on_delete.unwrap_or(core::OnDeleteAction::Ignore);
+        line.push_str(&format!(" ON DELETE {}", action.as_surreal()));
     }
 
     if let Some(default) = &field.default_value {
@@ -163,6 +174,20 @@ fn render_define_field(table: &str, field: &Field, naming: &NamingContext<'_>) -
 
     line.push(';');
     line
+}
+
+fn render_computed_link(_table: &str, field: &Field, naming: &NamingContext<'_>) -> String {
+    let field_name = naming.field_name(field);
+    let source_model = field
+        .link_target
+        .as_deref()
+        .or_else(|| field.field_type.link_model_name())
+        .unwrap_or("unknown");
+    let source_table = naming.table_name_for_type(source_model);
+    let back_field_dsl = field.link_opposite_field.as_deref().unwrap_or(field_name.as_str());
+    let back_field = naming.field_name_str(back_field_dsl, &BTreeMap::new());
+
+    format!("DEFINE FIELD {field_name} ON {_table} COMPUTED <~({source_table} FIELD {back_field});")
 }
 
 fn render_unique_index(table: &str, field: &Field, naming: &NamingContext<'_>) -> String {
@@ -275,6 +300,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -299,6 +328,10 @@ mod tests {
             readonly: true,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -326,6 +359,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -350,6 +387,10 @@ mod tests {
             readonly: true,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -377,6 +418,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -402,6 +447,10 @@ mod tests {
             readonly: false,
             flexible: true,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -422,6 +471,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -455,12 +508,19 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: Some("User".to_owned()),
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
 
         let rendered = render_define_field("post", &field, &naming);
-        assert_eq!(rendered, "DEFINE FIELD author ON post TYPE option<record<user>>;");
+        assert_eq!(
+            rendered,
+            "DEFINE FIELD author ON post TYPE option<record<user>> REFERENCE ON DELETE IGNORE;"
+        );
     }
 
     #[test]
@@ -504,6 +564,10 @@ mod tests {
                         readonly: false,
                         flexible: false,
                         link_target: None,
+                        link_name: None,
+                        on_delete: None,
+                        link_storage: None,
+                        link_opposite_field: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
                     },
@@ -546,6 +610,10 @@ mod tests {
                     readonly: false,
                     flexible: false,
                     link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 }],
@@ -656,6 +724,10 @@ mod tests {
             readonly: false,
             flexible: false,
             link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -694,6 +766,10 @@ mod tests {
                         readonly: false,
                         flexible: false,
                         link_target: None,
+                        link_name: None,
+                        on_delete: None,
+                        link_storage: None,
+                        link_opposite_field: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
                     },
@@ -709,6 +785,10 @@ mod tests {
                         readonly: false,
                         flexible: false,
                         link_target: None,
+                        link_name: None,
+                        on_delete: None,
+                        link_storage: None,
+                        link_opposite_field: None,
                         relation_name: Some("Likes".to_owned()),
                         attributes: BTreeMap::new(),
                     },
@@ -740,6 +820,10 @@ mod tests {
                     readonly: false,
                     flexible: false,
                     link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 }],
@@ -789,6 +873,78 @@ mod tests {
         assert!(rendered.contains(
             "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"
         ));
+    }
+
+    #[test]
+    fn renders_reference_and_computed_backlink() {
+        let models = vec![
+            Model {
+                name: "User".to_owned(),
+                fields: Vec::new(),
+                table_mode: TableMode::Schemafull,
+                permissions: None,
+                indexes: Vec::new(),
+                attributes: BTreeMap::new(),
+            },
+            Model {
+                name: "Post".to_owned(),
+                fields: Vec::new(),
+                table_mode: TableMode::Schemafull,
+                permissions: None,
+                indexes: Vec::new(),
+                attributes: BTreeMap::new(),
+            },
+        ];
+        let convention = NamingConvention::default();
+        let naming = NamingContext::new(&convention, &models);
+
+        let author = Field {
+            name: "author".to_owned(),
+            field_type: FieldType::Model("User".to_owned()),
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: Some("User".to_owned()),
+            link_name: Some("PostAuthor".to_owned()),
+            on_delete: Some(core::OnDeleteAction::Cascade),
+            link_storage: Some(core::LinkStorage::Stored),
+            link_opposite_field: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+        assert_eq!(
+            render_define_field("post", &author, &naming),
+            "DEFINE FIELD author ON post TYPE record<user> REFERENCE ON DELETE CASCADE;"
+        );
+
+        let posts = Field {
+            name: "posts".to_owned(),
+            field_type: FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: Some("Post".to_owned()),
+            link_name: Some("PostAuthor".to_owned()),
+            on_delete: None,
+            link_storage: Some(core::LinkStorage::Computed),
+            link_opposite_field: Some("author".to_owned()),
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+        assert_eq!(
+            render_define_field("user", &posts, &naming),
+            "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);"
+        );
     }
 }
 

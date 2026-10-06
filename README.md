@@ -24,7 +24,7 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 
 SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The current target is **SurrealDB 3.3.0**. The first milestone started on 3.1.5.
 
-Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate status`, `migrate rollback`) uses the official SurrealDB client. Applied migrations are tracked in `_awesome_migrations`. `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
+Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate status`, `migrate rollback`) uses the official SurrealDB client. Applied migrations are tracked in `_awesome_migrations`. `@link` fields render as SurrealDB record references (`REFERENCE`); `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
 
 ## Workspace structure
 
@@ -145,6 +145,24 @@ Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 | `@updated(expr)` | `VALUE expr` | Alias for auto-updating timestamps (`updatedAt`) |
 | `@readonly` | `READONLY` | Prevents manual updates (use with `@value`) |
 | `@flexible` | `FLEXIBLE` | Allows extra undefined keys on a schemafull object field |
+| `@link` / `@link("Name")` | `REFERENCE` (+ optional `ON DELETE`) | Stored record reference; pair name matches Prisma-style opposite |
+| `@onDelete(Cascade\|Unset\|Reject\|Ignore)` | `ON DELETE …` | Delete policy on the stored `@link` side (default Ignore) |
+
+Record references (provider-neutral in the domain; SurrealDB is the first renderer):
+
+```prisma
+model User {
+  id    @id
+  posts Post[] @link("PostAuthor")   // COMPUTED <~(post FIELD author)
+}
+
+model Post {
+  id     @id
+  author User @link("PostAuthor") @onDelete(Cascade)  // record<user> REFERENCE ON DELETE CASCADE
+}
+```
+
+`@relation("EdgeName")` remains graph navigation (skips SurrealQL on the model field); use `edge` for `TYPE RELATION`.
 
 Flexible objects mirror SurrealDB's schemaless-in-schemafull pattern for nested data. Define nested fields inline, with dotted paths, or via a reusable type:
 

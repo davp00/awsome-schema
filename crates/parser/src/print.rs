@@ -187,8 +187,15 @@ fn print_field(out: &mut String, field: &Field, indent: &str, model: Option<&Mod
     if field.readonly {
         let _ = write!(out, " @readonly");
     }
-    if field.link_target.is_some() || matches!(field.field_type, FieldType::Model(_)) {
-        let _ = write!(out, " @link");
+    if field.link_target.is_some() {
+        if let Some(name) = &field.link_name {
+            let _ = write!(out, " @link(\"{name}\")");
+        } else {
+            let _ = write!(out, " @link");
+        }
+        if let Some(action) = field.on_delete.filter(|a| *a != core::OnDeleteAction::Ignore) {
+            let _ = write!(out, " @onDelete({})", action.as_dsl());
+        }
     }
     if let Some(relation) = &field.relation_name {
         let _ = write!(out, " @relation(\"{relation}\")");

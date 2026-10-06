@@ -57,14 +57,16 @@ pub fn map_database_info(
     models.sort_by(|a, b| a.name.cmp(&b.name));
     edges.sort_by(|a, b| a.name.cmp(&b.name));
 
-    Ok(DatabaseSchema {
+    let mut schema = DatabaseSchema {
         datasource: DatabaseSchema::empty().datasource,
         naming: NamingConvention::default(),
         generators: Vec::new(),
         object_types: Vec::new(),
         models,
         edges,
-    })
+    };
+    pair_pulled_links(&mut schema);
+    Ok(schema)
 }
 
 fn is_relation_table(define: &str) -> bool {
@@ -166,6 +168,34 @@ fn parse_field_define(
             "field define table mismatch: expected `{table}` in `{define}`"
         )));
     }
+
+    if let Some(computed) = parse_computed_backlink(define, preserve) {
+        let field_type = FieldType::Array(Box::new(FieldType::Model(computed.target_model.clone())));
+        return Ok(Field {
+            name,
+            field_type,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: Some(computed.target_model),
+            link_name: None,
+            on_delete: None,
+            link_storage: Some(core::LinkStorage::Computed),
+            link_opposite_field: if computed.opposite_field.is_empty() {
+                None
+            } else {
+                Some(computed.opposite_field)
+            },
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+    }
+
     let type_pos = tokens.iter().position(|t| t.eq_ignore_ascii_case("type")).ok_or_else(|| {
         DomainError::DatabaseError(format!("field define missing TYPE: {define}"))
     })?;
@@ -176,6 +206,7 @@ fn parse_field_define(
     let mut default_always = false;
     let mut value_expression = None;
     let mut readonly = false;
+    let mut on_delete = None;
 
     while idx < tokens.len() {
         let token = tokens[idx].to_ascii_lowercase();
@@ -203,6 +234,19 @@ fn parse_field_define(
             "flexible" => {
                 idx += 1;
             }
+            "reference" => {
+                idx += 1;
+            }
+            "on" => {
+                if tokens.get(idx + 1).is_some_and(|t| t.eq_ignore_ascii_case("delete")) {
+                    idx += 2;
+                    let action = tokens.get(idx).map(String::as_str).unwrap_or("IGNORE");
+                    on_delete = core::OnDeleteAction::parse(action);
+                    idx += 1;
+                } else {
+                    idx += 1;
+                }
+            }
             "assert" | "permissions" => {
                 let (_, next) = read_expression(&tokens, idx + 1);
                 idx = next;
@@ -219,6 +263,16 @@ fn parse_field_define(
         }
     }
 
+    // RECORD links map to @link; REFERENCE adds storage + on_delete
+    let (link_storage, on_delete) = if link_target.is_some() {
+        (
+            Some(core::LinkStorage::Stored),
+            Some(on_delete.unwrap_or(core::OnDeleteAction::Ignore)),
+        )
+    } else {
+        (None, None)
+    };
+
     Ok(Field {
         name,
         field_type,
@@ -231,9 +285,100 @@ fn parse_field_define(
         readonly,
         flexible,
         link_target,
+        link_name: None,
+        on_delete,
+        link_storage,
+        link_opposite_field: None,
         relation_name: None,
         attributes: BTreeMap::new(),
     })
+}
+
+struct ComputedBacklink {
+    target_model: String,
+    opposite_field: String,
+}
+
+fn parse_computed_backlink(define: &str, preserve: &DatabaseSchema) -> Option<ComputedBacklink> {
+    let lower = define.to_ascii_lowercase();
+    let computed_at = lower.find("computed")?;
+    let after = define[computed_at + "computed".len()..].trim();
+    let after = after.trim_end_matches(';').trim();
+    if !after.contains("<~") {
+        return None;
+    }
+    let start = after.find("<~")?;
+    let mut body = after[start + 2..].trim();
+    body = body.trim_start_matches('(').trim_end_matches(')').trim();
+    // table FIELD field  OR  table
+    let parts: Vec<&str> = body.split_whitespace().collect();
+    if parts.len() >= 3 && parts[1].eq_ignore_ascii_case("field") {
+        return Some(ComputedBacklink {
+            target_model: model_name_for_table(parts[0], preserve),
+            opposite_field: parts[2].trim_matches(|c| c == ')' || c == ';').to_owned(),
+        });
+    }
+    if parts.len() == 1 {
+        return Some(ComputedBacklink {
+            target_model: model_name_for_table(parts[0], preserve),
+            opposite_field: String::new(),
+        });
+    }
+    None
+}
+
+fn pair_pulled_links(schema: &mut DatabaseSchema) {
+    // Assign shared link_name from computed side → stored opposite
+    let mut pairs: Vec<(String, String, String, String)> = Vec::new();
+    // (computed_model, computed_field, stored_model, stored_field)
+    for model in &schema.models {
+        for field in &model.fields {
+            if !field.is_computed_link() {
+                continue;
+            }
+            let Some(target) = &field.link_target else {
+                continue;
+            };
+            let Some(opposite) = &field.link_opposite_field else {
+                continue;
+            };
+            if opposite.is_empty() {
+                continue;
+            }
+            pairs.push((
+                model.name.clone(),
+                field.name.clone(),
+                target.clone(),
+                opposite.clone(),
+            ));
+        }
+    }
+
+    for (computed_model, computed_field, stored_model, stored_field) in pairs {
+        let pair_name = format!("{stored_model}{computed_model}");
+        if let Some(model) = schema.models.iter_mut().find(|m| m.name == computed_model) {
+            if let Some(field) = model.fields.iter_mut().find(|f| f.name == computed_field) {
+                field.link_name = Some(pair_name.clone());
+                // Prefer list type for computed backrefs
+                if let Some(target) = field.link_target.clone() {
+                    if !field.is_list_link() {
+                        field.field_type = FieldType::Array(Box::new(FieldType::Model(target)));
+                    }
+                }
+            }
+        }
+        if let Some(model) = schema.models.iter_mut().find(|m| m.name == stored_model) {
+            if let Some(field) = model.fields.iter_mut().find(|f| f.name == stored_field) {
+                field.link_name = Some(pair_name);
+                if field.link_storage.is_none() {
+                    field.link_storage = Some(core::LinkStorage::Stored);
+                }
+                if field.on_delete.is_none() {
+                    field.on_delete = Some(core::OnDeleteAction::Ignore);
+                }
+            }
+        }
+    }
 }
 
 fn parse_index_define(define: &str) -> Result<Index, DomainError> {
@@ -468,5 +613,67 @@ mod tests {
         assert!(email.unique);
         let id = user.fields.iter().find(|f| f.name == "id").unwrap();
         assert!(id.is_id);
+    }
+
+    #[test]
+    fn maps_reference_and_computed_pair() {
+        let mut preserve = DatabaseSchema::empty();
+        preserve.datasource.provider = "surrealdb".into();
+        preserve.naming.tables = core::NamingCase::SnakeCase;
+        preserve.models.push(Model {
+            name: "User".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+        preserve.models.push(Model {
+            name: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        tables.insert("post".into(), "DEFINE TABLE post SCHEMAFULL;".into());
+
+        let mut user_info = TableInfo::default();
+        user_info.fields.insert(
+            "id".into(),
+            "DEFINE FIELD id ON user TYPE record<user>;".into(),
+        );
+        user_info.fields.insert(
+            "posts".into(),
+            "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);".into(),
+        );
+
+        let mut post_info = TableInfo::default();
+        post_info.fields.insert(
+            "id".into(),
+            "DEFINE FIELD id ON post TYPE record<post>;".into(),
+        );
+        post_info.fields.insert(
+            "author".into(),
+            "DEFINE FIELD author ON post TYPE record<user> REFERENCE ON DELETE CASCADE;".into(),
+        );
+
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), user_info);
+        table_infos.insert("post".into(), post_info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let user = pulled.models.iter().find(|m| m.name == "User").unwrap();
+        let post = pulled.models.iter().find(|m| m.name == "Post").unwrap();
+        let posts = user.fields.iter().find(|f| f.name == "posts").unwrap();
+        let author = post.fields.iter().find(|f| f.name == "author").unwrap();
+        assert_eq!(posts.link_storage, Some(core::LinkStorage::Computed));
+        assert_eq!(author.link_storage, Some(core::LinkStorage::Stored));
+        assert_eq!(author.on_delete, Some(core::OnDeleteAction::Cascade));
+        assert_eq!(posts.link_name.as_ref(), author.link_name.as_ref());
+        assert!(posts.link_name.is_some());
     }
 }
