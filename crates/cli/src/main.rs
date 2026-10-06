@@ -1,6 +1,6 @@
 fn main() {
     if let Err(error) = cli::run() {
-        eprintln!("error: {error}");
+        eprintln!("error: {error:#}");
         std::process::exit(1);
     }
 }

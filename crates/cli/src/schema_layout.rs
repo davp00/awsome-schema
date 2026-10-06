@@ -1,6 +1,6 @@
-pub const CONFIG_FILE: &str = "_config.awesome.schema";
+pub const CONFIG_FILE: &str = "_config.schema";
 pub const TABLES_DIR: &str = "tables";
-pub const TABLE_SUFFIX: &str = ".awesome.schema";
+pub const TABLE_SUFFIX: &str = ".schema";
 
 pub fn split_schema_dir(schema_path: &str) -> String {
     let path = std::path::Path::new(schema_path);

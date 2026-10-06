@@ -77,14 +77,14 @@ async fn cli_db_pull_split_by_table_writes_schema_directory() {
         .success()
         .stdout(predicate::str::contains("Pulled").and(predicate::str::contains("schema")));
 
-    assert!(Path::new(&project.path("schema/_config.awesome.schema")).exists());
-    assert!(Path::new(&project.path("schema/tables/user.awesome.schema")).exists());
+    assert!(Path::new(&project.path("schema/_config.schema")).exists());
+    assert!(Path::new(&project.path("schema/tables/user.schema")).exists());
 
-    let config = fs::read_to_string(project.path("schema/_config.awesome.schema")).expect("config");
+    let config = fs::read_to_string(project.path("schema/_config.schema")).expect("config");
     assert!(config.contains("datasource db"));
     assert!(config.contains(&format!("\"{endpoint}\"")));
 
-    let user = fs::read_to_string(project.path("schema/tables/user.awesome.schema")).expect("user");
+    let user = fs::read_to_string(project.path("schema/tables/user.schema")).expect("user");
     assert!(user.contains("model User"));
     assert!(user.contains("@id"));
 

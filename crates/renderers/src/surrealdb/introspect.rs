@@ -24,6 +24,10 @@ pub fn map_database_info(
     let mut edges = Vec::new();
 
     for (table_name, table_define) in table_defines {
+        // Skip internal ledger / system tables.
+        if table_name.starts_with('_') {
+            continue;
+        }
         let info = table_infos.get(table_name).cloned().unwrap_or_default();
         if is_relation_table(table_define) {
             let (in_table, out_table) = parse_relation_endpoints(table_define)?;
@@ -162,6 +166,10 @@ fn map_fields(
     let mut fields = Vec::new();
     for define in info.fields.values() {
         let mut field = parse_field_define(define, table, preserve)?;
+        // Surreal INFO emits array-item schemas as `tags.*` — not valid DSL field paths.
+        if field.name.contains(".*") || field.name.ends_with('*') {
+            continue;
+        }
         if field.name == "id" && id_table.is_some_and(|t| t == table) {
             field.is_id = true;
         }
@@ -448,7 +456,8 @@ fn preserved_link_name(
 
 fn parse_index_define(define: &str) -> Result<Index, DomainError> {
     let tokens = tokenize(define);
-    if tokens.len() < 8 {
+    // DEFINE INDEX <name> ON <table> FIELDS <field…> [UNIQUE|FULLTEXT|HNSW…]
+    if tokens.len() < 7 {
         return Err(DomainError::DatabaseError(format!("unexpected index define: {define}")));
     }
     let name = Some(tokens[2].clone());
@@ -516,11 +525,32 @@ fn parse_type_tokens(
 ) -> Result<(FieldType, bool, bool), DomainError> {
     let raw = tokens.get(*idx).ok_or_else(|| DomainError::DatabaseError("missing type".into()))?;
     *idx += 1;
-    let (field_type, optional) = if raw.starts_with("option<") && raw.ends_with('>') {
+
+    // SurrealDB 3.3 INFO often emits optionals as `none | T` (or `T | none`).
+    if raw.eq_ignore_ascii_case("none")
+        && tokens.get(*idx).is_some_and(|t| t == "|")
+        && tokens.get(*idx + 1).is_some()
+    {
+        *idx += 1; // |
+        let inner = &tokens[*idx];
+        *idx += 1;
+        let field_type = parse_type_name(inner)?;
+        return Ok((field_type, true, false));
+    }
+
+    let (field_type, mut optional) = if raw.starts_with("option<") && raw.ends_with('>') {
         (parse_inner_option_type(raw)?, true)
     } else {
         (parse_type_name(raw)?, false)
     };
+
+    if tokens.get(*idx).is_some_and(|t| t == "|")
+        && tokens.get(*idx + 1).is_some_and(|t| t.eq_ignore_ascii_case("none"))
+    {
+        *idx += 2;
+        optional = true;
+    }
+
     let mut flexible = false;
     while *idx < tokens.len() {
         let token = tokens[*idx].to_ascii_lowercase();
@@ -680,6 +710,27 @@ mod tests {
             attributes: BTreeMap::new(),
         });
         schema
+    }
+
+    #[test]
+    fn parses_plain_index_without_unique_flag() {
+        let index = parse_index_define("DEFINE INDEX post_title_idx ON post FIELDS title")
+            .expect("plain index");
+        assert_eq!(index.name.as_deref(), Some("post_title_idx"));
+        assert_eq!(index.fields, vec!["title".to_owned()]);
+        assert!(!index.unique);
+        assert!(!index.fulltext);
+        assert!(!index.vector);
+    }
+
+    #[test]
+    fn parses_none_pipe_optional_types() {
+        let tokens = tokenize("DEFINE FIELD age ON user TYPE none | int PERMISSIONS FULL");
+        let type_pos = tokens.iter().position(|t| t.eq_ignore_ascii_case("type")).unwrap();
+        let mut idx = type_pos + 1;
+        let (field_type, optional, _) = parse_type_tokens(&tokens, &mut idx).expect("type");
+        assert_eq!(field_type, FieldType::Int);
+        assert!(optional);
     }
 
     #[test]

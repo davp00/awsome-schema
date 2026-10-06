@@ -327,13 +327,13 @@ fn schema_directory_loads_merged_schema() {
     let schema_dir = temp.path().join("schema");
     std::fs::create_dir_all(schema_dir.join("tables")).expect("tables");
     std::fs::write(
-        schema_dir.join("_config.awesome.schema"),
+        schema_dir.join("_config.schema"),
         r#"datasource db { provider = "surrealdb" url = "127.0.0.1:8000" }
 "#,
     )
     .expect("config");
     std::fs::write(
-        schema_dir.join("tables/user.awesome.schema"),
+        schema_dir.join("tables/user.schema"),
         "model User { id @id email string }
 ",
     )

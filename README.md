@@ -114,7 +114,7 @@ cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
 # Pull into awesome.schema (requires --force to overwrite a non-empty file)
 cargo run -p cli -- db pull --force
 
-# Pull one model/edge per file under schema/
+# Pull one model/edge per file under schema/ (e.g. schema/tables/user.schema)
 cargo run -p cli -- db pull --split-by-table --force
 
 # Point commands at a split schema directory
