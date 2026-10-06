@@ -456,9 +456,9 @@
     "semantic_hash": "4d33c02e8ed334f7dc1fa1cd322aa33c"
   },
   "crates/e2e/tests/surrealdb_workflow.rs": {
-    "mtime": 1791304514.6309726,
-    "seen": 1791304912.1884181,
-    "ast_hash": "e6a7e40eb39e299abe5f294907c0d75c",
+    "mtime": 1791304963.9532063,
+    "seen": 1791305069.893284,
+    "ast_hash": "36380fb86e8f86e2c309ec5e85aea6fb",
     "semantic_hash": ""
   },
   "crates/migrations/Cargo.toml": {
