@@ -450,15 +450,9 @@
     "semantic_hash": ""
   },
   "crates/e2e/Cargo.toml": {
-    "mtime": 1791294398.6660764,
-    "seen": 1791298873.143904,
-    "ast_hash": "4d33c02e8ed334f7dc1fa1cd322aa33c",
-    "semantic_hash": "4d33c02e8ed334f7dc1fa1cd322aa33c"
-  },
-  "crates/e2e/tests/surrealdb_workflow.rs": {
-    "mtime": 1791313933.7412622,
-    "seen": 1791314134.487118,
-    "ast_hash": "d30e2f73ca7db4638fc3883575efe877",
+    "mtime": 1791314454.586774,
+    "seen": 1791314740.547967,
+    "ast_hash": "d3e2f82da08128e575cf1abbc02632fa",
     "semantic_hash": ""
   },
   "crates/migrations/Cargo.toml": {
@@ -660,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791313334.6210861,
-    "seen": 1791313802.564002,
-    "ast_hash": "f5dbd0848782e7d2d0d784c871751ad4",
+    "mtime": 1791314460.240647,
+    "seen": 1791314740.547988,
+    "ast_hash": "19bcc37e41dc5d7a208ede413498b526",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -672,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791313995.4367309,
-    "seen": 1791314134.487136,
-    "ast_hash": "b65dd70fd57fdd92975b837f2fbff2cf",
+    "mtime": 1791314460.8725498,
+    "seen": 1791314740.547988,
+    "ast_hash": "cbd70fa56d1da0531fbc9c354cea9240",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -753,6 +747,42 @@
     "mtime": 1791306378.6709075,
     "seen": 1791307356.44974,
     "ast_hash": "7ee84b5c4ebca8aa72673a202a1499b7",
+    "semantic_hash": ""
+  },
+  "crates/e2e/tests/common/mod.rs": {
+    "mtime": 1791314433.8217866,
+    "seen": 1791314740.547968,
+    "ast_hash": "759247be1ff07f037e7c9b62ae94f40e",
+    "semantic_hash": ""
+  },
+  "crates/e2e/tests/db_sync.rs": {
+    "mtime": 1791314442.466646,
+    "seen": 1791314740.547969,
+    "ast_hash": "b1bf28ffbdc1799dc0e434cb8f05a1a6",
+    "semantic_hash": ""
+  },
+  "crates/e2e/tests/graph_edges.rs": {
+    "mtime": 1791314444.8186314,
+    "seen": 1791314740.547969,
+    "ast_hash": "72515ef1f2e3755a3308eaff09af1b45",
+    "semantic_hash": ""
+  },
+  "crates/e2e/tests/migrate.rs": {
+    "mtime": 1791314438.603319,
+    "seen": 1791314740.54797,
+    "ast_hash": "de384202459a18e88f7ee69c0dc20302",
+    "semantic_hash": ""
+  },
+  "crates/e2e/tests/offline_cli.rs": {
+    "mtime": 1791314435.1150336,
+    "seen": 1791314740.54797,
+    "ast_hash": "1e77dbd53e0544c90e72534dce27afd4",
+    "semantic_hash": ""
+  },
+  "crates/e2e/tests/record_refs.rs": {
+    "mtime": 1791314447.9592304,
+    "seen": 1791314740.547971,
+    "ast_hash": "3b4f74af4222c104a08628a0dd6cc015",
     "semantic_hash": ""
   }
 }
