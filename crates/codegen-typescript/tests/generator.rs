@@ -74,7 +74,7 @@ fn maps_all_field_types_to_typescript() {
 fn default_generator_is_constructible() {
     use codegen::CodeGenerator;
 
-    let generator = TypeScriptGenerator;
+    let generator = TypeScriptGenerator::default();
     assert_eq!(CodeGenerator::language(&generator), "typescript");
     let output = CodeGenerator::generate(&generator, &schema_with_field(FieldType::String, false))
         .expect("generate");

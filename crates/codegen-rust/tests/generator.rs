@@ -54,8 +54,9 @@ fn rust_generator_default_and_language() {
     use codegen::CodeGenerator;
     use codegen_rust::RustGenerator;
 
-    let generator = RustGenerator;
+    let generator = RustGenerator::default();
     assert_eq!(generator.language(), "rust");
+    assert_eq!(CodeGenerator::language(&generator), "rust");
 }
 
 #[test]

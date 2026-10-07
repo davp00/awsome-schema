@@ -572,3 +572,141 @@ fn rejects_unknown_type_reference() {
     .expect_err("unknown type");
     assert!(matches!(error, DomainError::ValidationError(_)));
 }
+
+#[test]
+fn rejects_bad_object_type_attribute() {
+    let error = parse(
+        r"type Meta @unknown {
+  value string
+}",
+    )
+    .expect_err("bad attr");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("does not support attribute")));
+}
+
+#[test]
+fn rejects_object_type_nested_field_path() {
+    let error = parse(
+        r"type Meta {
+  nested.path string
+}",
+    )
+    .expect_err("nested path");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("nested path")));
+}
+
+#[test]
+fn rejects_object_type_field_with_attributes() {
+    let error = parse(
+        r"type Meta {
+  value string @unique
+}",
+    )
+    .expect_err("field attr");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("does not support field attributes")));
+}
+
+#[test]
+fn rejects_bad_on_delete_value() {
+    let error = parse(r#"model Post { id @id author User @link @onDelete(Explode) }"#)
+        .expect_err("bad onDelete");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("@onDelete")));
+}
+
+#[test]
+fn rejects_on_delete_without_link() {
+    let error = parse(r#"model Post { id @id author User @onDelete(Cascade) }"#)
+        .expect_err("onDelete without link");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("@onDelete requires @link")));
+}
+
+#[test]
+fn rejects_fulltext_without_analyzer() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  title string
+  @@index([title]) @fulltext
+}",
+    )
+    .expect_err("fulltext");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("@fulltext requires")));
+}
+
+#[test]
+fn rejects_vector_bad_and_zero_dimension() {
+    let bad = parse(
+        r"model Doc {
+  id @id
+  embedding float
+  @@index([embedding]) @vector(abc)
+}",
+    )
+    .expect_err("bad dim");
+    assert!(matches!(bad, DomainError::ParseError(_)));
+
+    let zero = parse(
+        r"model Doc {
+  id @id
+  embedding float
+  @@index([embedding]) @vector(0)
+}",
+    )
+    .expect_err("zero dim");
+    assert!(matches!(zero, DomainError::ParseError(msg) if msg.contains("positive dimension")));
+}
+
+#[test]
+fn rejects_bad_dist_value() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  embedding float
+  @@index([embedding]) @vector(3) @dist(Chebyshev)
+}",
+    )
+    .expect_err("bad dist");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("@dist")));
+}
+
+#[test]
+fn rejects_dist_without_value() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  embedding float
+  @@index([embedding]) @vector(3) @dist
+}",
+    )
+    .expect_err("bare dist");
+    assert!(matches!(
+        error,
+        DomainError::ParseError(msg) if msg.contains("@dist requires")
+    ));
+}
+
+#[test]
+fn rejects_unknown_index_attribute() {
+    let error = parse(
+        r"model Doc {
+  id @id
+  title string
+  @@index([title]) @sparse
+}",
+    )
+    .expect_err("unknown attr");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("unknown @@index")));
+}
+
+#[test]
+fn rejects_combine_fulltext_and_vector() {
+    let error = parse(
+        r#"model Doc {
+  id @id
+  title string
+  @@index([title]) @fulltext("english") @vector(3)
+}"#,
+    )
+    .expect_err("combo");
+    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("cannot combine @fulltext and @vector")));
+}

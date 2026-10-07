@@ -88,7 +88,9 @@ mod tests {
     fn vector_dist_formats_dsl_and_surreal() {
         assert_eq!(VectorDist::Cosine.as_dsl(), "Cosine");
         assert_eq!(VectorDist::Cosine.as_surreal(), "COSINE");
+        assert_eq!(VectorDist::Euclidean.as_dsl(), "Euclidean");
         assert_eq!(VectorDist::Euclidean.as_surreal(), "EUCLIDEAN");
+        assert_eq!(VectorDist::Manhattan.as_dsl(), "Manhattan");
         assert_eq!(VectorDist::Manhattan.as_surreal(), "MANHATTAN");
     }
 }

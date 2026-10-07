@@ -60,15 +60,15 @@ fn normalize_model_object_types(
     let mut index = 0;
     while index < model.fields.len() {
         let field = model.fields[index].clone();
-        if !should_expand_object_type(&field) {
-            index += 1;
-            continue;
-        }
-
         let FieldType::Model(type_name) = &field.field_type else {
             index += 1;
             continue;
         };
+        // Object-type expansion only applies to bare Model refs (not links/relations).
+        if field.link_target.is_some() || field.relation_name.is_some() {
+            index += 1;
+            continue;
+        }
 
         if let Some(object_type) =
             object_types.iter().find(|candidate| candidate.name == *type_name)
@@ -97,13 +97,6 @@ fn normalize_model_object_types(
     }
 
     Ok(())
-}
-
-fn should_expand_object_type(field: &Field) -> bool {
-    matches!(
-        &field.field_type,
-        FieldType::Model(_) if field.link_target.is_none() && field.relation_name.is_none()
-    )
 }
 
 #[derive(Clone)]
@@ -143,7 +136,7 @@ fn resolve_link_pairs(schema: &mut DatabaseSchema) -> Result<(), DomainError> {
     }
 
     // Infer pair names when exactly one unpaired link exists between two models (both directions).
-    infer_anonymous_pair_names(schema, &mut links)?;
+    infer_anonymous_pair_names(schema, &mut links);
 
     let mut by_name: BTreeMap<String, Vec<usize>> = BTreeMap::new();
     for (index, link) in links.iter().enumerate() {
@@ -203,10 +196,7 @@ fn resolve_link_pairs(schema: &mut DatabaseSchema) -> Result<(), DomainError> {
     Ok(())
 }
 
-fn infer_anonymous_pair_names(
-    schema: &mut DatabaseSchema,
-    links: &mut [LinkRef],
-) -> Result<(), DomainError> {
+fn infer_anonymous_pair_names(schema: &mut DatabaseSchema, links: &mut [LinkRef]) {
     // Group unnamed links by unordered model pair
     let mut buckets: BTreeMap<(String, String), Vec<usize>> = BTreeMap::new();
     for (index, link) in links.iter().enumerate() {
@@ -223,14 +213,8 @@ fn infer_anonymous_pair_names(
         if indexes.len() != 2 {
             continue;
         }
-        let a = &links[indexes[0]];
-        let b = &links[indexes[1]];
-        // Must point at each other
-        let cross = (a.target == b.model_name && b.target == a.model_name)
-            || (a.model_name == b.model_name && a.target == b.target);
-        if !cross {
-            continue;
-        }
+        // Same unordered {model, target} bucket always forms a pair (mutual or
+        // same-model same-target); a non-crossing len-2 bucket cannot occur.
         let inferred = format!("{left_model}{right_model}");
         for index in indexes {
             links[index].link_name = Some(inferred.clone());
@@ -238,8 +222,6 @@ fn infer_anonymous_pair_names(
                 Some(inferred.clone());
         }
     }
-
-    Ok(())
 }
 
 fn resolve_stored_computed<'a>(
@@ -249,10 +231,11 @@ fn resolve_stored_computed<'a>(
 ) -> Result<(&'a LinkRef, &'a LinkRef), DomainError> {
     if left.is_list != right.is_list {
         // singular = stored, list = computed
-        if left.is_list {
-            return Ok((right, left));
-        }
-        return Ok((left, right));
+        return if left.is_list {
+            Ok((right, left))
+        } else {
+            Ok((left, right))
+        };
     }
 
     // 1-1: both singular
@@ -323,7 +306,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use crate::domain::{Datasource, NamingConvention, TableMode};
+    use crate::domain::{Datasource, LinkStorage, NamingConvention, TableMode};
 
     fn sample_schema() -> DatabaseSchema {
         DatabaseSchema {
@@ -403,6 +386,62 @@ mod tests {
         }
     }
 
+    fn bare_field(name: &str, field_type: FieldType) -> Field {
+        Field {
+            name: name.to_owned(),
+            field_type,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        }
+    }
+
+    fn id_field(model: &str) -> Field {
+        let mut field = bare_field("id", FieldType::RecordId(model.to_owned()));
+        field.is_id = true;
+        field
+    }
+
+    fn model_named(name: &str, fields: Vec<Field>) -> Model {
+        Model {
+            name: name.to_owned(),
+            fields,
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: Vec::new(),
+            attributes: BTreeMap::new(),
+        }
+    }
+
+    fn empty_base_schema() -> DatabaseSchema {
+        DatabaseSchema {
+            datasource: Datasource {
+                provider: "surrealdb".to_owned(),
+                url: None,
+                namespace: None,
+                database: None,
+                extra: BTreeMap::new(),
+            },
+            naming: NamingConvention::default(),
+            generators: Vec::new(),
+            object_types: Vec::new(),
+            models: Vec::new(),
+            edges: Vec::new(),
+        }
+    }
+
     #[test]
     fn expands_object_type_reference_into_nested_fields() {
         let mut schema = sample_schema();
@@ -414,5 +453,345 @@ mod tests {
         assert_eq!(metadata.field_type, FieldType::Object);
         assert!(user.fields.iter().any(|field| field.name == "metadata.user_id"));
         assert!(user.fields.iter().any(|field| field.name == "metadata.source"));
+    }
+
+    #[test]
+    fn rejects_duplicate_object_type_name() {
+        let mut schema = sample_schema();
+        schema.object_types.push(schema.object_types[0].clone());
+        let error = normalize_schema(&mut schema).expect_err("duplicate object type");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("more than once")));
+    }
+
+    #[test]
+    fn rejects_object_type_conflicting_with_model_name() {
+        let mut schema = sample_schema();
+        schema.object_types[0].name = "User".to_owned();
+        let error = normalize_schema(&mut schema).expect_err("name conflict");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("conflicts with model")));
+    }
+
+    #[test]
+    fn rejects_object_type_nested_field_path() {
+        let mut schema = sample_schema();
+        schema.object_types[0].fields[0].name = "nested.path".to_owned();
+        let error = normalize_schema(&mut schema).expect_err("nested path");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("simple name")));
+    }
+
+    #[test]
+    fn rejects_unknown_type_reference_on_model_field() {
+        let mut schema = empty_base_schema();
+        schema.models.push(model_named(
+            "User",
+            vec![id_field("User"), bare_field("meta", FieldType::Model("Missing".to_owned()))],
+        ));
+        let error = normalize_schema(&mut schema).expect_err("unknown type");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("unknown type")));
+    }
+
+    #[test]
+    fn skips_expand_when_field_type_is_another_model() {
+        let mut schema = empty_base_schema();
+        schema.models.push(model_named("User", vec![id_field("User")]));
+        schema.models.push(model_named(
+            "Post",
+            vec![id_field("Post"), bare_field("author", FieldType::Model("User".to_owned()))],
+        ));
+        normalize_schema(&mut schema).expect("normalize");
+        let author = &schema.models[1].fields[1];
+        assert_eq!(author.field_type, FieldType::Model("User".to_owned()));
+        assert!(!schema.models[1].fields.iter().any(|field| field.name.contains('.')));
+    }
+
+    #[test]
+    fn skips_expand_when_link_target_is_set() {
+        let mut schema = empty_base_schema();
+        schema.object_types.push(ObjectTypeDefinition {
+            name: "UserMetadata".to_owned(),
+            flexible: false,
+            fields: vec![ObjectTypeField {
+                name: "source".to_owned(),
+                field_type: FieldType::String,
+                optional: false,
+            }],
+        });
+        let mut link = bare_field("meta", FieldType::Model("UserMetadata".to_owned()));
+        link.link_target = Some("User".to_owned());
+        schema.models.push(model_named("User", vec![id_field("User"), link]));
+        normalize_schema(&mut schema).expect("normalize");
+        // link_target set => should_expand is false; object type is not expanded.
+        assert_eq!(
+            schema.models[0].fields[1].field_type,
+            FieldType::Model("UserMetadata".to_owned())
+        );
+        assert!(!schema.models[0].fields.iter().any(|field| field.name == "meta.source"));
+        assert_eq!(
+            schema.models[0].fields[1].link_storage,
+            Some(LinkStorage::Stored)
+        );
+    }
+
+    #[test]
+    fn rejects_link_used_on_more_than_two_fields() {
+        let mut schema = empty_base_schema();
+        let mut a = bare_field("a", FieldType::Model("User".to_owned()));
+        a.link_target = Some("User".to_owned());
+        a.link_name = Some("Triple".to_owned());
+        let mut b = bare_field("b", FieldType::Model("User".to_owned()));
+        b.link_target = Some("User".to_owned());
+        b.link_name = Some("Triple".to_owned());
+        let mut c = bare_field("c", FieldType::Model("User".to_owned()));
+        c.link_target = Some("User".to_owned());
+        c.link_name = Some("Triple".to_owned());
+        schema.models.push(model_named("User", vec![id_field("User"), a, b, c]));
+        let error = normalize_schema(&mut schema).expect_err("more than two");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("more than two")));
+    }
+
+    #[test]
+    fn rejects_many_to_many_link_on_both_sides() {
+        let mut schema = empty_base_schema();
+        let mut posts = bare_field(
+            "posts",
+            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+        );
+        posts.link_target = Some("Post".to_owned());
+        posts.link_name = Some("Tagged".to_owned());
+        let mut users = bare_field(
+            "users",
+            FieldType::Array(Box::new(FieldType::Model("User".to_owned()))),
+        );
+        users.link_target = Some("User".to_owned());
+        users.link_name = Some("Tagged".to_owned());
+        schema.models.push(model_named("User", vec![id_field("User"), posts]));
+        schema.models.push(model_named("Post", vec![id_field("Post"), users]));
+        let error = normalize_schema(&mut schema).expect_err("many-to-many");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("many-to-many")));
+    }
+
+    #[test]
+    fn infers_anonymous_cross_model_pair_names() {
+        let mut schema = empty_base_schema();
+        let mut author = bare_field("author", FieldType::Model("User".to_owned()));
+        author.link_target = Some("User".to_owned());
+        author.on_delete = Some(OnDeleteAction::Cascade);
+        let mut posts = bare_field(
+            "posts",
+            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+        );
+        posts.link_target = Some("Post".to_owned());
+        schema.models.push(model_named("User", vec![id_field("User"), posts]));
+        schema.models.push(model_named("Post", vec![id_field("Post"), author]));
+        normalize_schema(&mut schema).expect("normalize");
+        let inferred = schema.models[0].fields[1].link_name.as_deref();
+        assert_eq!(inferred, Some("PostUser"));
+        assert_eq!(schema.models[1].fields[1].link_name.as_deref(), Some("PostUser"));
+        assert_eq!(
+            schema.models[1].fields[1].link_storage,
+            Some(LinkStorage::Stored)
+        );
+        assert_eq!(
+            schema.models[0].fields[1].link_storage,
+            Some(LinkStorage::Computed)
+        );
+    }
+
+    #[test]
+    fn resolves_stored_when_singular_side_is_collected_first() {
+        // Post (singular author) before User (list posts) → left singular, right list.
+        let mut schema = empty_base_schema();
+        let mut author = bare_field("author", FieldType::Model("User".to_owned()));
+        author.link_target = Some("User".to_owned());
+        author.link_name = Some("PostAuthor".to_owned());
+        author.on_delete = Some(OnDeleteAction::Cascade);
+        let mut posts = bare_field(
+            "posts",
+            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+        );
+        posts.link_target = Some("Post".to_owned());
+        posts.link_name = Some("PostAuthor".to_owned());
+        schema.models.push(model_named("Post", vec![id_field("Post"), author]));
+        schema.models.push(model_named("User", vec![id_field("User"), posts]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Stored));
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Computed));
+    }
+
+    #[test]
+    fn rejects_one_to_one_on_delete_on_both_sides() {
+        let mut schema = empty_base_schema();
+        let mut left = bare_field("profile", FieldType::Model("Profile".to_owned()));
+        left.link_target = Some("Profile".to_owned());
+        left.link_name = Some("UserProfile".to_owned());
+        left.on_delete = Some(OnDeleteAction::Cascade);
+        let mut right = bare_field("user", FieldType::Model("User".to_owned()));
+        right.link_target = Some("User".to_owned());
+        right.link_name = Some("UserProfile".to_owned());
+        right.on_delete = Some(OnDeleteAction::Cascade);
+        schema.models.push(model_named("User", vec![id_field("User"), left]));
+        schema.models.push(model_named("Profile", vec![id_field("Profile"), right]));
+        let error = normalize_schema(&mut schema).expect_err("both onDelete");
+        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("both sides")));
+    }
+
+    #[test]
+    fn rejects_one_to_one_on_delete_on_neither_side_when_optionality_ties() {
+        let mut schema = empty_base_schema();
+        let mut left = bare_field("profile", FieldType::Model("Profile".to_owned()));
+        left.link_target = Some("Profile".to_owned());
+        left.link_name = Some("UserProfile".to_owned());
+        left.optional = true;
+        let mut right = bare_field("user", FieldType::Model("User".to_owned()));
+        right.link_target = Some("User".to_owned());
+        right.link_name = Some("UserProfile".to_owned());
+        right.optional = true;
+        schema.models.push(model_named("User", vec![id_field("User"), left]));
+        schema.models.push(model_named("Profile", vec![id_field("Profile"), right]));
+        let error = normalize_schema(&mut schema).expect_err("neither onDelete");
+        assert!(matches!(
+            error,
+            DomainError::ValidationError(msg) if msg.contains("exactly one side")
+        ));
+    }
+
+    #[test]
+    fn one_to_one_on_delete_selects_stored_side() {
+        let mut schema = empty_base_schema();
+        let mut left = bare_field("profile", FieldType::Model("Profile".to_owned()));
+        left.link_target = Some("Profile".to_owned());
+        left.link_name = Some("UserProfile".to_owned());
+        left.on_delete = Some(OnDeleteAction::Cascade);
+        let mut right = bare_field("user", FieldType::Model("User".to_owned()));
+        right.link_target = Some("User".to_owned());
+        right.link_name = Some("UserProfile".to_owned());
+        schema.models.push(model_named("User", vec![id_field("User"), left]));
+        schema.models.push(model_named("Profile", vec![id_field("Profile"), right]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Stored));
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Computed));
+        assert_eq!(
+            schema.models[1].fields[1].link_opposite_field.as_deref(),
+            Some("profile")
+        );
+        assert!(schema.models[1].fields[1].on_delete.is_none());
+    }
+
+    #[test]
+    fn one_to_one_optional_based_stored_selection() {
+        let mut schema = empty_base_schema();
+        let mut left = bare_field("profile", FieldType::Model("Profile".to_owned()));
+        left.link_target = Some("Profile".to_owned());
+        left.link_name = Some("UserProfile".to_owned());
+        left.optional = false;
+        let mut right = bare_field("user", FieldType::Model("User".to_owned()));
+        right.link_target = Some("User".to_owned());
+        right.link_name = Some("UserProfile".to_owned());
+        right.optional = true;
+        schema.models.push(model_named("User", vec![id_field("User"), left]));
+        schema.models.push(model_named("Profile", vec![id_field("Profile"), right]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Stored));
+        assert_eq!(schema.models[0].fields[1].on_delete, Some(OnDeleteAction::Ignore));
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Computed));
+    }
+
+    #[test]
+    fn infers_anonymous_same_model_both_pointing_at_other_model() {
+        // Hits `a.model_name == b.model_name && a.target == b.target` (not mutual self-link).
+        let mut schema = empty_base_schema();
+        let mut authored = bare_field("authored", FieldType::Model("Post".to_owned()));
+        authored.link_target = Some("Post".to_owned());
+        authored.on_delete = Some(OnDeleteAction::Cascade);
+        let mut reviewed = bare_field("reviewed", FieldType::Model("Post".to_owned()));
+        reviewed.link_target = Some("Post".to_owned());
+        schema.models.push(model_named(
+            "User",
+            vec![id_field("User"), authored, reviewed],
+        ));
+        schema.models.push(model_named("Post", vec![id_field("Post")]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(
+            schema.models[0].fields[1].link_name.as_deref(),
+            Some("PostUser")
+        );
+        assert_eq!(
+            schema.models[0].fields[2].link_name.as_deref(),
+            Some("PostUser")
+        );
+    }
+
+    #[test]
+    fn one_to_one_on_delete_on_right_only_selects_right_as_stored() {
+        let mut schema = empty_base_schema();
+        let mut left = bare_field("profile", FieldType::Model("Profile".to_owned()));
+        left.link_target = Some("Profile".to_owned());
+        left.link_name = Some("UserProfile".to_owned());
+        let mut right = bare_field("user", FieldType::Model("User".to_owned()));
+        right.link_target = Some("User".to_owned());
+        right.link_name = Some("UserProfile".to_owned());
+        right.on_delete = Some(OnDeleteAction::Cascade);
+        schema.models.push(model_named("User", vec![id_field("User"), left]));
+        schema.models.push(model_named("Profile", vec![id_field("Profile"), right]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Stored));
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Computed));
+    }
+
+    #[test]
+    fn one_to_one_optional_left_true_selects_right_as_stored() {
+        let mut schema = empty_base_schema();
+        let mut left = bare_field("profile", FieldType::Model("Profile".to_owned()));
+        left.link_target = Some("Profile".to_owned());
+        left.link_name = Some("UserProfile".to_owned());
+        left.optional = true;
+        let mut right = bare_field("user", FieldType::Model("User".to_owned()));
+        right.link_target = Some("User".to_owned());
+        right.link_name = Some("UserProfile".to_owned());
+        right.optional = false;
+        schema.models.push(model_named("User", vec![id_field("User"), left]));
+        schema.models.push(model_named("Profile", vec![id_field("Profile"), right]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Stored));
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Computed));
+    }
+
+    #[test]
+    fn unnamed_solo_link_keeps_existing_storage() {
+        let mut schema = empty_base_schema();
+        let mut author = bare_field("author", FieldType::Model("User".to_owned()));
+        author.link_target = Some("User".to_owned());
+        author.link_storage = Some(LinkStorage::Stored);
+        author.on_delete = Some(OnDeleteAction::Cascade);
+        schema.models.push(model_named("User", vec![id_field("User")]));
+        schema.models.push(model_named("Post", vec![id_field("Post"), author]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(
+            schema.models[1].fields[1].link_storage,
+            Some(LinkStorage::Stored)
+        );
+    }
+
+    #[test]
+    fn skips_expand_when_relation_name_is_set() {
+        let mut schema = empty_base_schema();
+        schema.object_types.push(ObjectTypeDefinition {
+            name: "UserMetadata".to_owned(),
+            flexible: false,
+            fields: vec![ObjectTypeField {
+                name: "source".to_owned(),
+                field_type: FieldType::String,
+                optional: false,
+            }],
+        });
+        let mut field = bare_field("meta", FieldType::Model("UserMetadata".to_owned()));
+        field.relation_name = Some("MetaEdge".to_owned());
+        schema.models.push(model_named("User", vec![id_field("User"), field]));
+        normalize_schema(&mut schema).expect("normalize");
+        assert_eq!(
+            schema.models[0].fields[1].field_type,
+            FieldType::Model("UserMetadata".to_owned())
+        );
+        assert!(!schema.models[0].fields.iter().any(|f| f.name == "meta.source"));
     }
 }

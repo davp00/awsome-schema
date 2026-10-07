@@ -49,16 +49,17 @@ fn load_directory_schema(
     let mut schema = parse(&filesystem.read_to_string(&config_path)?)?;
 
     let tables_dir = format!("{dir}/{TABLES_DIR}");
-    if filesystem.is_directory(&tables_dir) {
-        for name in filesystem.list_dir(&tables_dir)? {
-            if !name.ends_with(TABLE_SUFFIX) {
-                continue;
-            }
-            let fragment_path = format!("{tables_dir}/{name}");
-            let fragment = parse(&filesystem.read_to_string(&fragment_path)?)?;
-            schema.models.extend(fragment.models);
-            schema.edges.extend(fragment.edges);
+    if !filesystem.is_directory(&tables_dir) {
+        return Ok(schema);
+    }
+    for name in filesystem.list_dir(&tables_dir)? {
+        if !name.ends_with(TABLE_SUFFIX) {
+            continue;
         }
+        let fragment_path = format!("{tables_dir}/{name}");
+        let fragment = parse(&filesystem.read_to_string(&fragment_path)?)?;
+        schema.models.extend(fragment.models);
+        schema.edges.extend(fragment.edges);
     }
 
     Ok(schema)

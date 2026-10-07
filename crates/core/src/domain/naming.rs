@@ -59,9 +59,13 @@ pub fn mapped_name(
     attributes: &BTreeMap<String, String>,
     case: Option<NamingCase>,
 ) -> String {
-    attributes.get("map").cloned().unwrap_or_else(|| {
-        case.map_or_else(|| name.to_owned(), |convention| convention.apply(name))
-    })
+    if let Some(mapped) = attributes.get("map") {
+        return mapped.clone();
+    }
+    match case {
+        Some(convention) => convention.apply(name),
+        None => name.to_owned(),
+    }
 }
 
 pub struct NamingContext<'a> {
@@ -196,10 +200,10 @@ fn to_camel_case(input: &str) -> String {
             result.push_str(&lower);
         } else {
             let mut chars = lower.chars();
-            if let Some(first) = chars.next() {
-                result.push(first.to_ascii_uppercase());
-                result.extend(chars);
-            }
+            // `split_identifier_parts` never yields empty parts.
+            let first = chars.next().expect("non-empty identifier part");
+            result.push(first.to_ascii_uppercase());
+            result.extend(chars);
         }
     }
 

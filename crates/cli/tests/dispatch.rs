@@ -70,6 +70,39 @@ fn dispatch_init_command() {
 }
 
 #[test]
+fn dispatch_init_creates_missing_schema() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let schema_path = temp.path().join("awesome.schema");
+    let migrations = temp.path().join("migrations");
+    std::fs::create_dir_all(&migrations).expect("migrations");
+
+    let schema_path_s = schema_path.to_string_lossy().into_owned();
+    let migrations_s = migrations.to_string_lossy().into_owned();
+    let cli = Cli::try_parse_from([
+        "awesome-schema",
+        "--schema",
+        schema_path_s.as_str(),
+        "--migrations-dir",
+        migrations_s.as_str(),
+        "init",
+    ])
+    .expect("parse");
+    assert!(!schema_path.exists());
+    commands::dispatch(&cli, &Printer::new()).expect("init");
+    assert!(schema_path.exists());
+}
+
+#[test]
+fn dispatch_migrate_apply_and_rollback_arms() {
+    // Hit `MigrateCommands::Apply` / `Rollback` regardless of whether a local SurrealDB is up.
+    let (_temp, apply_cli) = temp_cli(&["migrate", "apply"]);
+    let _ = commands::dispatch(&apply_cli, &Printer::new());
+
+    let (_temp, rollback_cli) = temp_cli(&["migrate", "rollback", "--steps", "1"]);
+    let _ = commands::dispatch(&rollback_cli, &Printer::new());
+}
+
+#[test]
 fn dispatch_init_when_schema_already_exists() {
     let (temp, cli) = temp_cli(&["init"]);
     commands::dispatch(&cli, &Printer::new()).expect("init first");

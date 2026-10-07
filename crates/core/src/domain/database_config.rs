@@ -99,7 +99,21 @@ mod tests {
     #[test]
     fn ws_connection_address_strips_scheme() {
         assert_eq!(ws_connection_address("ws://127.0.0.1:8000"), "127.0.0.1:8000");
+        assert_eq!(ws_connection_address("wss://db.example:443"), "db.example:443");
         assert_eq!(ws_connection_address("127.0.0.1:8000"), "127.0.0.1:8000");
+    }
+
+    #[test]
+    fn preserves_wss_endpoint() {
+        let datasource = Datasource {
+            provider: "surrealdb".to_owned(),
+            url: Some("wss://db.example:443".to_owned()),
+            namespace: Some("app".to_owned()),
+            database: Some("main".to_owned()),
+            extra: BTreeMap::new(),
+        };
+        let config = DatabaseConfig::from_datasource(&datasource).expect("config");
+        assert_eq!(config.endpoint, "wss://db.example:443");
     }
 
     #[test]

@@ -946,6 +946,55 @@ mod tests {
     }
 
     #[test]
+    fn default_renderer_and_schemaless_edge_permissions() {
+        let renderer = SurrealDbRenderer::default();
+        let mut schema = DatabaseSchema::empty();
+        schema.datasource.provider = "surrealdb".into();
+        schema.models.push(Model {
+            name: "User".to_owned(),
+            fields: vec![Field {
+                name: "id".to_owned(),
+                field_type: FieldType::RecordId("User".to_owned()),
+                optional: false,
+                unique: false,
+                is_id: true,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                flexible: false,
+                link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
+                relation_name: None,
+                attributes: BTreeMap::new(),
+            }],
+            table_mode: TableMode::Schemaless,
+            permissions: None,
+            indexes: Vec::new(),
+            attributes: BTreeMap::new(),
+        });
+        schema.edges.push(Edge {
+            name: "Likes".to_owned(),
+            in_model: "User".to_owned(),
+            out_model: "User".to_owned(),
+            fields: Vec::new(),
+            table_mode: TableMode::Schemaless,
+            permissions: Some("FULL".to_owned()),
+            attributes: BTreeMap::new(),
+        });
+
+        let rendered = renderer.render_schema(&schema).expect("render");
+        assert!(rendered.contains("DEFINE TABLE user SCHEMALESS;"));
+        assert!(rendered.contains(
+            "DEFINE TABLE likes TYPE RELATION IN user OUT user SCHEMALESS;"
+        ));
+        assert!(rendered.contains("DEFINE TABLE likes PERMISSIONS FULL;"));
+    }
+
+    #[test]
     fn renders_reference_and_computed_backlink() {
         let models = vec![
             Model {
@@ -1015,6 +1064,28 @@ mod tests {
             render_define_field("user", &posts, &naming),
             "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);"
         );
+
+        // No link_target and non-model type → fallback table name "unknown".
+        let orphan = Field {
+            name: "orphans".to_owned(),
+            field_type: FieldType::String,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: Some(core::LinkStorage::Computed),
+            link_opposite_field: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        };
+        assert!(render_define_field("user", &orphan, &naming).contains("unknown"));
     }
 }
 

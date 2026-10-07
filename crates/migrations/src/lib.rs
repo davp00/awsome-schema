@@ -474,6 +474,27 @@ mod tests {
     }
 
     #[test]
+    fn creates_indexes_when_model_is_new() {
+        let mut schema = target_schema();
+        schema.models[0].indexes.push(core::Index {
+            name: Some("user_email_idx".to_owned()),
+            fields: vec!["email".to_owned()],
+            unique: false,
+            fulltext: false,
+            fulltext_analyzer: None,
+            vector: false,
+            vector_dimension: None,
+            vector_dist: None,
+        });
+        let plan = diff_schemas(None, &schema, "create_user_with_index");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::CreateIndex { table, index }
+            if table == "user" && index.name.as_deref() == Some("user_email_idx")
+        )));
+    }
+
+    #[test]
     fn creates_relation_table_for_new_edge() {
         let mut schema = target_schema();
         schema.models.push(post_model());
@@ -562,6 +583,25 @@ mod tests {
                 mode: _,
                 relation: Some(RelationEndpoints { out_table, .. })
             } if name == "likes" && out_table == "user"
+        )));
+    }
+
+    #[test]
+    fn recreates_edge_permissions_when_endpoints_change() {
+        let mut previous = target_schema();
+        previous.models.push(post_model());
+        let mut edge = likes_edge();
+        edge.permissions = Some("FULL".to_owned());
+        previous.edges.push(edge);
+        let mut current = previous.clone();
+        current.edges[0].out_model = "User".to_owned();
+        current.edges[0].permissions = Some("FULL".to_owned());
+
+        let plan = diff_schemas(Some(&previous), &current, "repoint_perm");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::CreatePermission { table, permission }
+            if table == "likes" && permission == "FULL"
         )));
     }
 
@@ -728,7 +768,174 @@ mod tests {
 
     #[test]
     fn schema_differ_default_is_constructible() {
-        assert!(SchemaDiffer.diff(None, &target_schema(), "init").operations.len() > 1);
+        let plan = SchemaDiffer::default().diff(None, &target_schema(), "init");
+        assert!(plan.operations.len() > 1);
+    }
+
+    #[test]
+    fn creates_permission_on_new_edge() {
+        let mut schema = target_schema();
+        schema.models.push(post_model());
+        let mut edge = likes_edge();
+        edge.permissions = Some("FULL".to_owned());
+        schema.edges.push(edge);
+
+        let plan = diff_schemas(None, &schema, "edge_perm");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::CreatePermission { table, permission }
+            if table == "likes" && permission == "FULL"
+        )));
+    }
+
+    #[test]
+    fn detects_edge_alter_mode_fields_and_permissions() {
+        let mut previous = target_schema();
+        previous.models.push(post_model());
+        let mut edge = likes_edge();
+        edge.permissions = Some("FULL".to_owned());
+        previous.edges.push(edge);
+
+        let mut current = previous.clone();
+        current.edges[0].table_mode = TableMode::Schemaless;
+        current.edges[0].fields[0].optional = true;
+        current.edges[0].fields.push(Field {
+            name: "note".to_owned(),
+            field_type: FieldType::String,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+        current.edges[0].permissions = Some("NONE".to_owned());
+
+        let plan = diff_schemas(Some(&previous), &current, "alter_edge");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::AlterTable {
+                name,
+                mode: TableMode::Schemaless,
+                relation: Some(_)
+            } if name == "likes"
+        )));
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::AlterField { table, field }
+            if table == "likes" && field.name == "score"
+        )));
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::CreateField { table, field }
+            if table == "likes" && field.name == "note"
+        )));
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::UpdatePermission { table, permission }
+            if table == "likes" && permission == "NONE"
+        )));
+    }
+
+    #[test]
+    fn detects_edge_field_drop_and_permission_drop() {
+        let mut previous = target_schema();
+        previous.models.push(post_model());
+        let mut edge = likes_edge();
+        edge.permissions = Some("FULL".to_owned());
+        previous.edges.push(edge);
+
+        let mut current = previous.clone();
+        current.edges[0].fields.clear();
+        current.edges[0].permissions = None;
+
+        let plan = diff_schemas(Some(&previous), &current, "drop_edge_bits");
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::DropField { table, name }
+            if table == "likes" && name == "score"
+        )));
+        assert!(plan.operations.iter().any(|op| matches!(
+            op,
+            MigrationOperation::DropPermission { table } if table == "likes"
+        )));
+    }
+
+    #[test]
+    fn skips_relation_fields_on_model_alter_and_drop() {
+        let mut previous = target_schema();
+        previous.models.push(post_model());
+        previous.models[0].fields.push(Field {
+            name: "nick".to_owned(),
+            field_type: FieldType::String,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+        previous.models[0].fields.push(Field {
+            name: "posts".to_owned(),
+            field_type: FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
+            relation_name: Some("Likes".to_owned()),
+            attributes: BTreeMap::new(),
+        });
+        previous.edges.push(likes_edge());
+
+        let mut altered = previous.clone();
+        // Relation optional change must be ignored; nick change must produce AlterField.
+        altered.models[0].fields.iter_mut().find(|f| f.name == "posts").unwrap().optional = true;
+        altered.models[0].fields.iter_mut().find(|f| f.name == "nick").unwrap().optional = true;
+
+        let alter_plan = diff_schemas(Some(&previous), &altered, "alter_relation");
+        assert!(alter_plan.operations.iter().any(|op| {
+            matches!(op, MigrationOperation::AlterField { field, .. } if field.name == "nick")
+        }));
+        assert!(alter_plan.operations.iter().all(|op| {
+            !matches!(op, MigrationOperation::AlterField { field, .. } if field.name == "posts")
+        }));
+
+        let mut dropped = previous.clone();
+        dropped.models[0].fields.retain(|f| f.name != "posts" && f.name != "nick");
+        let drop_plan = diff_schemas(Some(&previous), &dropped, "drop_relation");
+        assert!(drop_plan.operations.iter().any(|op| {
+            matches!(op, MigrationOperation::DropField { name, .. } if name == "nick")
+        }));
+        assert!(drop_plan.operations.iter().all(|op| {
+            !matches!(op, MigrationOperation::DropField { name, .. } if name == "posts")
+        }));
     }
 
     #[test]

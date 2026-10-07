@@ -124,14 +124,8 @@ fn parse_permissions(define: &str) -> Option<String> {
 /// defined as `TYPE record<table>`. Models still require `@id`, so synthesize it.
 fn ensure_model_id_field(fields: &mut Vec<Field>, model_name: &str) {
     if let Some(field) = fields.iter_mut().find(|field| field.name == "id") {
+        // `parse_field_define` already maps `record<table>` id fields to RecordId.
         field.is_id = true;
-        if let FieldType::Model(target) = &field.field_type {
-            field.field_type = FieldType::RecordId(target.clone());
-            field.link_target = None;
-            field.link_storage = None;
-            field.on_delete = None;
-            field.link_name = None;
-        }
         return;
     }
 
@@ -191,9 +185,7 @@ fn map_indexes(
         if index.fields.len() == 1 && index.unique {
             let field_name = &index.fields[0];
             let expected = format!("{table}_{field_name}_unique");
-            if index.resolved_name(table, &preserve.naming) == expected
-                || index.name.as_deref() == Some(expected.as_str())
-            {
+            if index.resolved_name(table, &preserve.naming) == expected {
                 if let Some(field) = fields.iter_mut().find(|f| f.name == *field_name) {
                     field.unique = true;
                     continue;
@@ -268,8 +260,8 @@ fn parse_field_define(
         match token.as_str() {
             "default" => {
                 idx += 1;
-                if tokens.get(idx).is_some_and(|t| t.eq_ignore_ascii_case("always")) {
-                    default_always = true;
+                default_always = tokens.get(idx).is_some_and(|t| t.eq_ignore_ascii_case("always"));
+                if default_always {
                     idx += 1;
                 }
                 let (value, next) = read_expression(&tokens, idx);
@@ -312,10 +304,12 @@ fn parse_field_define(
 
     let (mut field_type, mut link_target) = map_record_links(field_type, preserve);
     if name == "id" {
-        if let FieldType::Model(model) = field_type {
-            field_type = FieldType::RecordId(model);
-            link_target = None;
-        }
+        // INFO `record<table>` id fields become Model via map_record_links; restore RecordId.
+        field_type = match field_type {
+            FieldType::Model(model) => FieldType::RecordId(model),
+            other => other,
+        };
+        link_target = None;
     }
 
     // RECORD links map to @link; REFERENCE adds storage + on_delete
@@ -391,15 +385,10 @@ fn pair_pulled_links(schema: &mut DatabaseSchema, preserve: &DatabaseSchema) {
             if !field.is_computed_link() {
                 continue;
             }
-            let Some(target) = &field.link_target else {
+            let (Some(target), Some(opposite)) = (&field.link_target, &field.link_opposite_field)
+            else {
                 continue;
             };
-            let Some(opposite) = &field.link_opposite_field else {
-                continue;
-            };
-            if opposite.is_empty() {
-                continue;
-            }
             pairs.push((
                 model.name.clone(),
                 field.name.clone(),
@@ -413,26 +402,27 @@ fn pair_pulled_links(schema: &mut DatabaseSchema, preserve: &DatabaseSchema) {
         let pair_name = preserved_link_name(preserve, &computed_model, &computed_field)
             .or_else(|| preserved_link_name(preserve, &stored_model, &stored_field))
             .unwrap_or_else(|| format!("{stored_model}{computed_model}"));
-        if let Some(model) = schema.models.iter_mut().find(|m| m.name == computed_model) {
-            if let Some(field) = model.fields.iter_mut().find(|f| f.name == computed_field) {
-                field.link_name = Some(pair_name.clone());
-                // Prefer list type for computed backrefs
-                if let Some(target) = field.link_target.clone() {
-                    if !field.is_list_link() {
-                        field.field_type = FieldType::Array(Box::new(FieldType::Model(target)));
-                    }
-                }
+        // Computed side always exists — pairs are collected from `schema.models`.
+        let computed = schema
+            .models
+            .iter_mut()
+            .find(|m| m.name == computed_model)
+            .and_then(|m| m.fields.iter_mut().find(|f| f.name == computed_field))
+            .expect("computed pair source");
+        computed.link_name = Some(pair_name.clone());
+
+        if let Some(field) = schema
+            .models
+            .iter_mut()
+            .find(|m| m.name == stored_model)
+            .and_then(|m| m.fields.iter_mut().find(|f| f.name == stored_field))
+        {
+            field.link_name = Some(pair_name);
+            if field.link_storage.is_none() {
+                field.link_storage = Some(core::LinkStorage::Stored);
             }
-        }
-        if let Some(model) = schema.models.iter_mut().find(|m| m.name == stored_model) {
-            if let Some(field) = model.fields.iter_mut().find(|f| f.name == stored_field) {
-                field.link_name = Some(pair_name);
-                if field.link_storage.is_none() {
-                    field.link_storage = Some(core::LinkStorage::Stored);
-                }
-                if field.on_delete.is_none() {
-                    field.on_delete = Some(core::OnDeleteAction::Ignore);
-                }
+            if field.on_delete.is_none() {
+                field.on_delete = Some(core::OnDeleteAction::Ignore);
             }
         }
     }
@@ -539,7 +529,7 @@ fn parse_type_tokens(
     }
 
     let (field_type, mut optional) = if raw.starts_with("option<") && raw.ends_with('>') {
-        (parse_inner_option_type(raw)?, true)
+        (parse_inner_option_type(raw), true)
     } else {
         (parse_type_name(raw)?, false)
     };
@@ -584,11 +574,13 @@ fn parse_type_name(raw: &str) -> Result<FieldType, DomainError> {
     })
 }
 
-fn parse_inner_option_type(raw: &str) -> Result<FieldType, DomainError> {
-    let inner = raw.strip_prefix("option<").and_then(|s| s.strip_suffix('>')).ok_or_else(|| {
-        DomainError::DatabaseError(format!("invalid option type `{raw}`"))
-    })?;
-    Ok(map_scalar_type_name(inner))
+/// Caller must pass a token that already matches `option<...>`.
+fn parse_inner_option_type(raw: &str) -> FieldType {
+    let inner = raw
+        .strip_prefix("option<")
+        .and_then(|s| s.strip_suffix('>'))
+        .unwrap_or(raw);
+    map_scalar_type_name(inner)
 }
 
 fn map_scalar_type_name(name: &str) -> FieldType {
@@ -650,10 +642,9 @@ fn table_name_to_pascal(table: &str) -> String {
         .filter(|part| !part.is_empty())
         .map(|part| {
             let mut chars = part.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(first) => first.to_ascii_uppercase().to_string() + chars.as_str(),
-            }
+            // `filter` above guarantees a non-empty part.
+            let first = chars.next().expect("non-empty split part");
+            first.to_ascii_uppercase().to_string() + chars.as_str()
         })
         .collect()
 }
@@ -927,5 +918,664 @@ mod tests {
         assert_eq!(author.on_delete, Some(core::OnDeleteAction::Cascade));
         assert_eq!(posts.link_name.as_deref(), Some("PostAuthor"));
         assert_eq!(author.link_name.as_deref(), Some("PostAuthor"));
+    }
+
+    #[test]
+    fn maps_schemaless_table_mode() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMALESS;".into());
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), TableInfo::default());
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        assert_eq!(pulled.models[0].table_mode, TableMode::Schemaless);
+    }
+
+    #[test]
+    fn rejects_relation_define_missing_in_out() {
+        let preserve = DatabaseSchema::empty();
+        let mut tables = BTreeMap::new();
+        tables.insert(
+            "likes".into(),
+            "DEFINE TABLE likes TYPE RELATION SCHEMAFULL;".into(),
+        );
+        let err = map_database_info(&tables, &BTreeMap::new(), &preserve).expect_err("missing IN");
+        assert!(matches!(err, DomainError::DatabaseError(msg) if msg.contains("missing IN")));
+    }
+
+    #[test]
+    fn maps_field_modifiers_and_trailing_tokens() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "label".into(),
+            "DEFINE FIELD label ON user TYPE string DEFAULT 'plain';".into(),
+        );
+        info.fields.insert(
+            "status".into(),
+            "DEFINE FIELD status ON user TYPE string DEFAULT ALWAYS 'active' VALUE string::lowercase($value) READONLY FLEXIBLE REFERENCE ON DELETE CASCADE ASSERT $value != NONE PERMISSIONS FULL;".into(),
+        );
+        info.fields.insert(
+            "buddy".into(),
+            "DEFINE FIELD buddy ON user TYPE record<user> REFERENCE ON DELETE CASCADE;".into(),
+        );
+        info.fields.insert(
+            "note".into(),
+            "DEFINE FIELD note ON user TYPE string ON other VALUE time::now();".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let user = &pulled.models[0];
+        let label = user.fields.iter().find(|f| f.name == "label").unwrap();
+        assert!(!label.default_always);
+        assert_eq!(label.default_value.as_deref(), Some("'plain'"));
+        let status = user.fields.iter().find(|f| f.name == "status").unwrap();
+        assert!(status.default_always);
+        assert_eq!(status.default_value.as_deref(), Some("'active'"));
+        assert_eq!(status.value_expression.as_deref(), Some("string::lowercase($value)"));
+        assert!(status.readonly);
+        let buddy = user.fields.iter().find(|f| f.name == "buddy").unwrap();
+        assert_eq!(buddy.on_delete, Some(core::OnDeleteAction::Cascade));
+        assert_eq!(buddy.link_storage, Some(core::LinkStorage::Stored));
+        let note = user.fields.iter().find(|f| f.name == "note").unwrap();
+        assert_eq!(note.value_expression.as_deref(), Some("time::now()"));
+    }
+
+    #[test]
+    fn maps_scalar_option_array_record_and_custom_types() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("doc".into(), "DEFINE TABLE doc SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        for (name, define) in [
+            ("opt", "DEFINE FIELD opt ON doc TYPE option<string>;"),
+            ("pipe", "DEFINE FIELD pipe ON doc TYPE string | none;"),
+            ("flag", "DEFINE FIELD flag ON doc TYPE bool;"),
+            ("when", "DEFINE FIELD when ON doc TYPE datetime;"),
+            ("meta", "DEFINE FIELD meta ON doc TYPE object;"),
+            ("tags", "DEFINE FIELD tags ON doc TYPE array<string>;"),
+            ("owner", "DEFINE FIELD owner ON doc TYPE record<user>;"),
+            ("shape", "DEFINE FIELD shape ON doc TYPE geometry;"),
+            ("matrix", "DEFINE FIELD matrix ON doc TYPE array<array<int>>;"),
+        ] {
+            info.fields.insert(name.into(), define.into());
+        }
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("doc".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let doc = &pulled.models[0];
+        let field = |name: &str| doc.fields.iter().find(|f| f.name == name).unwrap();
+
+        assert!(field("opt").optional);
+        assert_eq!(field("opt").field_type, FieldType::String);
+        assert!(field("pipe").optional);
+        assert_eq!(field("pipe").field_type, FieldType::String);
+        assert_eq!(field("flag").field_type, FieldType::Bool);
+        assert_eq!(field("when").field_type, FieldType::Datetime);
+        assert_eq!(field("meta").field_type, FieldType::Object);
+        assert_eq!(
+            field("tags").field_type,
+            FieldType::Array(Box::new(FieldType::String))
+        );
+        assert_eq!(field("owner").link_target.as_deref(), Some("User"));
+        assert_eq!(field("shape").field_type, FieldType::Custom("geometry".into()));
+        assert_eq!(
+            field("matrix").field_type,
+            FieldType::Array(Box::new(FieldType::Array(Box::new(FieldType::Int))))
+        );
+
+        let tokens = tokenize("TYPE option<string>");
+        let mut idx = 1;
+        let (ty, optional, _) = parse_type_tokens(&tokens, &mut idx).expect("option");
+        assert_eq!(ty, FieldType::String);
+        assert!(optional);
+    }
+
+    #[test]
+    fn maps_computed_backlink_single_table_and_field_form() {
+        let mut preserve = preserve_with_user();
+        preserve.models.push(Model {
+            name: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        tables.insert("post".into(), "DEFINE TABLE post SCHEMAFULL;".into());
+
+        let mut user_info = TableInfo::default();
+        user_info.fields.insert(
+            "posts".into(),
+            "DEFINE FIELD posts ON user COMPUTED <~ post;".into(),
+        );
+        user_info.fields.insert(
+            "authored".into(),
+            "DEFINE FIELD authored ON user COMPUTED <~ (post FIELD author);".into(),
+        );
+        let mut post_info = TableInfo::default();
+        post_info.fields.insert(
+            "author".into(),
+            "DEFINE FIELD author ON post TYPE record<user>;".into(),
+        );
+
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), user_info);
+        table_infos.insert("post".into(), post_info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let user = pulled.models.iter().find(|m| m.name == "User").unwrap();
+        let posts = user.fields.iter().find(|f| f.name == "posts").unwrap();
+        assert_eq!(posts.link_storage, Some(core::LinkStorage::Computed));
+        assert_eq!(posts.link_target.as_deref(), Some("Post"));
+        assert!(posts.link_opposite_field.is_none());
+
+        let authored = user.fields.iter().find(|f| f.name == "authored").unwrap();
+        assert_eq!(authored.link_opposite_field.as_deref(), Some("author"));
+    }
+
+    #[test]
+    fn pair_pulled_links_preserves_name_and_fills_stored_defaults() {
+        let mut preserve = DatabaseSchema::empty();
+        preserve.datasource.provider = "surrealdb".into();
+        preserve.naming.tables = core::NamingCase::SnakeCase;
+        preserve.models.push(Model {
+            name: "User".into(),
+            fields: vec![Field {
+                name: "posts".into(),
+                field_type: FieldType::Array(Box::new(FieldType::Model("Post".into()))),
+                optional: false,
+                unique: false,
+                is_id: false,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                flexible: false,
+                link_target: Some("Post".into()),
+                link_name: Some("PostAuthor".into()),
+                on_delete: None,
+                link_storage: Some(core::LinkStorage::Computed),
+                link_opposite_field: Some("author".into()),
+                relation_name: None,
+                attributes: BTreeMap::new(),
+            }],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+        preserve.models.push(Model {
+            name: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        tables.insert("post".into(), "DEFINE TABLE post SCHEMAFULL;".into());
+
+        let mut user_info = TableInfo::default();
+        user_info.fields.insert(
+            "posts".into(),
+            "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);".into(),
+        );
+        let mut post_info = TableInfo::default();
+        // Non-record opposite so pair_pulled_links fills link_storage/on_delete defaults.
+        post_info.fields.insert(
+            "author".into(),
+            "DEFINE FIELD author ON post TYPE string;".into(),
+        );
+
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), user_info);
+        table_infos.insert("post".into(), post_info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let post = pulled.models.iter().find(|m| m.name == "Post").unwrap();
+        let author = post.fields.iter().find(|f| f.name == "author").unwrap();
+        assert_eq!(author.link_name.as_deref(), Some("PostAuthor"));
+        assert_eq!(author.link_storage, Some(core::LinkStorage::Stored));
+        assert_eq!(author.on_delete, Some(core::OnDeleteAction::Ignore));
+    }
+
+    #[test]
+    fn index_define_errors_too_short_and_missing_fields() {
+        let short = parse_index_define("DEFINE INDEX x").expect_err("short");
+        assert!(matches!(short, DomainError::DatabaseError(_)));
+        // Need ≥7 tokens so the length check passes before FIELDS lookup.
+        let missing =
+            parse_index_define("DEFINE INDEX x ON user TABLE placeholder UNIQUE").expect_err("fields");
+        assert!(matches!(missing, DomainError::DatabaseError(msg) if msg.contains("FIELDS")));
+    }
+
+    #[test]
+    fn field_define_errors_propagate_through_map_fields() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+
+        let cases = [
+            "NOT A FIELD DEFINE",
+            "DEFINE FIELD email TABLE user TYPE string;",
+            "DEFINE FIELD email ON other TYPE string;",
+            "DEFINE FIELD email ON user;",
+        ];
+        for define in cases {
+            let mut info = TableInfo::default();
+            info.fields.insert("email".into(), define.into());
+            let mut table_infos = BTreeMap::new();
+            table_infos.insert("user".into(), info);
+            let err = map_database_info(&tables, &table_infos, &preserve).expect_err(define);
+            assert!(matches!(err, DomainError::DatabaseError(_)), "{define}");
+        }
+    }
+
+    #[test]
+    fn skips_internal_tables_and_array_item_field_defines() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("_awesome_migrations".into(), "DEFINE TABLE _awesome_migrations SCHEMAFULL;".into());
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "tags.*".into(),
+            "DEFINE FIELD tags.* ON user TYPE string;".into(),
+        );
+        info.fields.insert(
+            "email".into(),
+            "DEFINE FIELD email ON user TYPE string;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        assert_eq!(pulled.models.len(), 1);
+        assert!(pulled.models[0].fields.iter().all(|f| !f.name.contains('*')));
+        assert!(pulled.models[0].fields.iter().any(|f| f.name == "email"));
+    }
+
+    #[test]
+    fn model_name_for_table_uses_edge_map_attribute() {
+        let mut preserve = DatabaseSchema::empty();
+        preserve.datasource.provider = "surrealdb".into();
+        preserve.naming.tables = core::NamingCase::SnakeCase;
+        let mut attrs = BTreeMap::new();
+        attrs.insert("map".into(), "user_likes".into());
+        preserve.edges.push(Edge {
+            name: "Likes".into(),
+            in_model: "User".into(),
+            out_model: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: attrs,
+        });
+        preserve.models.push(Model {
+            name: "User".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "edge_ref".into(),
+            "DEFINE FIELD edge_ref ON user TYPE record<user_likes>;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let edge_ref = pulled.models[0]
+            .fields
+            .iter()
+            .find(|f| f.name == "edge_ref")
+            .unwrap();
+        assert_eq!(edge_ref.link_target.as_deref(), Some("Likes"));
+    }
+
+    #[test]
+    fn read_expression_empty_start_and_keyword_break() {
+        let empty = read_expression(&[], 0);
+        assert_eq!(empty.0, "");
+        assert_eq!(empty.1, 0);
+
+        let tokens = tokenize("time::now() READONLY VALUE other");
+        let (value, next) = read_expression(&tokens, 0);
+        assert_eq!(value, "time::now()");
+        assert_eq!(tokens[next].to_ascii_lowercase(), "readonly");
+    }
+
+    #[test]
+    fn permissions_none_vs_full_on_table_and_edge() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert(
+            "user".into(),
+            "DEFINE TABLE user SCHEMAFULL PERMISSIONS NONE;".into(),
+        );
+        tables.insert(
+            "likes".into(),
+            "DEFINE TABLE likes TYPE RELATION IN user OUT user SCHEMAFULL PERMISSIONS FULL;".into(),
+        );
+        let pulled = map_database_info(&tables, &BTreeMap::new(), &preserve).expect("map");
+        assert!(pulled.models[0].permissions.is_none());
+        assert_eq!(pulled.edges[0].permissions.as_deref(), Some("FULL"));
+    }
+
+    #[test]
+    fn id_field_non_record_keeps_scalar_type() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "id".into(),
+            "DEFINE FIELD id ON user TYPE string;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let id = pulled.models[0].fields.iter().find(|f| f.name == "id").unwrap();
+        assert!(id.is_id);
+        assert_eq!(id.field_type, FieldType::String);
+    }
+
+    #[test]
+    fn unique_index_expected_name_marks_field_unique() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "email".into(),
+            "DEFINE FIELD email ON user TYPE string;".into(),
+        );
+        info.indexes.insert(
+            "user_email_unique".into(),
+            "DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let email = pulled.models[0]
+            .fields
+            .iter()
+            .find(|f| f.name == "email")
+            .unwrap();
+        assert!(email.unique);
+        assert!(pulled.models[0].indexes.is_empty());
+    }
+
+    #[test]
+    fn rejects_relation_missing_out_and_targets() {
+        let preserve = DatabaseSchema::empty();
+        let cases = [
+            (
+                "DEFINE TABLE likes TYPE RELATION IN user SCHEMAFULL;",
+                "missing OUT",
+            ),
+            (
+                "DEFINE TABLE likes TYPE RELATION OUT user IN",
+                "missing IN target",
+            ),
+            (
+                "DEFINE TABLE likes TYPE RELATION IN user OUT",
+                "missing OUT target",
+            ),
+        ];
+        for (define, needle) in cases {
+            let mut tables = BTreeMap::new();
+            tables.insert("likes".into(), define.into());
+            let err = map_database_info(&tables, &BTreeMap::new(), &preserve).expect_err(needle);
+            assert!(
+                matches!(err, DomainError::DatabaseError(ref msg) if msg.contains(needle)),
+                "define={define} err={err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn computed_without_backlink_and_weird_body_are_not_backlinks() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "score".into(),
+            "DEFINE FIELD score ON user COMPUTED 1 + 2;".into(),
+        );
+        info.fields.insert(
+            "weird".into(),
+            "DEFINE FIELD weird ON user COMPUTED <~ (post FIELD);".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+
+        // COMPUTED without <~ falls through to TYPE parse and fails; weird body is not a backlink.
+        let err = map_database_info(&tables, &table_infos, &preserve).expect_err("no type");
+        assert!(matches!(err, DomainError::DatabaseError(msg) if msg.contains("TYPE")));
+
+        assert!(parse_computed_backlink(
+            "DEFINE FIELD score ON user COMPUTED 1 + 2;",
+            &preserve
+        )
+        .is_none());
+        assert!(parse_computed_backlink(
+            "DEFINE FIELD weird ON user COMPUTED <~ (post FIELD);",
+            &preserve
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn parses_flexible_after_type_and_map_scalar_via_option_array() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("doc".into(), "DEFINE TABLE doc SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "meta".into(),
+            "DEFINE FIELD meta ON doc TYPE object FLEXIBLE;".into(),
+        );
+        info.fields.insert(
+            "flags".into(),
+            "DEFINE FIELD flags ON doc TYPE array<bool>;".into(),
+        );
+        info.fields.insert(
+            "when".into(),
+            "DEFINE FIELD when ON doc TYPE option<datetime>;".into(),
+        );
+        info.fields.insert(
+            "owner".into(),
+            "DEFINE FIELD owner ON doc TYPE array<record<user>>;".into(),
+        );
+        info.fields.insert(
+            "shape".into(),
+            "DEFINE FIELD shape ON doc TYPE option<geometry>;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("doc".into(), info);
+
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let doc = &pulled.models[0];
+        let field = |name: &str| doc.fields.iter().find(|f| f.name == name).unwrap();
+        assert!(field("meta").flexible);
+        assert_eq!(
+            field("flags").field_type,
+            FieldType::Array(Box::new(FieldType::Bool))
+        );
+        assert!(field("when").optional);
+        assert_eq!(field("when").field_type, FieldType::Datetime);
+        assert_eq!(
+            field("owner").field_type,
+            FieldType::Array(Box::new(FieldType::RecordId("user".into())))
+        );
+        assert_eq!(field("shape").field_type, FieldType::Custom("geometry".into()));
+    }
+
+    #[test]
+    fn model_and_edge_name_fallback_and_map_paths() {
+        let mut preserve = DatabaseSchema::empty();
+        preserve.naming.tables = core::NamingCase::SnakeCase;
+        let mut attrs = BTreeMap::new();
+        attrs.insert("map".into(), "custom_edge".into());
+        preserve.edges.push(Edge {
+            name: "Follows".into(),
+            in_model: "User".into(),
+            out_model: "User".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: attrs,
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("mystery_table".into(), "DEFINE TABLE mystery_table SCHEMAFULL;".into());
+        tables.insert(
+            "custom_edge".into(),
+            "DEFINE TABLE custom_edge TYPE RELATION IN user OUT user SCHEMAFULL;".into(),
+        );
+        let pulled = map_database_info(&tables, &BTreeMap::new(), &preserve).expect("map");
+        assert!(pulled.models.iter().any(|m| m.name == "MysteryTable"));
+        assert_eq!(pulled.edges[0].name, "Follows");
+        assert_eq!(model_name_for_table("unknown_x", &preserve), "UnknownX");
+        assert_eq!(edge_name_for_table("custom_edge", &preserve), "Follows");
+        assert_eq!(edge_name_for_table("other_edge", &preserve), "OtherEdge");
+    }
+
+    #[test]
+    fn index_analyzer_and_hnsw_empty_values_are_ignored() {
+        let ft = parse_index_define(
+            "DEFINE INDEX body_ft ON doc FIELDS body FULLTEXT ANALYZER;",
+        )
+        .expect("fulltext");
+        assert!(ft.fulltext);
+        assert!(ft.fulltext_analyzer.is_none());
+
+        // FULLTEXT without ANALYZER keyword at all.
+        let ft_bare =
+            parse_index_define("DEFINE INDEX body_ft ON doc FIELDS body FULLTEXT").expect("ft bare");
+        assert!(ft_bare.fulltext);
+        assert!(ft_bare.fulltext_analyzer.is_none());
+
+        let hn_dim = parse_index_define(
+            "DEFINE INDEX emb ON doc FIELDS embedding HNSW DIMENSION",
+        )
+        .expect("hnsw dim");
+        assert!(hn_dim.vector);
+        assert!(hn_dim.vector_dimension.is_none());
+
+        // HNSW without DIMENSION keyword.
+        let hn_bare =
+            parse_index_define("DEFINE INDEX emb ON doc FIELDS embedding HNSW").expect("hn bare");
+        assert!(hn_bare.vector);
+        assert!(hn_bare.vector_dimension.is_none());
+
+        let hn_dist = parse_index_define(
+            "DEFINE INDEX emb ON doc FIELDS embedding HNSW DIMENSION 3 DIST",
+        )
+        .expect("hnsw dist");
+        assert_eq!(hn_dist.vector_dimension, Some(3));
+        assert!(hn_dist.vector_dist.is_none());
+    }
+
+    #[test]
+    fn unique_index_with_custom_name_is_kept_as_index() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.fields.insert(
+            "email".into(),
+            "DEFINE FIELD email ON user TYPE string;".into(),
+        );
+        info.indexes.insert(
+            "custom_email_idx".into(),
+            "DEFINE INDEX custom_email_idx ON user FIELDS email UNIQUE;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        assert_eq!(pulled.models[0].indexes.len(), 1);
+        assert!(!pulled.models[0]
+            .fields
+            .iter()
+            .find(|f| f.name == "email")
+            .unwrap()
+            .unique);
+    }
+
+    #[test]
+    fn unique_index_without_matching_field_is_kept() {
+        let preserve = preserve_with_user();
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        let mut info = TableInfo::default();
+        info.indexes.insert(
+            "user_email_unique".into(),
+            "DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), info);
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        assert_eq!(pulled.models[0].indexes.len(), 1);
+        assert_eq!(pulled.models[0].indexes[0].fields, vec!["email".to_owned()]);
+    }
+
+    #[test]
+    fn pair_pulled_links_skips_missing_computed_or_stored_sides() {
+        let mut preserve = preserve_with_user();
+        preserve.models.push(Model {
+            name: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        // Computed backlink to Post.author, but Post table is absent from pull → stored side missing.
+        let mut user_info = TableInfo::default();
+        user_info.fields.insert(
+            "posts".into(),
+            "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);".into(),
+        );
+        let mut table_infos = BTreeMap::new();
+        table_infos.insert("user".into(), user_info);
+        let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
+        let posts = pulled.models[0]
+            .fields
+            .iter()
+            .find(|f| f.name == "posts")
+            .unwrap();
+        assert_eq!(posts.link_name.as_deref(), Some("PostUser"));
+    }
+
+    #[test]
+    fn read_expression_start_past_end() {
+        let tokens = tokenize("DEFAULT 'x'");
+        let (value, next) = read_expression(&tokens, tokens.len());
+        assert_eq!(value, "");
+        assert_eq!(next, tokens.len());
     }
 }

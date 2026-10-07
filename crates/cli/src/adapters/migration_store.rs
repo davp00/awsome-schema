@@ -38,8 +38,8 @@ impl MigrationStore for MigrationStoreAdapter {
         schema: &DatabaseSchema,
         migration_dir: &str,
     ) -> Result<(), DomainError> {
-        let content = serde_json::to_string_pretty(schema)
-            .map_err(|error| DomainError::MigrationError(error.to_string()))?;
+        // `DatabaseSchema` is always JSON-serializable.
+        let content = serde_json::to_string_pretty(schema).expect("serialize schema snapshot");
         self.filesystem.write_string(&format!("{migration_dir}/snapshot.json"), &content)
     }
 

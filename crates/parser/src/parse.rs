@@ -296,7 +296,7 @@ impl Parser {
     }
 
     fn parse_object_type_field(&mut self) -> Result<ObjectTypeField, DomainError> {
-        let name = self.expect_identifier()?;
+        let name = self.parse_field_path()?;
         if name.contains('.') {
             return Err(DomainError::ParseError(format!(
                 "object type field `{name}` must be a simple name, not a nested path"
@@ -472,13 +472,12 @@ impl Parser {
             }
         }
 
+        // When `@link` is parsed with a known type, `link_target` is set above.
+        // Attribute-before-type fields (`name @link`) have no type yet → error.
         if has_link && link_target.is_none() {
-            let Some(ft) = field_type else {
-                return Err(DomainError::ParseError(format!(
-                    "field `{name}` @link requires a type when no target is given"
-                )));
-            };
-            link_target = Some(link_target_from_type(ft));
+            return Err(DomainError::ParseError(format!(
+                "field `{name}` @link requires a type when no target is given"
+            )));
         }
 
         if has_link && relation_name.is_some() {
@@ -801,12 +800,12 @@ struct ParsedFieldAttributes {
 }
 
 fn parse_index_fields(raw: &str) -> Result<Vec<String>, DomainError> {
-    if raw.is_empty() {
-        return Err(DomainError::ParseError(
-            "@@index requires a non-empty field list, e.g. @@index([email])".to_owned(),
-        ));
-    }
-    let fields: Vec<String> = raw.split(',').map(str::trim).filter(|s| !s.is_empty()).map(ToOwned::to_owned).collect();
+    let fields: Vec<String> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(ToOwned::to_owned)
+        .collect();
     if fields.is_empty() {
         return Err(DomainError::ParseError(
             "@@index requires a non-empty field list, e.g. @@index([email])".to_owned(),

@@ -214,6 +214,11 @@ mod tests {
         assert_eq!(FieldType::RecordId("User".into()).base_surreal_type_name(), "record<User>");
         assert_eq!(FieldType::Model("Post".into()).base_surreal_type_name(), "record<Post>");
         assert_eq!(FieldType::Custom("geometry".into()).base_surreal_type_name(), "geometry");
+        assert_eq!(
+            FieldType::String.surreal_type_name(true),
+            "option<string>"
+        );
+        assert_eq!(FieldType::Int.surreal_type_name(false), "int");
     }
 
     #[test]
@@ -221,7 +226,32 @@ mod tests {
         assert_eq!(OnDeleteAction::parse("Cascade"), Some(OnDeleteAction::Cascade));
         assert_eq!(OnDeleteAction::parse("CASCADE"), Some(OnDeleteAction::Cascade));
         assert_eq!(OnDeleteAction::parse("cascade"), Some(OnDeleteAction::Cascade));
+        assert_eq!(OnDeleteAction::Cascade.as_dsl(), "Cascade");
         assert_eq!(OnDeleteAction::Cascade.as_surreal(), "CASCADE");
         assert_eq!(OnDeleteAction::Unset.as_dsl(), "Unset");
+        assert_eq!(OnDeleteAction::Unset.as_surreal(), "UNSET");
+        assert_eq!(OnDeleteAction::parse("Unset"), Some(OnDeleteAction::Unset));
+        assert_eq!(OnDeleteAction::Ignore.as_dsl(), "Ignore");
+        assert_eq!(OnDeleteAction::Ignore.as_surreal(), "IGNORE");
+        assert_eq!(OnDeleteAction::parse("Ignore"), Some(OnDeleteAction::Ignore));
+        assert_eq!(OnDeleteAction::Reject.as_dsl(), "Reject");
+        assert_eq!(OnDeleteAction::Reject.as_surreal(), "REJECT");
+        assert_eq!(OnDeleteAction::parse("Reject"), Some(OnDeleteAction::Reject));
+        assert_eq!(OnDeleteAction::parse("nope"), None);
+    }
+
+    #[test]
+    fn link_model_name_defaults() {
+        assert_eq!(FieldType::Model("User".into()).link_model_name(), Some("User"));
+        assert_eq!(
+            FieldType::Array(Box::new(FieldType::Model("Post".into()))).link_model_name(),
+            Some("Post")
+        );
+        assert_eq!(FieldType::String.link_model_name(), None);
+        assert_eq!(
+            FieldType::Array(Box::new(FieldType::String)).link_model_name(),
+            None
+        );
+        assert_eq!(FieldType::RecordId("User".into()).link_model_name(), None);
     }
 }

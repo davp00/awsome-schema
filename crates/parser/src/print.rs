@@ -23,9 +23,7 @@ pub fn print_schema(schema: &DatabaseSchema) -> String {
     for edge in &schema.edges {
         print_edge(&mut out, edge);
     }
-    if !out.is_empty() && !out.ends_with('\n') {
-        out.push('\n');
-    }
+    // All printers use `writeln!`, so output already ends with `\n` when non-empty.
     out
 }
 
@@ -40,9 +38,6 @@ pub fn print_config_blocks(schema: &DatabaseSchema) -> String {
     }
     for object_type in &schema.object_types {
         print_object_type(&mut out, object_type);
-    }
-    if !out.is_empty() && !out.ends_with('\n') {
-        out.push('\n');
     }
     out
 }
@@ -221,9 +216,7 @@ fn print_field(out: &mut String, field: &Field, indent: &str, model: Option<&Mod
 }
 
 fn field_type_for_print(field: &Field, model: Option<&Model>) -> Option<String> {
-    if field.is_id {
-        return None;
-    }
+    // Callers skip `@id` fields before invoking this helper.
     match &field.field_type {
         FieldType::Model(name) => Some(name.clone()),
         FieldType::RecordId(name) => {

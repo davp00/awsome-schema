@@ -481,6 +481,212 @@ fn migrate_rollback_errors_when_down_missing() {
 }
 
 #[test]
+fn migrate_rollback_steps_zero_is_noop() {
+    let fs = Arc::new(MemoryFs::new());
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_init".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database.clone(), ledger);
+    let output = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 0,
+        })
+        .expect("rollback");
+
+    assert!(output.rolled_back.is_empty());
+    assert!(database.scripts.lock().expect("lock").is_empty());
+}
+
+#[test]
+fn migrate_rollback_errors_when_local_directory_missing() {
+    let fs = Arc::new(MemoryFs::new());
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(Vec::new()),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database, ledger);
+    let error = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 1,
+        })
+        .expect_err("missing local dir");
+
+    assert!(matches!(error, DomainError::MigrationError(msg) if msg.contains("no local directory")));
+}
+
+#[test]
+fn migrate_rollback_errors_when_down_script_empty() {
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("migrations/001_init/migration.down.surql", "  \n-- No rollback available\n")
+        .expect("write");
+
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_init".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database, ledger);
+    let error = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 1,
+        })
+        .expect_err("empty down");
+
+    assert!(matches!(error, DomainError::MigrationError(msg) if msg.contains("empty down script")));
+}
+
+#[test]
+fn format_schema_multiple_files_without_write_back() {
+    let schema = sample_schema();
+    let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("a.schema", "model A {\n  id @id\n}\n\n").expect("write");
+    fs.write_string("b.schema", "model B {\n  id @id\n}\n\n").expect("write");
+    let use_case = FormatSchemaUseCase::new(source, fs.clone(), "awesome.schema".to_owned());
+    let output = use_case
+        .execute(FormatSchemaInput {
+            write_back: false,
+            schema_files: vec!["a.schema".into(), "b.schema".into()],
+        })
+        .expect("format");
+
+    assert!(!output.written);
+    assert!(output.formatted.is_empty());
+    // Unchanged on disk when write_back is false.
+    assert_eq!(
+        fs.read_to_string("a.schema").expect("read"),
+        "model A {\n  id @id\n}\n\n"
+    );
+}
+
+#[test]
+fn migrate_rollback_sorts_by_applied_at_descending() {
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("migrations/001_first/migration.down.surql", "REMOVE TABLE first;")
+        .expect("write");
+    fs.write_string("migrations/002_second/migration.down.surql", "REMOVE TABLE second;")
+        .expect("write");
+
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_first".to_owned(), "002_second".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger {
+        applied: Mutex::new(vec![
+            AppliedMigration {
+                name: "001_first".to_owned(),
+                applied_at: Some("2026-01-01T00:00:00Z".to_owned()),
+                checksum: "a".to_owned(),
+            },
+            AppliedMigration {
+                name: "002_second".to_owned(),
+                applied_at: Some("2026-02-01T00:00:00Z".to_owned()),
+                checksum: "b".to_owned(),
+            },
+        ]),
+    });
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database.clone(), ledger);
+    let output = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 1,
+        })
+        .expect("rollback");
+
+    assert_eq!(output.rolled_back, vec!["002_second".to_owned()]);
+    assert_eq!(
+        database.scripts.lock().expect("lock").as_slice(),
+        ["REMOVE TABLE second;"]
+    );
+}
+
+#[test]
+fn migrate_rollback_falls_back_to_name_when_applied_at_missing() {
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("migrations/001_first/migration.down.surql", "REMOVE TABLE first;")
+        .expect("write");
+    fs.write_string("migrations/002_second/migration.down.surql", "REMOVE TABLE second;")
+        .expect("write");
+
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(vec!["001_first".to_owned(), "002_second".to_owned()]),
+        snapshot: Mutex::new(None),
+    });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let ledger = Arc::new(MemoryLedger {
+        applied: Mutex::new(vec![
+            AppliedMigration {
+                name: "001_first".to_owned(),
+                applied_at: None,
+                checksum: "a".to_owned(),
+            },
+            AppliedMigration {
+                name: "002_second".to_owned(),
+                applied_at: Some("2026-02-01T00:00:00Z".to_owned()),
+                checksum: "b".to_owned(),
+            },
+        ]),
+    });
+
+    let use_case = MigrateRollbackUseCase::new(store, fs, database.clone(), ledger);
+    let output = use_case
+        .execute(MigrateRollbackInput {
+            migrations_dir: "migrations".to_owned(),
+            datasource: sample_schema().datasource,
+            steps: 1,
+        })
+        .expect("rollback");
+
+    // Missing applied_at falls back to name order (desc): 002 before 001.
+    assert_eq!(output.rolled_back, vec!["002_second".to_owned()]);
+}
+
+#[test]
+fn format_schema_writes_back_multiple_files() {
+    let schema = sample_schema();
+    let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
+    let fs = Arc::new(MemoryFs::new());
+    fs.write_string("a.schema", "model A {\n  id @id\n}\n\n").expect("write");
+    fs.write_string("b.schema", "model B {\n  id @id\n}\n\n").expect("write");
+    let use_case = FormatSchemaUseCase::new(source, fs.clone(), "awesome.schema".to_owned());
+    let output = use_case
+        .execute(FormatSchemaInput {
+            write_back: true,
+            schema_files: vec!["a.schema".into(), "b.schema".into()],
+        })
+        .expect("format");
+
+    assert!(output.written);
+    assert!(output.formatted.is_empty());
+    assert_eq!(
+        fs.read_to_string("a.schema").expect("read"),
+        "model A {\n  id @id\n}\n"
+    );
+    assert_eq!(
+        fs.read_to_string("b.schema").expect("read"),
+        "model B {\n  id @id\n}\n"
+    );
+}
+
+#[test]
 fn db_push_renders_and_applies_schema() {
     let schema = sample_schema();
     let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });

@@ -1,8 +1,8 @@
 pub mod db;
 pub mod format;
 mod generate;
-mod init;
-mod migrate;
+pub mod init;
+pub mod migrate;
 mod validate;
 
 use anyhow::Result;
