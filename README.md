@@ -143,6 +143,7 @@ cargo run -p cli -- format --write
 # Generate SurrealQL, Rust stubs, or TypeScript client
 # TypeScript writes to generator.output by default; use --stdout to print only
 # Generated client shares select/create/update/delete/query helpers; named APIs are thin wrappers
+# Nested select: scalars + links/relations with typed GetPayload; SurrealQL via buildProjection
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript

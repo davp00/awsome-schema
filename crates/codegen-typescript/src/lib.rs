@@ -58,17 +58,24 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
         emit_model_record(&mut out, schema, model, &naming);
         emit_model_selected(&mut out, schema, model, &naming);
         emit_model_inputs(&mut out, schema, model, &naming);
-        emit_model_select_payload(&mut out, schema, model, &naming);
     }
 
     for edge in &schema.edges {
         emit_edge_record(&mut out, schema, edge, &naming);
         emit_edge_selected(&mut out, schema, edge, &naming);
         emit_edge_inputs(&mut out, schema, edge, &naming);
-        emit_edge_select_payload(&mut out, edge, &naming);
+    }
+
+    emit_select_type_utils(&mut out);
+    for model in &schema.models {
+        emit_model_select_payload(&mut out, schema, model, &naming);
+    }
+    for edge in &schema.edges {
+        emit_edge_select_payload(&mut out, schema, edge, &naming);
     }
 
     emit_tables_const(&mut out, schema, &naming);
+    emit_select_meta_registry(&mut out, schema, &naming);
     emit_record_id_helpers(&mut out);
     emit_surreal_like(&mut out);
     emit_shared_runtime(&mut out);
@@ -168,53 +175,112 @@ fn emit_model_inputs(
     out.push(String::new());
 }
 
+fn emit_select_type_utils(out: &mut Vec<String>) {
+    out.push("/** `true` or nested `{ select }` for a related entity. */".to_owned());
+    out.push("export type SelectArg<S> = boolean | { select?: S };".to_owned());
+    out.push(String::new());
+    out.push(
+        "/** Resolve one select entry: `true` → Default; `{ select: N }` → nested payload. */"
+            .to_owned(),
+    );
+    out.push("export type ResolveSelectField<".to_owned());
+    out.push("  V,".to_owned());
+    out.push("  Default,".to_owned());
+    out.push("  NestedSelect,".to_owned());
+    out.push("  NestedPayload,".to_owned());
+    out.push("> = V extends true".to_owned());
+    out.push("  ? Default".to_owned());
+    out.push("  : V extends { select?: NestedSelect }".to_owned());
+    out.push("    ? NestedPayload".to_owned());
+    out.push("    : never;".to_owned());
+    out.push(String::new());
+}
+
 fn emit_model_select_payload(
     out: &mut Vec<String>,
     schema: &DatabaseSchema,
     model: &Model,
     naming: &NamingContext<'_>,
 ) {
-    let select_fields: Vec<(&Field, String, String)> = model
+    let fields: Vec<&Field> = model
         .fields
         .iter()
         .filter(|field| !field.name.contains('.'))
-        .filter(|field| field.is_link() || field.relation_name.is_some())
-        .map(|field| {
-            let name = naming.field_name(field);
-            let ty = map_model_field_selected(schema, model, field, naming);
-            (field, name, ty)
+        .filter(|field| {
+            !should_omit_on_record(field) || field.is_link() || field.relation_name.is_some()
         })
         .collect();
 
-    out.push(format!("export type {}SelectFields = {{", model.name));
-    if select_fields.is_empty() {
-        out.push("  // no link/@relation fields".to_owned());
-    } else {
-        for (_, name, ty) in &select_fields {
-            out.push(format!("  {name}: {ty};"));
+    out.push(format!("export type {}Scalars = {{", model.name));
+    for field in &fields {
+        if field.is_link() || field.relation_name.is_some() {
+            continue;
+        }
+        let name = naming.field_name(field);
+        let ts = map_model_field_record(schema, model, field, naming);
+        out.push(format!("  {name}: {ts};"));
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+
+    out.push(format!("export type {}Select = {{", model.name));
+    for field in &fields {
+        let name = naming.field_name(field);
+        if field.is_link() || field.relation_name.is_some() {
+            let target_select = relation_select_type_name(schema, field);
+            out.push(format!("  {name}?: SelectArg<{target_select}>;"));
+        } else {
+            out.push(format!("  {name}?: boolean;"));
         }
     }
     out.push("};".to_owned());
     out.push(String::new());
 
-    out.push(format!(
-        "export type {}Select = {{ [K in keyof {}SelectFields]?: boolean }};",
-        model.name, model.name
-    ));
-    out.push(String::new());
+    for field in fields.iter().filter(|f| f.is_link() || f.relation_name.is_some()) {
+        let name = naming.field_name(field);
+        let alias = format!("{}{}Field", model.name, pascal_case(&name));
+        let (default_ty, nested_select, list) = relation_payload_parts(schema, field);
+        let default = if list {
+            format!("{default_ty}[]")
+        } else {
+            default_ty.clone()
+        };
+        let nested_payload = if list {
+            format!("{default_ty}GetPayload<N>[]")
+        } else {
+            format!("{default_ty}GetPayload<N>")
+        };
+        out.push(format!("type {alias}<V> = V extends true"));
+        out.push(format!("  ? {default}"));
+        out.push(format!(
+            "  : V extends {{ select?: infer N extends {nested_select} | undefined }}"
+        ));
+        out.push(format!("    ? {nested_payload}"));
+        out.push("    : never;".to_owned());
+        out.push(String::new());
+    }
 
     out.push(format!(
         "export type {}GetPayload<S extends {}Select | undefined = undefined> =",
         model.name, model.name
     ));
-    out.push(format!("  S extends {}Select", model.name));
-    out.push(format!("    ? {} & {{", model.name));
-    out.push(format!(
-        "        [K in keyof {}SelectFields as S[K] extends true ? K : never]: {}SelectFields[K];",
-        model.name, model.name
-    ));
-    out.push("      }".to_owned());
-    out.push(format!("    : {};", model.name));
+    out.push("  [S] extends [undefined]".to_owned());
+    out.push(format!("    ? {}", model.name));
+    out.push("    : {".to_owned());
+    out.push(
+        "        [K in keyof S as S[K] extends false | undefined ? never : K]-?:"
+            .to_owned(),
+    );
+    out.push(format!("          K extends keyof {}Scalars", model.name));
+    out.push(format!("            ? {}Scalars[K]", model.name));
+    for field in fields.iter().filter(|f| f.is_link() || f.relation_name.is_some()) {
+        let name = naming.field_name(field);
+        let alias = format!("{}{}Field", model.name, pascal_case(&name));
+        out.push(format!("            : K extends \"{name}\""));
+        out.push(format!("              ? {alias}<S[K]>"));
+    }
+    out.push("            : never;".to_owned());
+    out.push("      };".to_owned());
     out.push(String::new());
 }
 
@@ -292,30 +358,112 @@ fn emit_edge_inputs(
     out.push(String::new());
 }
 
-fn emit_edge_select_payload(out: &mut Vec<String>, edge: &Edge, _naming: &NamingContext<'_>) {
-    out.push(format!("export type {}SelectFields = {{", edge.name));
-    out.push(format!("  in: {}Selected;", edge.in_model));
-    out.push(format!("  out: {}Selected;", edge.out_model));
+fn emit_edge_select_payload(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    edge: &Edge,
+    naming: &NamingContext<'_>,
+) {
+    let in_table = table_for_model_name(schema, &edge.in_model, naming);
+    let out_table = table_for_model_name(schema, &edge.out_model, naming);
+
+    out.push(format!("export type {}Scalars = {{", edge.name));
+    out.push(format!(
+        "  id: RecordId<\"{}\">;",
+        edge.table_name(naming.convention())
+    ));
+    out.push(format!("  in: RecordId<\"{in_table}\">;"));
+    out.push(format!("  out: RecordId<\"{out_table}\">;"));
+    for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        let ts = map_scalar_or_object(None, &field.field_type, field, naming);
+        out.push(format!("  {name}: {ts};"));
+    }
     out.push("};".to_owned());
     out.push(String::new());
-    out.push(format!(
-        "export type {}Select = {{ [K in keyof {}SelectFields]?: boolean }};",
-        edge.name, edge.name
-    ));
+
+    out.push(format!("export type {}Select = {{", edge.name));
+    out.push("  id?: boolean;".to_owned());
+    out.push(format!("  in?: SelectArg<{}Select>;", edge.in_model));
+    out.push(format!("  out?: SelectArg<{}Select>;", edge.out_model));
+    for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        out.push(format!("  {name}?: boolean;"));
+    }
+    out.push("};".to_owned());
     out.push(String::new());
+
+    out.push(format!("type {}InField<V> = V extends true", edge.name));
+    out.push(format!("  ? {}", edge.in_model));
+    out.push(format!(
+        "  : V extends {{ select?: infer N extends {}Select | undefined }}",
+        edge.in_model
+    ));
+    out.push(format!("    ? {}GetPayload<N>", edge.in_model));
+    out.push("    : never;".to_owned());
+    out.push(String::new());
+
+    out.push(format!("type {}OutField<V> = V extends true", edge.name));
+    out.push(format!("  ? {}", edge.out_model));
+    out.push(format!(
+        "  : V extends {{ select?: infer N extends {}Select | undefined }}",
+        edge.out_model
+    ));
+    out.push(format!("    ? {}GetPayload<N>", edge.out_model));
+    out.push("    : never;".to_owned());
+    out.push(String::new());
+
     out.push(format!(
         "export type {}GetPayload<S extends {}Select | undefined = undefined> =",
         edge.name, edge.name
     ));
-    out.push(format!("  S extends {}Select", edge.name));
-    out.push(format!("    ? {} & {{", edge.name));
-    out.push(format!(
-        "        [K in keyof {}SelectFields as S[K] extends true ? K : never]: {}SelectFields[K];",
-        edge.name, edge.name
-    ));
-    out.push("      }".to_owned());
-    out.push(format!("    : {};", edge.name));
+    out.push("  [S] extends [undefined]".to_owned());
+    out.push(format!("    ? {}", edge.name));
+    out.push("    : {".to_owned());
+    out.push(
+        "        [K in keyof S as S[K] extends false | undefined ? never : K]-?:"
+            .to_owned(),
+    );
+    out.push(format!("          K extends \"in\" ? {}InField<S[K]>", edge.name));
+    out.push(format!("          : K extends \"out\" ? {}OutField<S[K]>", edge.name));
+    out.push(format!("          : K extends keyof {}Scalars ? {}Scalars[K]", edge.name, edge.name));
+    out.push("          : never;".to_owned());
+    out.push("      };".to_owned());
     out.push(String::new());
+}
+
+fn relation_select_type_name(schema: &DatabaseSchema, field: &Field) -> String {
+    if let Some(relation) = &field.relation_name {
+        return format!("{}Select", resolve_edge_type_name(schema, relation));
+    }
+    let target = field
+        .link_target
+        .as_deref()
+        .or_else(|| field.field_type.link_model_name())
+        .unwrap_or("unknown");
+    format!("{target}Select")
+}
+
+fn relation_payload_parts(schema: &DatabaseSchema, field: &Field) -> (String, String, bool) {
+    let list = field.is_list_link() || matches!(field.field_type, FieldType::Array(_));
+    if let Some(relation) = &field.relation_name {
+        let edge = resolve_edge_type_name(schema, relation);
+        return (edge.clone(), format!("{edge}Select"), list);
+    }
+    let target = field
+        .link_target
+        .as_deref()
+        .or_else(|| field.field_type.link_model_name())
+        .unwrap_or("unknown")
+        .to_owned();
+    (target.clone(), format!("{target}Select"), list)
+}
+
+fn pascal_case(name: &str) -> String {
+    let mut chars = name.chars();
+    chars.next().map_or_else(String::new, |first| {
+        first.to_uppercase().collect::<String>() + chars.as_str()
+    })
 }
 
 fn should_omit_on_record(field: &Field) -> bool {
@@ -528,6 +676,95 @@ fn emit_tables_const(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &Na
     out.push(String::new());
 }
 
+fn emit_select_meta_registry(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    naming: &NamingContext<'_>,
+) {
+    out.push("export type FieldSelectMeta =".to_owned());
+    out.push("  | { kind: \"scalar\" }".to_owned());
+    out.push(
+        "  | { kind: \"stored\" | \"computed\"; targetTable: string; list: boolean }".to_owned(),
+    );
+    out.push(
+        "  | { kind: \"edge\"; edgeTable: string; dir: \"out\" | \"in\"; list: boolean };"
+            .to_owned(),
+    );
+    out.push(String::new());
+    out.push(
+        "export const SelectMetaByTable: Record<string, Record<string, FieldSelectMeta>> = {"
+            .to_owned(),
+    );
+
+    for model in &schema.models {
+        let table = model.table_name(naming.convention());
+        out.push(format!("  \"{table}\": {{"));
+        for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+            let name = naming.field_name(field);
+            if let Some(relation) = &field.relation_name {
+                let edge_name = resolve_edge_type_name(schema, relation);
+                let Some(edge) = schema.edges.iter().find(|e| e.name == edge_name) else {
+                    continue;
+                };
+                let edge_table = edge.table_name(naming.convention());
+                let dir = if edge.in_model == model.name {
+                    "out"
+                } else if edge.out_model == model.name {
+                    "in"
+                } else {
+                    continue;
+                };
+                let list = field.is_list_link()
+                    || matches!(field.field_type, FieldType::Array(_));
+                out.push(format!(
+                    "    {name}: {{ kind: \"edge\", edgeTable: \"{edge_table}\", dir: \"{dir}\", list: {list} }},"
+                ));
+            } else if field.is_link() {
+                let target = field
+                    .link_target
+                    .as_deref()
+                    .or_else(|| field.field_type.link_model_name())
+                    .unwrap_or("unknown");
+                let target_table = table_for_model_name(schema, target, naming);
+                let kind = if field.is_computed_link() {
+                    "computed"
+                } else {
+                    "stored"
+                };
+                let list = field.is_list_link();
+                out.push(format!(
+                    "    {name}: {{ kind: \"{kind}\", targetTable: \"{target_table}\", list: {list} }},"
+                ));
+            } else if !should_omit_on_record(field) {
+                out.push(format!("    {name}: {{ kind: \"scalar\" }},"));
+            }
+        }
+        out.push("  },".to_owned());
+    }
+
+    for edge in &schema.edges {
+        let table = edge.table_name(naming.convention());
+        let in_table = table_for_model_name(schema, &edge.in_model, naming);
+        let out_table = table_for_model_name(schema, &edge.out_model, naming);
+        out.push(format!("  \"{table}\": {{"));
+        out.push("    id: { kind: \"scalar\" },".to_owned());
+        out.push(format!(
+            "    in: {{ kind: \"stored\", targetTable: \"{in_table}\", list: false }},"
+        ));
+        out.push(format!(
+            "    out: {{ kind: \"stored\", targetTable: \"{out_table}\", list: false }},"
+        ));
+        for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+            let name = naming.field_name(field);
+            out.push(format!("    {name}: {{ kind: \"scalar\" }},"));
+        }
+        out.push("  },".to_owned());
+    }
+
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
 fn emit_record_id_helpers(out: &mut Vec<String>) {
     out.push("export function recordId<Table extends string>(".to_owned());
     out.push("  table: Table,".to_owned());
@@ -670,13 +907,86 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
+    out.push("function projectField(".to_owned());
+    out.push("  key: string,".to_owned());
+    out.push("  value: unknown,".to_owned());
+    out.push("  fieldMeta: FieldSelectMeta,".to_owned());
+    out.push("  allMeta: Record<string, Record<string, FieldSelectMeta>>,".to_owned());
+    out.push("): string | null {".to_owned());
+    out.push("  if (value === false || value == null) return null;".to_owned());
+    out.push("  if (fieldMeta.kind === \"scalar\") return key;".to_owned());
+    out.push("  if (value === true) {".to_owned());
+    out.push("    if (fieldMeta.kind === \"edge\") {".to_owned());
+    out.push(
+        "      const arrow = fieldMeta.dir === \"out\" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;"
+            .to_owned(),
+    );
+    out.push("      return `${arrow}.* AS ${key}`;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return `${key}.*`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (typeof value === \"object\" && value !== null && \"select\" in value) {".to_owned());
+    out.push(
+        "    const nestedSelect = (value as { select?: Record<string, unknown> }).select;"
+            .to_owned(),
+    );
+    out.push("    const nestedTable =".to_owned());
+    out.push(
+        "      fieldMeta.kind === \"edge\" ? fieldMeta.edgeTable : fieldMeta.targetTable;"
+            .to_owned(),
+    );
+    out.push(
+        "    const nested = buildProjection(nestedSelect, nestedTable, allMeta);"
+            .to_owned(),
+    );
+    out.push("    if (fieldMeta.kind === \"edge\") {".to_owned());
+    out.push(
+        "      const arrow = fieldMeta.dir === \"out\" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;"
+            .to_owned(),
+    );
+    out.push("      return `${arrow}.{ ${nested} } AS ${key}`;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return `${key}.{ ${nested} }`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return null;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("function buildProjection(".to_owned());
+    out.push("  select: Record<string, unknown> | undefined,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push(
+        "  allMeta: Record<string, Record<string, FieldSelectMeta>> = SelectMetaByTable,"
+            .to_owned(),
+    );
+    out.push("): string {".to_owned());
+    out.push("  if (!select) return \"*\";".to_owned());
+    out.push("  const meta = allMeta[table] ?? {};".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  for (const [key, value] of Object.entries(select)) {".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta) continue;".to_owned());
+    out.push("    const part = projectField(key, value, fieldMeta, allMeta);".to_owned());
+    out.push("    if (part) parts.push(part);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return parts.length === 0 ? \"*\" : parts.join(\", \");".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
     out.push("async function findUniqueRecord<T>(".to_owned());
     out.push("  db: SurrealLike,".to_owned());
     out.push("  table: string,".to_owned());
     out.push("  id: string,".to_owned());
-    out.push("  select?: Record<string, boolean | undefined>,".to_owned());
+    out.push("  select?: Record<string, unknown>,".to_owned());
     out.push("): Promise<T | undefined> {".to_owned());
-    out.push("  return selectRecordRelated<T>(db, table, id, selectedFetchKeys(select));".to_owned());
+    out.push("  if (!select) return selectRecord<T>(db, table, id);".to_owned());
+    out.push("  const thing = normalizeThing(table, id);".to_owned());
+    out.push("  const projection = buildProjection(select, table);".to_owned());
+    out.push(
+        "  const row = await db.query(`SELECT ${projection} FROM type::thing($thing)`, { thing });"
+            .to_owned(),
+    );
+    out.push("  return firstRow<T>(row);".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 
@@ -684,15 +994,30 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  db: SurrealLike,".to_owned());
     out.push("  table: string,".to_owned());
     out.push("  args: {".to_owned());
-    out.push("    select?: Record<string, boolean | undefined>;".to_owned());
+    out.push("    select?: Record<string, unknown>;".to_owned());
     out.push("    whereSql?: string;".to_owned());
     out.push("    vars?: Record<string, unknown>;".to_owned());
     out.push("  } = {},".to_owned());
     out.push("): Promise<T[]> {".to_owned());
-    out.push("  const keys = selectedFetchKeys(args.select);".to_owned());
-    out.push("  const base = args.whereSql ?? `SELECT * FROM ${table}`;".to_owned());
-    out.push("  const sql = keys.length === 0 ? base : `${base} FETCH ${keys.join(\", \")}`;".to_owned());
-    out.push("  return queryRows<T>(db, sql, args.vars);".to_owned());
+    out.push("  if (!args.select) {".to_owned());
+    out.push(
+        "    const sql = args.whereSql ?? `SELECT * FROM ${table}`;"
+            .to_owned(),
+    );
+    out.push("    return queryRows<T>(db, sql, args.vars);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const projection = buildProjection(args.select, table);".to_owned());
+    out.push("  if (args.whereSql) {".to_owned());
+    out.push(
+        "    const sql = args.whereSql.replace(/^\\s*SELECT\\s+\\*/i, `SELECT ${projection}`);"
+            .to_owned(),
+    );
+    out.push("    return queryRows<T>(db, sql, args.vars);".to_owned());
+    out.push("  }".to_owned());
+    out.push(
+        "  return queryRows<T>(db, `SELECT ${projection} FROM ${table}`, args.vars);"
+            .to_owned(),
+    );
     out.push("}".to_owned());
     out.push(String::new());
 }
@@ -918,7 +1243,7 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             model.name
         ));
         out.push(format!(
-            "        findUniqueRecord(db, \"{table}\", args.where.id, args.select as Record<string, boolean | undefined> | undefined) as Promise<{}GetPayload<S> | undefined>,",
+            "        findUniqueRecord(db, \"{table}\", args.where.id, args.select as Record<string, unknown> | undefined) as Promise<{}GetPayload<S> | undefined>,",
             model.name
         ));
         out.push(format!(
@@ -933,7 +1258,7 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             model.name
         ));
         out.push(format!(
-            "        findManyRecords(db, \"{table}\", args as {{ select?: Record<string, boolean | undefined>; whereSql?: string; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S>[]>,",
+            "        findManyRecords(db, \"{table}\", args as {{ select?: Record<string, unknown>; whereSql?: string; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S>[]>,",
             model.name
         ));
         out.push(format!(
@@ -966,7 +1291,7 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             edge.name
         ));
         out.push(format!(
-            "        findUniqueRecord(db, \"{table}\", args.where.id, args.select as Record<string, boolean | undefined> | undefined) as Promise<{}GetPayload<S> | undefined>,",
+            "        findUniqueRecord(db, \"{table}\", args.where.id, args.select as Record<string, unknown> | undefined) as Promise<{}GetPayload<S> | undefined>,",
             edge.name
         ));
         out.push(format!(

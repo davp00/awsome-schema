@@ -154,7 +154,7 @@ fn emits_create_update_inputs_without_computed_fields() {
     assert!(!create.contains("id:"));
 
     let update_start = create_end;
-    let update_end = output.find("export type UserSelectFields").expect("select fields");
+    let update_end = output.find("export type PostCreateInput").expect("PostCreate");
     let update = &output[update_start..update_end];
     assert!(update.contains("email?: string"));
     assert!(!update.contains("posts"));
@@ -194,12 +194,39 @@ fn emits_as_record_id_and_crud_query_helpers() {
 #[test]
 fn emits_get_payload_and_select_types() {
     let output = generate_fixture();
-    assert!(output.contains("export type UserSelectFields = {"));
-    assert!(output.contains("posts: PostSelected[]"));
-    assert!(output.contains("liked: LikesSelected[]"));
-    assert!(output.contains("export type UserSelect ="));
+    assert!(output.contains("export type SelectArg<S>"));
+    assert!(output.contains("export type ResolveSelectField<"));
+    assert!(output.contains("export type UserScalars = {"));
+    assert!(output.contains("export type UserSelect = {"));
+    assert!(output.contains("email?: boolean"));
+    assert!(output.contains("posts?: SelectArg<PostSelect>"));
+    assert!(output.contains("liked?: SelectArg<LikesSelect>"));
+    assert!(output.contains("author?: SelectArg<UserSelect>"));
     assert!(output.contains("export type UserGetPayload<S extends UserSelect | undefined = undefined>"));
+    assert!(output.contains("PostGetPayload<N>[]"));
+    assert!(output.contains("LikesGetPayload<N>[]"));
+    assert!(output.contains("export type LikesSelect = {"));
+    assert!(output.contains("in?: SelectArg<UserSelect>"));
+    assert!(output.contains("out?: SelectArg<PostSelect>"));
     assert!(output.contains("export type LikesGetPayload"));
+}
+
+#[test]
+fn emits_select_meta_and_projection_builder() {
+    let output = generate_fixture();
+    assert!(output.contains("export type FieldSelectMeta"));
+    assert!(output.contains("export const SelectMetaByTable"));
+    assert!(output.contains("kind: \"computed\""));
+    assert!(output.contains("kind: \"stored\""));
+    assert!(output.contains("kind: \"edge\""));
+    assert!(output.contains("edgeTable: \"likes\""));
+    assert!(output.contains("dir: \"out\""));
+    assert!(output.contains("function buildProjection("));
+    assert!(output.contains("function projectField("));
+    assert!(output.contains("`${key}.{ ${nested} }`"));
+    assert!(output.contains("`${arrow}.{ ${nested} } AS ${key}`"));
+    assert!(output.contains("`${arrow}.* AS ${key}`"));
+    assert!(output.contains("SELECT ${projection} FROM type::thing($thing)"));
 }
 
 #[test]

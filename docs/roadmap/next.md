@@ -35,10 +35,9 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 
 ## 6. Client generators — TypeScript client done (shallow select)
 
-TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, `GetPayload`/`Select`, shared runtime helpers with thin named CRUD/`query*` wrappers, and `createClient` with shallow boolean `.select({ posts: true })`. Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested scalar/relation `Select` + recursive `GetPayload`, shared `buildProjection` (link `field.{…}`, edge `->`/`<-`), thin CRUD/`query*` wrappers, and `createClient`. Still deferred:
 
-- Nested select (`select: { posts: { select: { author: true } } }`)
-- Zod / runtime validators; transaction / live / batch wrappers
+- Multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
