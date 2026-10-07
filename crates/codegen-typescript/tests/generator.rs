@@ -210,20 +210,20 @@ fn emits_as_record_id_and_crud_query_helpers() {
 #[test]
 fn emits_get_payload_and_select_types() {
     let output = generate_fixture();
-    assert!(output.contains("export type SelectArg<S>"));
+    assert!(output.contains("export type SelectArg<S, O = never>"));
     assert!(output.contains("export type ResolveSelectField<"));
     assert!(output.contains("export type UserScalars = {"));
     assert!(output.contains("export type UserSelect = {"));
     assert!(output.contains("email?: boolean"));
-    assert!(output.contains("posts?: SelectArg<PostSelect>"));
-    assert!(output.contains("liked?: SelectArg<LikesSelect>"));
-    assert!(output.contains("author?: SelectArg<UserSelect>"));
+    assert!(output.contains("posts?: SelectArg<PostSelect, PostOrderByInput>"));
+    assert!(output.contains("liked?: SelectArg<LikesSelect, LikesOrderByInput>"));
+    assert!(output.contains("author?: SelectArg<UserSelect, UserOrderByInput>"));
     assert!(output.contains("export type UserGetPayload<S extends UserSelect | undefined = undefined>"));
     assert!(output.contains("PostGetPayload<N>[]"));
     assert!(output.contains("LikesGetPayload<N>[]"));
     assert!(output.contains("export type LikesSelect = {"));
-    assert!(output.contains("in?: SelectArg<UserSelect>"));
-    assert!(output.contains("out?: SelectArg<PostSelect>"));
+    assert!(output.contains("in?: SelectArg<UserSelect, UserOrderByInput>"));
+    assert!(output.contains("out?: SelectArg<PostSelect, PostOrderByInput>"));
     assert!(output.contains("export type LikesGetPayload"));
 }
 
@@ -243,6 +243,21 @@ fn emits_select_meta_and_projection_builder() {
     assert!(output.contains("`${arrow}.{ ${nested} } AS ${key}`"));
     assert!(output.contains("`${arrow}.* AS ${key}`"));
     assert!(output.contains("SELECT ${projection} FROM type::record($thing)"));
+}
+
+#[test]
+fn emits_nested_relation_order_by() {
+    let output = generate_fixture();
+    assert!(output.contains("orderBy?: [O] extends [never] ? never : O | O[]"));
+    assert!(output.contains("posts?: SelectArg<PostSelect, PostOrderByInput>"));
+    assert!(output.contains("liked?: SelectArg<LikesSelect, LikesOrderByInput>"));
+    assert!(output.contains("buildOrderBy(bag.orderBy, nestedTable, allMeta)"));
+    assert!(output.contains(
+        "(SELECT ${nested} FROM $parent.${key} ${orderClause}) AS ${key}"
+    ));
+    assert!(output.contains(
+        "${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable} ${orderClause}) AS ${key}"
+    ));
 }
 
 #[test]

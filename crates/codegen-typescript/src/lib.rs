@@ -344,8 +344,14 @@ fn emit_model_nested_write_bags(
 }
 
 fn emit_select_type_utils(out: &mut Vec<String>) {
-    out.push("/** `true` or nested `{ select }` for a related entity. */".to_owned());
-    out.push("export type SelectArg<S> = boolean | { select?: S };".to_owned());
+    out.push(
+        "/** `true` or nested `{ select, orderBy? }` for a related entity. */".to_owned(),
+    );
+    out.push("export type SelectArg<S, O = never> =".to_owned());
+    out.push("  | boolean".to_owned());
+    out.push(
+        "  | { select?: S; orderBy?: [O] extends [never] ? never : O | O[] };".to_owned(),
+    );
     out.push(String::new());
     out.push(
         "/** Resolve one select entry: `true` → Default; `{ select: N }` → nested payload. */"
@@ -684,7 +690,10 @@ fn emit_model_select_payload(
         let name = naming.field_name(field);
         if field.is_link() || field.relation_name.is_some() {
             let target_select = relation_select_type_name(schema, field);
-            out.push(format!("  {name}?: SelectArg<{target_select}>;"));
+            let target_order = relation_order_by_type_name(schema, field);
+            out.push(format!(
+                "  {name}?: SelectArg<{target_select}, {target_order}>;"
+            ));
         } else {
             out.push(format!("  {name}?: boolean;"));
         }
@@ -840,8 +849,14 @@ fn emit_edge_select_payload(
 
     out.push(format!("export type {}Select = {{", edge.name));
     out.push("  id?: boolean;".to_owned());
-    out.push(format!("  in?: SelectArg<{}Select>;", edge.in_model));
-    out.push(format!("  out?: SelectArg<{}Select>;", edge.out_model));
+    out.push(format!(
+        "  in?: SelectArg<{}Select, {}OrderByInput>;",
+        edge.in_model, edge.in_model
+    ));
+    out.push(format!(
+        "  out?: SelectArg<{}Select, {}OrderByInput>;",
+        edge.out_model, edge.out_model
+    ));
     for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
         let name = naming.field_name(field);
         out.push(format!("  {name}?: boolean;"));
@@ -898,6 +913,18 @@ fn relation_select_type_name(schema: &DatabaseSchema, field: &Field) -> String {
         .or_else(|| field.field_type.link_model_name())
         .unwrap_or("unknown");
     format!("{target}Select")
+}
+
+fn relation_order_by_type_name(schema: &DatabaseSchema, field: &Field) -> String {
+    if let Some(relation) = &field.relation_name {
+        return format!("{}OrderByInput", resolve_edge_type_name(schema, relation));
+    }
+    let target = field
+        .link_target
+        .as_deref()
+        .or_else(|| field.field_type.link_model_name())
+        .unwrap_or("unknown");
+    format!("{target}OrderByInput")
 }
 
 fn relation_payload_parts(schema: &DatabaseSchema, field: &Field) -> (String, String, bool) {
@@ -2000,9 +2027,12 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("    }".to_owned());
     out.push("    return `${key}.*`;".to_owned());
     out.push("  }".to_owned());
-    out.push("  if (typeof value === \"object\" && value !== null && \"select\" in value) {".to_owned());
     out.push(
-        "    const nestedSelect = (value as { select?: Record<string, unknown> }).select;"
+        "  if (typeof value === \"object\" && value !== null && (\"select\" in value || \"orderBy\" in value)) {"
+            .to_owned(),
+    );
+    out.push(
+        "    const bag = value as { select?: Record<string, unknown>; orderBy?: Record<string, unknown> | Record<string, unknown>[] };"
             .to_owned(),
     );
     out.push("    const nestedTable =".to_owned());
@@ -2011,9 +2041,26 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
             .to_owned(),
     );
     out.push(
-        "    const nested = buildProjection(nestedSelect, nestedTable, allMeta);"
+        "    const nested = buildProjection(bag.select, nestedTable, allMeta);"
             .to_owned(),
     );
+    out.push("    const orderClause = buildOrderBy(bag.orderBy, nestedTable, allMeta);".to_owned());
+    out.push("    if (orderClause) {".to_owned());
+    out.push("      if (fieldMeta.kind === \"edge\") {".to_owned());
+    out.push(
+        "        const arrow = fieldMeta.dir === \"out\" ? \"->\" : \"<-\";"
+            .to_owned(),
+    );
+    out.push(
+        "        return `${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable} ${orderClause}) AS ${key}`;"
+            .to_owned(),
+    );
+    out.push("      }".to_owned());
+    out.push(
+        "      return `(SELECT ${nested} FROM $parent.${key} ${orderClause}) AS ${key}`;"
+            .to_owned(),
+    );
+    out.push("    }".to_owned());
     out.push("    if (fieldMeta.kind === \"edge\") {".to_owned());
     out.push(
         "      const arrow = fieldMeta.dir === \"out\" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;"
