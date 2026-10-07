@@ -339,10 +339,18 @@ fn emit_model_nested_write_bags(
 }
 
 fn emit_select_type_utils(out: &mut Vec<String>) {
-    out.push("/** `true` or nested `{ select, orderBy? }` for a related entity. */".to_owned());
+    out.push(
+        "/** `true` or nested `{ select, orderBy?, take?, skip? }` for a related entity. */"
+            .to_owned(),
+    );
     out.push("export type SelectArg<S, O = never> =".to_owned());
     out.push("  | boolean".to_owned());
-    out.push("  | { select?: S; orderBy?: [O] extends [never] ? never : O | O[] };".to_owned());
+    out.push("  | {".to_owned());
+    out.push("      select?: S;".to_owned());
+    out.push("      orderBy?: [O] extends [never] ? never : O | O[];".to_owned());
+    out.push("      take?: number;".to_owned());
+    out.push("      skip?: number;".to_owned());
+    out.push("    };".to_owned());
     out.push(String::new());
     out.push(
         "/** Resolve one select entry: `true` → Default; `{ select: N }` → nested payload. */"
@@ -2060,11 +2068,11 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("    return `${key}.*`;".to_owned());
     out.push("  }".to_owned());
     out.push(
-        "  if (typeof value === \"object\" && value !== null && (\"select\" in value || \"orderBy\" in value)) {"
+        "  if (typeof value === \"object\" && value !== null && (\"select\" in value || \"orderBy\" in value || \"take\" in value || \"skip\" in value)) {"
             .to_owned(),
     );
     out.push(
-        "    const bag = value as { select?: Record<string, unknown>; orderBy?: Record<string, unknown> | Record<string, unknown>[] };"
+        "    const bag = value as { select?: Record<string, unknown>; orderBy?: Record<string, unknown> | Record<string, unknown>[]; take?: number; skip?: number };"
             .to_owned(),
     );
     out.push("    const nestedTable =".to_owned());
@@ -2081,18 +2089,19 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
         "    if (countProj.length > 0) nested = `${nested}, ${countProj.join(\", \")}`;".to_owned(),
     );
     out.push("    const orderClause = buildOrderBy(bag.orderBy, nestedTable, allMeta);".to_owned());
-    out.push("    if (orderClause) {".to_owned());
+    out.push("    const pageClause = nestedLimitClause(bag.take, bag.skip);".to_owned());
+    out.push("    if (orderClause || pageClause) {".to_owned());
+    out.push(
+        "      const tail = `${orderClause ? ` ${orderClause}` : \"\"}${pageClause}`;".to_owned(),
+    );
     out.push("      if (fieldMeta.kind === \"edge\") {".to_owned());
     out.push("        const arrow = fieldMeta.dir === \"out\" ? \"->\" : \"<-\";".to_owned());
     out.push(
-        "        return `${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable} ${orderClause}) AS ${key}`;"
+        "        return `${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable}${tail}) AS ${key}`;"
             .to_owned(),
     );
     out.push("      }".to_owned());
-    out.push(
-        "      return `(SELECT ${nested} FROM $parent.${key} ${orderClause}) AS ${key}`;"
-            .to_owned(),
-    );
+    out.push("      return `(SELECT ${nested} FROM $parent.${key}${tail}) AS ${key}`;".to_owned());
     out.push("    }".to_owned());
     out.push("    if (fieldMeta.kind === \"edge\") {".to_owned());
     out.push(
@@ -2883,6 +2892,22 @@ fn emit_build_order_by(out: &mut Vec<String>) {
     out.push("    }".to_owned());
     out.push("  }".to_owned());
     out.push("  return parts.length === 0 ? \"\" : `ORDER BY ${parts.join(\", \")}`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push(
+        "function nestedLimitClause(take: number | undefined, skip: number | undefined): string {"
+            .to_owned(),
+    );
+    out.push("  let clause = \"\";".to_owned());
+    out.push("  if (take !== undefined) {".to_owned());
+    out.push("    if (!Number.isFinite(take) || take < 0) throw new Error(\"take must be a non-negative number\");".to_owned());
+    out.push("    clause += ` LIMIT ${Math.floor(take)}`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (skip !== undefined) {".to_owned());
+    out.push("    if (!Number.isFinite(skip) || skip < 0) throw new Error(\"skip must be a non-negative number\");".to_owned());
+    out.push("    clause += ` START ${Math.floor(skip)}`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return clause;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
     out.push("function appendLimitStart(".to_owned());

@@ -158,6 +158,7 @@ cargo run -p cli -- format --write
 # Generated client shares select/create/update/delete/query helpers; named APIs are thin wrappers
 # Nested select: scalars + links/relations with typed GetPayload; SurrealQL via buildProjection
 # Relation select bags accept orderBy (target OrderByInput) via $parent / graph subqueries
+# Relation select bags also accept take/skip (literal LIMIT/START on that same subquery)
 # Hybrid where on findMany/findUnique: bare equals sugar + Prisma-lite operators / some|every|none (buildWhere)
 # findMany also supports orderBy (asc/desc) + take/skip (LIMIT/START)
 # orderBy relation _count on list links/edges: { posts: { _count: "desc" } }, { liked: { _count: "asc" } }

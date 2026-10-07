@@ -249,10 +249,17 @@ fn emits_nested_relation_order_by() {
     assert!(output.contains("posts?: SelectArg<PostSelect, PostOrderByInput>"));
     assert!(output.contains("liked?: SelectArg<LikesSelect, LikesOrderByInput>"));
     assert!(output.contains("buildOrderBy(bag.orderBy, nestedTable, allMeta)"));
-    assert!(output.contains("(SELECT ${nested} FROM $parent.${key} ${orderClause}) AS ${key}"));
-    assert!(output.contains(
-        "${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable} ${orderClause}) AS ${key}"
-    ));
+    assert!(output.contains("(SELECT ${nested} FROM $parent.${key}${tail}) AS ${key}"));
+    assert!(
+        output.contains("${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable}${tail}) AS ${key}")
+    );
+    assert!(output.contains("take?: number"));
+    assert!(output.contains("skip?: number"));
+    assert!(output.contains("function nestedLimitClause("));
+    assert!(output.contains("LIMIT ${Math.floor(take)}"));
+    assert!(output.contains("START ${Math.floor(skip)}"));
+    assert!(output.contains("const pageClause = nestedLimitClause(bag.take, bag.skip)"));
+    assert!(output.contains("`${key}.{ ${nested} }`"));
 }
 
 #[test]
