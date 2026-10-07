@@ -52,7 +52,7 @@ crates/
 
 - `core` owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases.
 - `parser`, `migrations`, `renderers`, and `codegen-*` are capability crates that implement or support ports.
-- `cli` wires dependencies via `di.rs`, implements adapters (filesystem, migration store, introspector stubs), and exposes commands through `clap`. **No business logic lives in the CLI.**
+- `cli` wires dependencies via `di.rs`, implements adapters (filesystem, migration store, SurrealDB introspector/executor/ledger), and exposes commands through `clap`. **No business logic lives in the CLI.**
 
 Port traits (in `core`):
 

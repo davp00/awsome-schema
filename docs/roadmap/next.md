@@ -43,6 +43,6 @@ Replace the Rust and TypeScript stubs after the schema and migrations match Surr
 - Assertions and a richer permissions model than a raw string.
 - Providers: MongoDB, Postgres, MySQL, SQLite, each behind the existing renderer and introspector ports.
 
-## Check still open
+## Last live check
 
-Re-run `cargo test -p e2e` (or topic binaries like `--test migrate` / `--test record_refs`) with Docker available for live SurrealDB coverage.
+2026-10-07 on `c344710`: `cargo test -p e2e --locked` — 9 passed (`offline_cli`, `migrate`, `db_sync`, `graph_edges`, `record_refs`) against SurrealDB v3.3.0 via Docker. No soft-skips.
