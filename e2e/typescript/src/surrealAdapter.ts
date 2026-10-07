@@ -26,28 +26,31 @@ export function asSurrealLike(db: Surreal): SurrealLike {
       return (await db.query(sql, encodeDeep(vars) as Record<string, unknown> | undefined)) as T;
     },
     async select<T = unknown>(thing: string): Promise<T> {
-      return (await db.select(toResource(thing))) as T;
+      return (await db.select(toRecordId(thing))) as T;
     },
     async create<T = unknown>(thing: string, data?: Record<string, unknown>): Promise<T> {
       return (await db
-        .create(toResource(thing))
+        .create(toTable(thing))
         .content((encodeDeep(data ?? {}) as Record<string, unknown>) ?? {})) as T;
     },
     async merge<T = unknown>(thing: string, data?: Record<string, unknown>): Promise<T> {
       return (await db
-        .update(toResource(thing))
+        .update(toRecordId(thing))
         .merge((encodeDeep(data ?? {}) as Record<string, unknown>) ?? {})) as T;
     },
     async delete<T = unknown>(thing: string): Promise<T> {
-      return (await db.delete(toResource(thing))) as T;
+      return (await db.delete(toRecordId(thing))) as T;
     },
   };
 }
 
-function toResource(thing: string): Table | RecordId | StringRecordId {
-  if (thing.includes(":")) {
-    return new StringRecordId(thing);
-  }
+/** Generated select/update/delete helpers pass `table:id` via normalizeThing. */
+function toRecordId(thing: string): StringRecordId {
+  return new StringRecordId(thing);
+}
+
+/** Generated create helpers pass a table name. */
+function toTable(thing: string): Table {
   return new Table(thing);
 }
 
@@ -58,7 +61,13 @@ function encodeDeep(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(encodeDeep);
   }
-  if (value && typeof value === "object" && !(value instanceof StringRecordId) && !(value instanceof RecordId) && !(value instanceof Table)) {
+  if (
+    value &&
+    typeof value === "object" &&
+    !(value instanceof StringRecordId) &&
+    !(value instanceof RecordId) &&
+    !(value instanceof Table)
+  ) {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
         key,
