@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791408967.0746949,
-    "seen": 1791409132.808683,
-    "ast_hash": "62211e3bf975287e6fef70c4398f7595",
+    "mtime": 1791409881.2893052,
+    "seen": 1791410142.553278,
+    "ast_hash": "6896a785802023324b8676923a196446",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791408840.061656,
-    "seen": 1791409132.808684,
-    "ast_hash": "3fd5c462dc9941ac0d4681c7c41dab62",
+    "mtime": 1791409896.8608296,
+    "seen": 1791410142.553279,
+    "ast_hash": "a550a2ee049da459f10858dbcc8a62a4",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791408930.5671568,
-    "seen": 1791409132.808737,
-    "ast_hash": "889e4332161e6a3dcaacb325a2d5762f",
+    "mtime": 1791409909.6634955,
+    "seen": 1791410142.553328,
+    "ast_hash": "24dbdf5eb45686c1b09f22e2bcfacf02",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791408938.6721516,
-    "seen": 1791409132.808738,
-    "ast_hash": "671c4f07f880ce94e809e9ab2469c673",
+    "mtime": 1791409915.0144813,
+    "seen": 1791410142.553329,
+    "ast_hash": "1253c807aaf76197e4386bc3d2d65ffa",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791408934.365731,
-    "seen": 1791409132.8087392,
-    "ast_hash": "a51437cc4e17ffd669f073568f312594",
+    "mtime": 1791409911.592232,
+    "seen": 1791410142.55333,
+    "ast_hash": "e8e5af95f3ef3ce42107c2e2026f88e1",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -933,6 +933,12 @@
     "mtime": 1791408917.203532,
     "seen": 1791409132.8087199,
     "ast_hash": "0f7ae7075ee1765fd2bd218238a4d6b1",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/tests/nested-order.test.ts": {
+    "mtime": 1791409904.8347726,
+    "seen": 1791410142.5533109,
+    "ast_hash": "ece108b7fe4e795f44a81fb9e8da6bb5",
     "semantic_hash": ""
   }
 }
