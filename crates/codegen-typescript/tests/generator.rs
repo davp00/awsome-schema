@@ -347,6 +347,24 @@ fn emits_where_unique_and_bulk_upsert() {
 }
 
 #[test]
+fn emits_single_update_delete_opts() {
+    let output = generate_fixture();
+    assert!(output.contains("export type SingleUpdateResult<"));
+    assert!(output.contains("export type SingleDeleteResult<"));
+    assert!(output.contains("export type SingleUpsertResult<"));
+    assert!(output.contains("async function updateOneRecord<T>("));
+    assert!(output.contains("async function deleteOneRecord<T>("));
+    assert!(output.contains("UPDATE type::record($thing) MERGE $__data RETURN ${projection}"));
+    assert!(output.contains("DELETE type::record($thing) RETURN BEFORE"));
+    assert!(output.contains("delete ${table}: return AFTER is not supported"));
+    assert!(output.contains("opts?: { select?: S; return?: R }"));
+    assert!(output.contains("SingleUpdateResult<S, R, User, UserGetPayload<S>>"));
+    assert!(output.contains("SingleDeleteResult<S, R, User, UserGetPayload<S>>"));
+    assert!(output.contains("SingleUpsertResult<S, R, User, UserGetPayload<S>>"));
+    assert!(output.contains("return?: MutationReturn"));
+}
+
+#[test]
 fn emits_mutation_return_modes() {
     let output = generate_fixture();
     assert!(output.contains("export type MutationReturn = \"NONE\" | \"BEFORE\" | \"AFTER\" | \"DIFF\""));
