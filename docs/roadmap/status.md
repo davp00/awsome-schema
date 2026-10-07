@@ -27,6 +27,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Index kinds | `@@index` `@unique` / `@fulltext("…")` / `@vector(N)` `@dist(…)` → UNIQUE, FULLTEXT ANALYZER BM25, HNSW | parser + renderer + introspect |
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e offline_cli |
+| TypeScript codegen | Dual record/`*Selected` shapes, `RecordId`, named object types, edges; thin `Tables` / `recordId` / `select*` / `select*Related` (FETCH) helpers over a `SurrealLike` client | `crates/codegen-typescript`; CLI `generate --target typescript`. Not a full ORM `.select({…})` builder; no `generator.output` file writes yet |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` |
 | `migrate create` | Empty migration directory | use case + CLI tests |
 | `migrate status` | Applied vs pending via `_awesome_migrations` ledger; snapshot flag | use case tests; e2e migrate |
@@ -44,7 +45,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | `edge` blocks | Parsed and rendered as `DEFINE TABLE … TYPE RELATION IN … OUT …`; differ create/alter/drop; edge permissions; e2e roundtrip | `LIGHTWEIGHT` / `INLINE` not modeled |
 | `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen) | Not restored by `db pull` (not stored in DB) |
 | Events, functions | `CreateEvent`, `DropEvent`, `CreateFunction`, `DropFunction` render | No DSL syntax. Nothing in the parser produces them |
-| Codegen | `generate --target rust` and `typescript` emit struct / type shells, including optionals and arrays | Source marks them as stubs. No links, edges, nested objects as real types, or a client |
+| Rust codegen | `generate --target rust` emits struct shells (optionals/arrays) | Still a stub: no dual link shapes, edges as real types, or client helpers |
 
 ## Not started
 

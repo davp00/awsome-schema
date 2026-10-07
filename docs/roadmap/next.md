@@ -33,9 +33,13 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 - Vector indexes render `HNSW DIMENSION … DIST …` (default Euclidean).
 - Differ recreates indexes when params change.
 
-## 6. Client generators
+## 6. Client generators — TypeScript types + thin helpers done
 
-Replace the Rust and TypeScript stubs after the schema and migrations match SurrealDB. Generated types should follow links, optionals, nested objects, and edges.
+TypeScript `generate --target typescript` emits dual record/`*Selected` types (`RecordId`, stored vs computed `@link` / `@relation`) plus thin Surreal helpers (`Tables`, `recordId` / `parseRecordId`, `select*` / `select*Related` with FETCH). Still deferred:
+
+- Full typed `.select({ posts: true })` query builder / create-update-delete suite
+- Writing files to `generator.output`
+- Rust generator rewrite (still a stub)
 
 ## 7. Later
 
