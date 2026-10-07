@@ -302,12 +302,23 @@ fn emits_find_unique_hybrid_where() {
 fn emits_order_by_take_skip() {
     let output = generate_fixture();
     assert!(output.contains("export type SortOrder = \"asc\" | \"desc\""));
+    assert!(output.contains("export type OrderByRelationCount = { _count?: SortOrder }"));
     assert!(output.contains("export type UserOrderByInput = {"));
     assert!(output.contains("email?: SortOrder"));
     assert!(output.contains("age?: SortOrder"));
+    assert!(output.contains("posts?: OrderByRelationCount"));
+    assert!(output.contains("liked?: OrderByRelationCount"));
+    assert!(!output.contains("author?: OrderByRelationCount"));
     assert!(output.contains("export type LikesOrderByInput = {"));
     assert!(output.contains("score?: SortOrder"));
+    assert!(output.contains("function relationCountExpr("));
+    assert!(output.contains("function collectOrderByCountProjections("));
+    assert!(output.contains("function stripOrderByCountFields"));
     assert!(output.contains("function buildOrderBy("));
+    assert!(output.contains("array::len(${key})"));
+    assert!(output.contains("array::len(${arrow})"));
+    assert!(output.contains("AS ${orderByCountAlias(key)}"));
+    assert!(output.contains("${orderByCountAlias(key)} ${String(dir).toUpperCase()}"));
     assert!(output.contains("function appendLimitStart("));
     assert!(output.contains("ORDER BY ${parts.join(\", \")}"));
     assert!(output.contains("LIMIT $__take"));

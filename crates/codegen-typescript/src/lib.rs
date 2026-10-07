@@ -552,15 +552,31 @@ fn where_scalar_union(field_type: &FieldType, is_id: bool) -> String {
 fn emit_order_by_shared_types(out: &mut Vec<String>) {
     out.push("export type SortOrder = \"asc\" | \"desc\";".to_owned());
     out.push(String::new());
+    out.push("/** Order parent rows by related list size (links / edges). */".to_owned());
+    out.push("export type OrderByRelationCount = { _count?: SortOrder };".to_owned());
+    out.push(String::new());
 }
 
 fn emit_model_order_by_input(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
     out.push(format!("export type {}OrderByInput = {{", model.name));
     for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
-        if field.is_link() || field.relation_name.is_some() || should_omit_on_record(field) {
+        let name = naming.field_name(field);
+        if field.relation_name.is_some() {
+            let list = field.is_list_link() || matches!(field.field_type, FieldType::Array(_));
+            if list {
+                out.push(format!("  {name}?: OrderByRelationCount;"));
+            }
             continue;
         }
-        let name = naming.field_name(field);
+        if field.is_link() {
+            if field.is_list_link() {
+                out.push(format!("  {name}?: OrderByRelationCount;"));
+            }
+            continue;
+        }
+        if should_omit_on_record(field) {
+            continue;
+        }
         out.push(format!("  {name}?: SortOrder;"));
     }
     out.push("};".to_owned());
@@ -2041,9 +2057,14 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
             .to_owned(),
     );
     out.push(
-        "    const nested = buildProjection(bag.select, nestedTable, allMeta);"
+        "    let nested = buildProjection(bag.select, nestedTable, allMeta);"
             .to_owned(),
     );
+    out.push(
+        "    const countProj = collectOrderByCountProjections(bag.orderBy, nestedTable, allMeta);"
+            .to_owned(),
+    );
+    out.push("    if (countProj.length > 0) nested = `${nested}, ${countProj.join(\", \")}`;".to_owned());
     out.push("    const orderClause = buildOrderBy(bag.orderBy, nestedTable, allMeta);".to_owned());
     out.push("    if (orderClause) {".to_owned());
     out.push("      if (fieldMeta.kind === \"edge\") {".to_owned());
@@ -2164,10 +2185,17 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("    vars?: Record<string, unknown>;".to_owned());
     out.push("  } = {},".to_owned());
     out.push("): Promise<T[]> {".to_owned());
+    out.push("  let projection = args.select ? buildProjection(args.select, table) : \"*\";".to_owned());
     out.push(
-        "  const projection = args.select ? buildProjection(args.select, table) : \"*\";"
+        "  const countProj = collectOrderByCountProjections(args.orderBy, table);"
             .to_owned(),
     );
+    out.push("  if (countProj.length > 0) {".to_owned());
+    out.push(
+        "    projection = projection === \"*\" ? `*, ${countProj.join(\", \")}` : `${projection}, ${countProj.join(\", \")}`;"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
     out.push("  const vars: Record<string, unknown> = { ...(args.vars ?? {}) };".to_owned());
     out.push("  let sql: string;".to_owned());
     out.push("  if (args.where) {".to_owned());
@@ -2192,7 +2220,8 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  const orderClause = buildOrderBy(args.orderBy, table);".to_owned());
     out.push("  if (orderClause) sql = `${sql} ${orderClause}`;".to_owned());
     out.push("  sql = appendLimitStart(sql, args.take, args.skip, vars);".to_owned());
-    out.push("  return queryRows<T>(db, sql, vars);".to_owned());
+    out.push("  const rows = await queryRows<T>(db, sql, vars);".to_owned());
+    out.push("  return stripOrderByCountFields(rows);".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 
@@ -2700,6 +2729,72 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
 }
 
 fn emit_build_order_by(out: &mut Vec<String>) {
+    out.push("function relationCountExpr(".to_owned());
+    out.push("  key: string,".to_owned());
+    out.push("  fieldMeta: FieldSelectMeta,".to_owned());
+    out.push("): string | null {".to_owned());
+    out.push("  if (!fieldMeta.list) return null;".to_owned());
+    out.push("  if (fieldMeta.kind === \"edge\") {".to_owned());
+    out.push(
+        "    const arrow = fieldMeta.dir === \"out\" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;"
+            .to_owned(),
+    );
+    out.push("    return `array::len(${arrow})`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (fieldMeta.kind === \"stored\" || fieldMeta.kind === \"computed\") {".to_owned());
+    out.push("    return `array::len(${key})`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return null;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function orderByCountAlias(key: string): string {".to_owned());
+    out.push("  return `__ob_${key}`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function collectOrderByCountProjections(".to_owned());
+    out.push("  orderBy: Record<string, unknown> | Record<string, unknown>[] | undefined,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push(
+        "  allMeta: Record<string, Record<string, FieldSelectMeta>> = SelectMetaByTable,"
+            .to_owned(),
+    );
+    out.push("): string[] {".to_owned());
+    out.push("  if (!orderBy) return [];".to_owned());
+    out.push("  const items = Array.isArray(orderBy) ? orderBy : [orderBy];".to_owned());
+    out.push("  const meta = allMeta[table] ?? {};".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  const seen = new Set<string>();".to_owned());
+    out.push("  for (const item of items) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    for (const [key, value] of Object.entries(item)) {".to_owned());
+    out.push(
+        "      if (!value || typeof value !== \"object\" || Array.isArray(value) || !(\"_count\" in value)) continue;"
+            .to_owned(),
+    );
+    out.push("      const dir = (value as { _count?: unknown })._count;".to_owned());
+    out.push("      if (dir !== \"asc\" && dir !== \"desc\") continue;".to_owned());
+    out.push("      const fieldMeta = meta[key];".to_owned());
+    out.push("      if (!fieldMeta) continue;".to_owned());
+    out.push("      const expr = relationCountExpr(key, fieldMeta);".to_owned());
+    out.push("      if (!expr || seen.has(key)) continue;".to_owned());
+    out.push("      seen.add(key);".to_owned());
+    out.push("      parts.push(`${expr} AS ${orderByCountAlias(key)}`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return parts;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function stripOrderByCountFields<T>(rows: T[]): T[] {".to_owned());
+    out.push("  return rows.map((row) => {".to_owned());
+    out.push("    if (!row || typeof row !== \"object\") return row;".to_owned());
+    out.push("    const out = { ...(row as Record<string, unknown>) };".to_owned());
+    out.push("    for (const key of Object.keys(out)) {".to_owned());
+    out.push("      if (key.startsWith(\"__ob_\")) delete out[key];".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return out as T;".to_owned());
+    out.push("  });".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
     out.push("function buildOrderBy(".to_owned());
     out.push("  orderBy: Record<string, unknown> | Record<string, unknown>[] | undefined,".to_owned());
     out.push("  table: string,".to_owned());
@@ -2715,10 +2810,22 @@ fn emit_build_order_by(out: &mut Vec<String>) {
     out.push("  for (const item of items) {".to_owned());
     out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
     out.push("    for (const [key, value] of Object.entries(item)) {".to_owned());
-    out.push("      if (value !== \"asc\" && value !== \"desc\") continue;".to_owned());
     out.push("      const fieldMeta = meta[key];".to_owned());
-    out.push("      if (!fieldMeta || fieldMeta.kind !== \"scalar\") continue;".to_owned());
-    out.push("      parts.push(`${key} ${value.toUpperCase()}`);".to_owned());
+    out.push("      if (!fieldMeta) continue;".to_owned());
+    out.push("      if (value === \"asc\" || value === \"desc\") {".to_owned());
+    out.push("        if (fieldMeta.kind !== \"scalar\") continue;".to_owned());
+    out.push("        parts.push(`${key} ${value.toUpperCase()}`);".to_owned());
+    out.push("        continue;".to_owned());
+    out.push("      }".to_owned());
+    out.push(
+        "      if (value && typeof value === \"object\" && !Array.isArray(value) && \"_count\" in value) {"
+            .to_owned(),
+    );
+    out.push("        const dir = (value as { _count?: unknown })._count;".to_owned());
+    out.push("        if (dir !== \"asc\" && dir !== \"desc\") continue;".to_owned());
+    out.push("        if (!relationCountExpr(key, fieldMeta)) continue;".to_owned());
+    out.push("        parts.push(`${orderByCountAlias(key)} ${String(dir).toUpperCase()}`);".to_owned());
+    out.push("      }".to_owned());
     out.push("    }".to_owned());
     out.push("  }".to_owned());
     out.push("  return parts.length === 0 ? \"\" : `ORDER BY ${parts.join(\", \")}`;".to_owned());

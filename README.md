@@ -109,7 +109,7 @@ cargo test -p e2e --test graph_edges   # TYPE RELATION roundtrip
 cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
 ```
 
-TypeScript generated-client e2e (Vitest; CRUD, nested `select` + nested relation `orderBy`, hybrid `where`, `orderBy`/`take`/`skip`, bulk/`upsert`/`return`, single update/delete opts, `count`/`groupBy`, nested writes, `$transaction`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
+TypeScript generated-client e2e (Vitest; CRUD, nested `select` + nested relation `orderBy`, hybrid `where`, `orderBy`/`take`/`skip` + relation `_count`, bulk/`upsert`/`return`, single update/delete opts, `count`/`groupBy`, nested writes, `$transaction`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
 
 ```bash
 cd e2e/typescript && npm i && npm test
@@ -160,6 +160,7 @@ cargo run -p cli -- format --write
 # Relation select bags accept orderBy (target OrderByInput) via $parent / graph subqueries
 # Hybrid where on findMany/findUnique: bare equals sugar + Prisma-lite operators / some|every|none (buildWhere)
 # findMany also supports orderBy (asc/desc) + take/skip (LIMIT/START)
+# orderBy relation _count on list links/edges: { posts: { _count: "desc" } }, { liked: { _count: "asc" } }
 # Bulk: createMany/updateMany/deleteMany default { count }; optional select → GetPayload rows
 # Optional return: 'NONE'|'BEFORE'|'AFTER'|'DIFF' on *Many (exclusive with select; BEFORE n/a on create, AFTER n/a on delete)
 # Single update(id, data, { select|return }) / delete(id, { select|return }); upsert adds return (exclusive with select)
