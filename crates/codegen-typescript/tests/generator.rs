@@ -137,9 +137,9 @@ fn emits_thin_select_helpers_with_fetch() {
     assert!(output.contains("export async function selectUserRelated("));
     assert!(output.contains("export async function selectPostRelated("));
     assert!(output.contains("export async function selectLikesRelated("));
-    assert!(output.contains("FETCH posts, liked"));
-    assert!(output.contains("FETCH author"));
-    assert!(output.contains("FETCH in, out"));
+    assert!(output.contains("selectRecordRelated<UserSelected>(db, \"user\", id, [\"posts\", \"liked\"])"));
+    assert!(output.contains("selectRecordRelated<PostSelected>(db, \"post\", id, [\"author\"])"));
+    assert!(output.contains("selectRecordRelated<LikesSelected>(db, \"likes\", id, [\"in\", \"out\"])"));
 }
 
 #[test]
@@ -169,14 +169,24 @@ fn emits_create_update_inputs_without_computed_fields() {
 fn emits_as_record_id_and_crud_query_helpers() {
     let output = generate_fixture();
     assert!(output.contains("export function asRecordId<Table extends string>"));
+    assert!(output.contains("async function selectRecord<T>("));
+    assert!(output.contains("async function createRecord<T>("));
+    assert!(output.contains("async function updateRecord<T>("));
+    assert!(output.contains("async function deleteRecord("));
+    assert!(output.contains("async function queryRows<T>("));
+    assert!(output.contains("async function findUniqueRecord<T>("));
+    assert!(output.contains("async function findManyRecords<T>("));
     assert!(output.contains("create<T = unknown>(thing: string"));
     assert!(output.contains("merge<T = unknown>(thing: string"));
     assert!(output.contains("delete<T = unknown>(thing: string"));
     assert!(output.contains("export async function createUser("));
     assert!(output.contains("export async function updateUser("));
     assert!(output.contains("export async function deleteUser("));
+    assert!(output.contains("return deleteRecord(db, \"user\", id)"));
     assert!(output.contains("export async function queryUsers("));
+    assert!(output.contains("return queryRows<User>(db, sql, vars)"));
     assert!(output.contains("export async function queryUsersRelated("));
+    assert!(output.contains("return queryRows<UserSelected>(db, sql, vars)"));
     assert!(output.contains("export async function createLikes("));
     assert!(output.contains("RELATE $in->likes->$out"));
 }
@@ -197,11 +207,12 @@ fn emits_fluent_create_client() {
     let output = generate_fixture();
     assert!(output.contains("export function createClient(db: SurrealLike)"));
     assert!(output.contains("user: {"));
-    assert!(output.contains("async findUnique<S extends UserSelect"));
-    assert!(output.contains("async findMany<S extends UserSelect"));
+    assert!(output.contains("findUnique: <S extends UserSelect"));
+    assert!(output.contains("findMany: <S extends UserSelect"));
     assert!(output.contains("select?: S;"));
-    assert!(output.contains("FETCH ${keys.join(\", \")}"));
-    assert!(output.contains("return createUser(db, data);"));
+    assert!(output.contains("findUniqueRecord(db, \"user\""));
+    assert!(output.contains("findManyRecords(db, \"user\""));
+    assert!(output.contains("createUser(db, data)"));
 }
 
 #[test]

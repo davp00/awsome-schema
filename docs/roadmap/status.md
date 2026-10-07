@@ -27,7 +27,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Index kinds | `@@index` `@unique` / `@fulltext("…")` / `@vector(N)` `@dist(…)` → UNIQUE, FULLTEXT ANALYZER BM25, HNSW | parser + renderer + introspect |
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e offline_cli |
-| TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; `GetPayload` + shallow `Select`; CRUD/`query*` helpers; `createClient` fluent `findUnique`/`findMany` with select-driven FETCH; writes `generator.output` (dir → `index.ts`) unless `--stdout` | `crates/codegen-typescript`; CLI tests. No zod; no nested select; no tx/live wrappers |
+| TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; `GetPayload` + shallow `Select`; shared runtime (`selectRecord`/`queryRows`/…) with thin named wrappers; `createClient` one-liners; writes `generator.output` unless `--stdout` | `crates/codegen-typescript`; CLI tests. No zod; no nested select; no tx/live wrappers |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` |
 | `migrate create` | Empty migration directory | use case + CLI tests |
 | `migrate status` | Applied vs pending via `_awesome_migrations` ledger; snapshot flag | use case tests; e2e migrate |

@@ -1,0 +1,14 @@
+---
+description: Prefer shared reusable helpers when extending codegen emitters
+globs: crates/codegen*/**/*
+alwaysApply: false
+---
+
+# Codegen: prefer reusable helpers first
+
+When adding or changing language generators (`crates/codegen*`, `crates/codegen-*`):
+
+1. Before emitting a new per-model or per-edge helper, check whether a shared generic/runtime helper already exists — or extract one if the same body would be copied.
+2. Prefer **one shared implementation + thin typed wrappers** over copy-pasted function bodies in generated output.
+3. Only duplicate bodies when the logic is truly entity-specific (e.g. edge `RELATE` create).
+4. Keep public named APIs stable when thinning internals unless the user explicitly asks to break them.

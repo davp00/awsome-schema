@@ -43,7 +43,7 @@ crates/
 ├── renderers           # Provider-specific DDL renderers (SurrealDB first)
 ├── codegen             # Language-agnostic codegen contracts
 ├── codegen-rust        # Rust model generator (stub)
-└── codegen-typescript  # TypeScript client (types, CRUD, fluent select)
+└── codegen-typescript  # TypeScript client (shared runtime + thin typed wrappers)
 ```
 
 
@@ -142,6 +142,7 @@ cargo run -p cli -- format --write
 
 # Generate SurrealQL, Rust stubs, or TypeScript client
 # TypeScript writes to generator.output by default; use --stdout to print only
+# Generated client shares select/create/update/delete/query helpers; named APIs are thin wrappers
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript
