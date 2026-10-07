@@ -126,7 +126,7 @@
       "file_type": "code",
       "norm_label": "formaterror()",
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L118"
+      "source_location": "L122"
     },
     {
       "id": "e2e_typescript_globalsetup_globalsetup",
@@ -150,7 +150,7 @@
       "file_type": "code",
       "norm_label": "runcli()",
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L106"
+      "source_location": "L110"
     },
     {
       "id": "e2e_typescript_globalsetup_writeenv",
@@ -162,7 +162,7 @@
       "file_type": "code",
       "norm_label": "writeenv()",
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L102"
+      "source_location": "L106"
     },
     {
       "id": "e2e_typescript_src_paths_findworkspaceroot",
@@ -29094,7 +29094,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L54",
+      "source_location": "L58",
       "weight": 1.0
     },
     {
@@ -29106,7 +29106,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L81",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -29118,7 +29118,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L82",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -50006,7 +50006,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L102",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -50017,7 +50017,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L106",
+      "source_location": "L110",
       "weight": 1.0
     },
     {
@@ -50028,7 +50028,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "e2e/typescript/globalSetup.ts",
-      "source_location": "L118",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -58465,5 +58465,5 @@
       "source_file": ".agents/skills/rust-best-practices/references/chapter_06.md"
     }
   ],
-  "built_at_commit": "d502eabe506090321d549471417695622ec72ddf"
+  "built_at_commit": "d37d6703478b86c009e0de8bfd0ddee1922f4101"
 }

@@ -1,7 +1,7 @@
 # Graph Report - awsome-schema  (2026-10-07)
 
 ## Corpus Check
-- 143 files · ~70,124 words
+- 143 files · ~70,243 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 4, .xml 3, .schema 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d502eabe`
+- Built from commit: `d37d6703`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -97,11 +97,11 @@
 10. `Parser` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Hexagonal Architecture` --semantically_similar_to--> `Split-Core Hexagonal CLI Architecture`  [INFERRED] [semantically similar]
+  README.md → .agents/skills/split-core-hexagonal-cli/SKILL.md
 - `cli crate` --semantically_similar_to--> `cli crate`  [INFERRED] [semantically similar]
   README.md → .agents/skills/split-core-hexagonal-cli/SKILL.md
 - `core crate` --semantically_similar_to--> `core crate`  [INFERRED] [semantically similar]
-  README.md → .agents/skills/split-core-hexagonal-cli/SKILL.md
-- `Hexagonal Architecture` --semantically_similar_to--> `Split-Core Hexagonal CLI Architecture`  [INFERRED] [semantically similar]
   README.md → .agents/skills/split-core-hexagonal-cli/SKILL.md
 - `awesome-schema binary` --conceptually_related_to--> `cli crate`  [INFERRED]
   .agents/skills/split-core-hexagonal-cli/references/RUST.md → README.md
@@ -342,7 +342,7 @@ Cohesion: 0.13
 Nodes (10): map_field_path(), mapped_name(), NamingCase, CamelCase, KebabCase, Lowercase, PascalCase, SnakeCase (+2 more)
 
 ## Knowledge Gaps
-- **158 isolated node(s):** `FIXTURE`, `SurrealLike`, `Lexer`, `Relation`, `Array` (+153 more)
+- **158 isolated node(s):** `SurrealLike`, `Lexer`, `Relation`, `Array`, `Bool` (+153 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 452 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **65 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -350,16 +350,16 @@ Nodes (10): map_field_path(), mapped_name(), NamingCase, CamelCase, KebabCase, L
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DomainError` connect `DomainError` to `DatabaseConfig`, `codegen-typescript/tests/generator.rs`, `db_push.rs`, `format_schema.rs`, `common/mod.rs`, `domain.rs`, `DatabaseSchema`, `MigrationStore`, `migrate_dev.rs`, `SchemaSource`?**
-  _High betweenness centrality (0.055) - this node is a cross-community bridge._
+  _High betweenness centrality (0.061) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `map_database_info()` (e.g. with `introspect_async()` and `maps_minimal_user_fixture()`) actually correct?**
   _`map_database_info()` has 4 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `FIXTURE`, `SurrealLike`, `Lexer` to the rest of the system?**
+- **What connects `SurrealLike`, `Lexer`, `Relation` to the rest of the system?**
   _158 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `FieldType` be split into smaller, more focused modules?**
   _Cohesion score 0.11747516072472239 - nodes in this community are weakly interconnected._
-- **Why does `FieldType` connect `FieldType` to `codegen-typescript/tests/generator.rs`, `src/print.rs`, `validation.rs`, `introspect.rs`, `NamingCase`, `normalize.rs`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+- **Why does `AppContext` connect `AppContext` to `format.rs`, `schema_core`, `.load_schema`, `Printer`, `coverage_gaps.rs`, `generate_code.rs`?**
+  _High betweenness centrality (0.043) - this node is a cross-community bridge._
 - **Should `DatabaseConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.07450980392156863 - nodes in this community are weakly interconnected._
 - **Why does `DatabaseSchema` connect `DatabaseSchema` to `FieldType`, `codegen-typescript/tests/generator.rs`, `db_push.rs`, `model.rs`, `MigrationStore`, `migrate_dev.rs`, `NamingConvention`, `SchemaSource`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._

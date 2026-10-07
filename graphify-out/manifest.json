@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791397746.249323,
-    "seen": 1791398363.0253062,
-    "ast_hash": "7a2a430252dfe741b17ecae05c008488",
+    "mtime": 1791398418.0227427,
+    "seen": 1791398491.044683,
+    "ast_hash": "d7e72a2c6aa9a374e3d4f6cda0bb272d",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791397749.5937881,
-    "seen": 1791398363.025308,
-    "ast_hash": "1548a6918270166ed1fd0aba90c5bd0f",
+    "mtime": 1791398418.7738411,
+    "seen": 1791398491.044686,
+    "ast_hash": "0280d46d114c0034b8cd2827c0a93021",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -816,9 +816,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/globalSetup.ts": {
-    "mtime": 1791394259.6992173,
-    "seen": 1791397337.826931,
-    "ast_hash": "185f99ee5deebffcc7dc552cab7fea06",
+    "mtime": 1791398416.0055335,
+    "seen": 1791398491.044668,
+    "ast_hash": "84c0a4fa25b44797b7367655dbd24be3",
     "semantic_hash": ""
   },
   "e2e/typescript/package.json": {
@@ -867,6 +867,12 @@
     "mtime": 1791397745.3297372,
     "seen": 1791398363.025293,
     "ast_hash": "8e86d55752d76c6e3a00ca32329e287e",
+    "semantic_hash": ""
+  },
+  ".github/workflows/typescript-e2e.yml": {
+    "mtime": 1791398414.4658523,
+    "seen": 1791398491.044683,
+    "ast_hash": "124b11c965b2f3125f8fd0e2743a853d",
     "semantic_hash": ""
   }
 }
