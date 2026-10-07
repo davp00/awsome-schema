@@ -253,6 +253,18 @@ fn emits_where_inputs_and_build_where() {
     assert!(output.contains("filter: \"string\""));
     assert!(output.contains("where?: Record<string, unknown>"));
     assert!(output.contains("WHERE ${whereClause}"));
+    assert!(output.contains("function uniqueWhereId("));
+    assert!(output.contains("LIMIT 1"));
+}
+
+#[test]
+fn emits_find_unique_hybrid_where() {
+    let output = generate_fixture();
+    assert!(output.contains("where: UserWhereInput"));
+    assert!(output.contains("where: LikesWhereInput"));
+    assert!(output.contains(
+        "findUniqueRecord(db, \"user\", args as { where: Record<string, unknown>; select?: Record<string, unknown>; vars?: Record<string, unknown> })"
+    ));
 }
 
 #[test]
@@ -264,6 +276,7 @@ fn emits_fluent_create_client() {
     assert!(output.contains("findMany: <S extends UserSelect"));
     assert!(output.contains("select?: S;"));
     assert!(output.contains("where?: UserWhereInput"));
+    assert!(output.contains("where: UserWhereInput"));
     assert!(output.contains("findUniqueRecord(db, \"user\""));
     assert!(output.contains("findManyRecords(db, \"user\""));
     assert!(output.contains("createUser(db, data)"));

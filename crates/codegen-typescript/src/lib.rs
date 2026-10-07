@@ -1140,24 +1140,59 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
-    out.push("async function findUniqueRecord<T>(".to_owned());
-    out.push("  db: SurrealLike,".to_owned());
-    out.push("  table: string,".to_owned());
-    out.push("  id: string,".to_owned());
-    out.push("  select?: Record<string, unknown>,".to_owned());
-    out.push("): Promise<T | undefined> {".to_owned());
-    out.push("  if (!select) return selectRecord<T>(db, table, id);".to_owned());
-    out.push("  const thing = normalizeThing(table, id);".to_owned());
-    out.push("  const projection = buildProjection(select, table);".to_owned());
-    out.push(
-        "  const row = await db.query(`SELECT ${projection} FROM type::record($thing)`, { thing });"
-            .to_owned(),
-    );
-    out.push("  return firstRow<T>(row);".to_owned());
+    emit_build_where(out);
+
+    out.push("function uniqueWhereId(where: Record<string, unknown> | undefined): string | undefined {".to_owned());
+    out.push("  if (!where) return undefined;".to_owned());
+    out.push("  const keys = Object.keys(where).filter((key) => where[key] !== undefined);".to_owned());
+    out.push("  if (keys.length !== 1 || keys[0] !== \"id\") return undefined;".to_owned());
+    out.push("  const id = where.id;".to_owned());
+    out.push("  if (typeof id === \"string\") return id;".to_owned());
+    out.push("  if (id && typeof id === \"object\" && !Array.isArray(id) && \"equals\" in id) {".to_owned());
+    out.push("    const equals = (id as { equals?: unknown }).equals;".to_owned());
+    out.push("    return typeof equals === \"string\" ? equals : undefined;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return undefined;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 
-    emit_build_where(out);
+    out.push("async function findUniqueRecord<T>(".to_owned());
+    out.push("  db: SurrealLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: {".to_owned());
+    out.push("    where: Record<string, unknown>;".to_owned());
+    out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("    vars?: Record<string, unknown>;".to_owned());
+    out.push("  },".to_owned());
+    out.push("): Promise<T | undefined> {".to_owned());
+    out.push("  const idOnly = uniqueWhereId(args.where);".to_owned());
+    out.push("  if (idOnly !== undefined) {".to_owned());
+    out.push("    if (!args.select) return selectRecord<T>(db, table, idOnly);".to_owned());
+    out.push("    const thing = normalizeThing(table, idOnly);".to_owned());
+    out.push("    const projection = buildProjection(args.select, table);".to_owned());
+    out.push(
+        "    const row = await db.query(`SELECT ${projection} FROM type::record($thing)`, { thing });"
+            .to_owned(),
+    );
+    out.push("    return firstRow<T>(row);".to_owned());
+    out.push("  }".to_owned());
+    out.push(
+        "  const projection = args.select ? buildProjection(args.select, table) : \"*\";"
+            .to_owned(),
+    );
+    out.push("  const vars: Record<string, unknown> = { ...(args.vars ?? {}) };".to_owned());
+    out.push(
+        "  const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+            .to_owned(),
+    );
+    out.push("  if (!whereClause) return undefined;".to_owned());
+    out.push(
+        "  const rows = await queryRows<T>(db, `SELECT ${projection} FROM ${table} WHERE ${whereClause} LIMIT 1`, vars);"
+            .to_owned(),
+    );
+    out.push("  return rows[0];".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
 
     out.push("async function findManyRecords<T>(".to_owned());
     out.push("  db: SurrealLike,".to_owned());
@@ -1570,14 +1605,15 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             "      findUnique: <S extends {}Select | undefined = undefined>(args: {{",
             model.name
         ));
-        out.push(format!("        where: {{ id: RecordId<\"{table}\"> | string }};"));
+        out.push(format!("        where: {}WhereInput;", model.name));
         out.push("        select?: S;".to_owned());
+        out.push("        vars?: Record<string, unknown>;".to_owned());
         out.push(format!(
             "      }}): Promise<{}GetPayload<S> | undefined> =>",
             model.name
         ));
         out.push(format!(
-            "        findUniqueRecord(db, \"{table}\", args.where.id, args.select as Record<string, unknown> | undefined) as Promise<{}GetPayload<S> | undefined>,",
+            "        findUniqueRecord(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown>; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S> | undefined>,",
             model.name
         ));
         out.push(format!(
@@ -1619,14 +1655,15 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             "      findUnique: <S extends {}Select | undefined = undefined>(args: {{",
             edge.name
         ));
-        out.push(format!("        where: {{ id: RecordId<\"{table}\"> | string }};"));
+        out.push(format!("        where: {}WhereInput;", edge.name));
         out.push("        select?: S;".to_owned());
+        out.push("        vars?: Record<string, unknown>;".to_owned());
         out.push(format!(
             "      }}): Promise<{}GetPayload<S> | undefined> =>",
             edge.name
         ));
         out.push(format!(
-            "        findUniqueRecord(db, \"{table}\", args.where.id, args.select as Record<string, unknown> | undefined) as Promise<{}GetPayload<S> | undefined>,",
+            "        findUniqueRecord(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown>; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S> | undefined>,",
             edge.name
         ));
         out.push(format!(

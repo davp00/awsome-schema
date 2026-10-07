@@ -157,7 +157,7 @@ cargo run -p cli -- format --write
 # TypeScript writes to generator.output by default; use --stdout to print only
 # Generated client shares select/create/update/delete/query helpers; named APIs are thin wrappers
 # Nested select: scalars + links/relations with typed GetPayload; SurrealQL via buildProjection
-# Hybrid where on findMany: bare equals sugar + Prisma-lite operators / some|every|none (buildWhere)
+# Hybrid where on findMany/findUnique: bare equals sugar + Prisma-lite operators / some|every|none (buildWhere)
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript

@@ -89,6 +89,37 @@ describe("generated TypeScript client hybrid where", () => {
       });
       expect(byAge.some((row) => recordIdString(row.id) === userId)).toBe(true);
 
+      // findUnique: id fast path still works
+      const byId = await client.user.findUnique({ where: { id: userId } });
+      expect(byId).toBeDefined();
+      expect(recordIdString(byId!.id)).toBe(userId);
+
+      // findUnique: bare unique scalar
+      const uniqueEmail = await client.user.findUnique({ where: { email } });
+      expect(uniqueEmail).toBeDefined();
+      expect(recordIdString(uniqueEmail!.id)).toBe(userId);
+
+      // findUnique: nested stored link + select
+      const uniquePost = await client.post.findUnique({
+        where: { author: { email } },
+        select: {
+          id: true,
+          title: true,
+          author: { select: { email: true } },
+        },
+      });
+      expect(uniquePost).toBeDefined();
+      expect(recordIdString(uniquePost!.id)).toBe(postId);
+      expect(uniquePost!.title).toBe(title);
+      expect(uniquePost!.author.email).toBe(email);
+
+      // findUnique: edge some filter
+      const uniqueWithLike = await client.user.findUnique({
+        where: { liked: { some: { score: { gte: 5 } } } },
+      });
+      expect(uniqueWithLike).toBeDefined();
+      expect(recordIdString(uniqueWithLike!.id)).toBe(userId);
+
       await client.likes.delete(likeId);
       await client.post.delete(postId);
       await client.user.delete(userId);
