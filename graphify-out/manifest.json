@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791403143.7633688,
-    "seen": 1791403355.772005,
-    "ast_hash": "a96bc87468610ee9bd3617d0fed50a70",
+    "mtime": 1791406114.1984968,
+    "seen": 1791406365.656307,
+    "ast_hash": "deb22ebe3768d6dc6734b89e9f5cb93a",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791403090.3611841,
-    "seen": 1791403355.7720058,
-    "ast_hash": "d69995ef8d4fe3837a9811d030ea6086",
+    "mtime": 1791406172.6345484,
+    "seen": 1791406365.656308,
+    "ast_hash": "fd6e063685430f2a2df12717ad542f68",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791403106.0658934,
-    "seen": 1791403355.772052,
-    "ast_hash": "8a35b59c8c84c32ae4ceab8623eb2455",
+    "mtime": 1791406163.9026175,
+    "seen": 1791406365.656356,
+    "ast_hash": "fb4ffd6b6165da483413908281222315",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791403102.5806112,
-    "seen": 1791403355.772053,
-    "ast_hash": "b4a69da965624e660e1ae12e70d31ae2",
+    "mtime": 1791406162.6503372,
+    "seen": 1791406365.656357,
+    "ast_hash": "bda8ac88349f34c0c68c75016050617a",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791403105.021172,
-    "seen": 1791403355.772054,
-    "ast_hash": "dc9577bb65bcc1972a6b56f7e05cf485",
+    "mtime": 1791406156.592979,
+    "seen": 1791406365.656358,
+    "ast_hash": "8e3d73cffbaba466410ef98c07d21aea",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -840,9 +840,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/src/surrealAdapter.ts": {
-    "mtime": 1791397529.809202,
-    "seen": 1791397601.531596,
-    "ast_hash": "423b5afe10fef9d267cb598ceb7adb11",
+    "mtime": 1791405313.8342767,
+    "seen": 1791405591.756562,
+    "ast_hash": "4a145e43ca7b6638bf044b201f3553cf",
     "semantic_hash": ""
   },
   "e2e/typescript/tests/crud.test.ts": {
@@ -897,6 +897,24 @@
     "mtime": 1791403303.7834322,
     "seen": 1791403355.772037,
     "ast_hash": "f82763152a61ade4d362c37ce7287834",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/tests/bulk.test.ts": {
+    "mtime": 1791404733.3435838,
+    "seen": 1791404874.206712,
+    "ast_hash": "52d13c9e1379df87fc3ef1faff7054e7",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/tests/transaction.test.ts": {
+    "mtime": 1791405322.5690873,
+    "seen": 1791405591.756565,
+    "ast_hash": "ee4a22f83ef5aed7486e28961bab4213",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/tests/return.test.ts": {
+    "mtime": 1791406219.0864887,
+    "seen": 1791406365.65634,
+    "ast_hash": "cd8662d90079425540fb23c7f62c7ec1",
     "semantic_hash": ""
   }
 }
