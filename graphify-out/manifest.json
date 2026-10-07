@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791390466.795227,
-    "seen": 1791391014.555558,
-    "ast_hash": "c2ac9bd753bcce1a3712ea0dd1f5000d",
+    "mtime": 1791392130.5980327,
+    "seen": 1791392387.5116868,
+    "ast_hash": "9ee4497087c635df799cd67e2cfaa18b",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791390484.4409325,
-    "seen": 1791391014.555558,
-    "ast_hash": "41bc26528c732d264a9de14c73c9919b",
+    "mtime": 1791392112.0331516,
+    "seen": 1791392387.511688,
+    "ast_hash": "94eefe5ad95bffc42c9bf4d5831ba755",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791390490.35964,
-    "seen": 1791391014.555594,
-    "ast_hash": "8f125988f1af3213e78ac69e39c16626",
+    "mtime": 1791392112.9585867,
+    "seen": 1791392387.511727,
+    "ast_hash": "275e0b72d9b8e47ef6fe3062ca9d3823",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791390494.4776955,
-    "seen": 1791391014.555595,
-    "ast_hash": "3f4ef8454df277e0fbf53df44df52d0d",
+    "mtime": 1791392119.251577,
+    "seen": 1791392387.511728,
+    "ast_hash": "30f4d3e0caca52fd6bd2df9c8c8afdd0",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791390492.5106235,
-    "seen": 1791391014.555596,
-    "ast_hash": "31b47d89acfa852761286a1bef8a6a71",
+    "mtime": 1791392116.280864,
+    "seen": 1791392387.511729,
+    "ast_hash": "314fabfb8f33bc995a371a505bae7cb0",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
