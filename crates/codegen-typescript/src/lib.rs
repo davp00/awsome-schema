@@ -82,6 +82,14 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
         emit_edge_where_input(&mut out, schema, edge, &naming);
     }
 
+    emit_order_by_shared_types(&mut out);
+    for model in &schema.models {
+        emit_model_order_by_input(&mut out, model, &naming);
+    }
+    for edge in &schema.edges {
+        emit_edge_order_by_input(&mut out, edge, &naming);
+    }
+
     emit_tables_const(&mut out, schema, &naming);
     emit_select_meta_registry(&mut out, schema, &naming);
     emit_record_id_helpers(&mut out);
@@ -350,6 +358,35 @@ fn where_scalar_union(field_type: &FieldType, is_id: bool) -> String {
         "id" => "string | IdFilter".to_owned(),
         _ => "unknown | JsonFilter".to_owned(),
     }
+}
+
+fn emit_order_by_shared_types(out: &mut Vec<String>) {
+    out.push("export type SortOrder = \"asc\" | \"desc\";".to_owned());
+    out.push(String::new());
+}
+
+fn emit_model_order_by_input(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
+    out.push(format!("export type {}OrderByInput = {{", model.name));
+    for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+        if field.is_link() || field.relation_name.is_some() || should_omit_on_record(field) {
+            continue;
+        }
+        let name = naming.field_name(field);
+        out.push(format!("  {name}?: SortOrder;"));
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_edge_order_by_input(out: &mut Vec<String>, edge: &Edge, naming: &NamingContext<'_>) {
+    out.push(format!("export type {}OrderByInput = {{", edge.name));
+    out.push("  id?: SortOrder;".to_owned());
+    for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        out.push(format!("  {name}?: SortOrder;"));
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
 }
 
 fn emit_model_select_payload(
@@ -1194,12 +1231,17 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
+    emit_build_order_by(out);
+
     out.push("async function findManyRecords<T>(".to_owned());
     out.push("  db: SurrealLike,".to_owned());
     out.push("  table: string,".to_owned());
     out.push("  args: {".to_owned());
     out.push("    select?: Record<string, unknown>;".to_owned());
     out.push("    where?: Record<string, unknown>;".to_owned());
+    out.push("    orderBy?: Record<string, unknown> | Record<string, unknown>[];".to_owned());
+    out.push("    take?: number;".to_owned());
+    out.push("    skip?: number;".to_owned());
     out.push("    whereSql?: string;".to_owned());
     out.push("    vars?: Record<string, unknown>;".to_owned());
     out.push("  } = {},".to_owned());
@@ -1209,26 +1251,77 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
             .to_owned(),
     );
     out.push("  const vars: Record<string, unknown> = { ...(args.vars ?? {}) };".to_owned());
-    out.push("  let whereClause = \"\";".to_owned());
+    out.push("  let sql: string;".to_owned());
     out.push("  if (args.where) {".to_owned());
     out.push(
-        "    whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+        "    const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
             .to_owned(),
     );
+    out.push("    sql = whereClause".to_owned());
+    out.push(
+        "      ? `SELECT ${projection} FROM ${table} WHERE ${whereClause}`"
+            .to_owned(),
+    );
+    out.push("      : `SELECT ${projection} FROM ${table}`;".to_owned());
     out.push("  } else if (args.whereSql) {".to_owned());
     out.push(
-        "    const sql = args.whereSql.replace(/^\\s*SELECT\\s+\\*/i, `SELECT ${projection}`);"
+        "    sql = args.whereSql.replace(/^\\s*SELECT\\s+\\*/i, `SELECT ${projection}`);"
             .to_owned(),
     );
-    out.push("    return queryRows<T>(db, sql, args.vars);".to_owned());
+    out.push("  } else {".to_owned());
+    out.push("    sql = `SELECT ${projection} FROM ${table}`;".to_owned());
     out.push("  }".to_owned());
-    out.push("  const sql = whereClause".to_owned());
+    out.push("  const orderClause = buildOrderBy(args.orderBy, table);".to_owned());
+    out.push("  if (orderClause) sql = `${sql} ${orderClause}`;".to_owned());
+    out.push("  sql = appendLimitStart(sql, args.take, args.skip, vars);".to_owned());
+    out.push("  return queryRows<T>(db, sql, vars);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+}
+
+fn emit_build_order_by(out: &mut Vec<String>) {
+    out.push("function buildOrderBy(".to_owned());
+    out.push("  orderBy: Record<string, unknown> | Record<string, unknown>[] | undefined,".to_owned());
+    out.push("  table: string,".to_owned());
     out.push(
-        "    ? `SELECT ${projection} FROM ${table} WHERE ${whereClause}`"
+        "  allMeta: Record<string, Record<string, FieldSelectMeta>> = SelectMetaByTable,"
             .to_owned(),
     );
-    out.push("    : `SELECT ${projection} FROM ${table}`;".to_owned());
-    out.push("  return queryRows<T>(db, sql, vars);".to_owned());
+    out.push("): string {".to_owned());
+    out.push("  if (!orderBy) return \"\";".to_owned());
+    out.push("  const items = Array.isArray(orderBy) ? orderBy : [orderBy];".to_owned());
+    out.push("  const meta = allMeta[table] ?? {};".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  for (const item of items) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    for (const [key, value] of Object.entries(item)) {".to_owned());
+    out.push("      if (value !== \"asc\" && value !== \"desc\") continue;".to_owned());
+    out.push("      const fieldMeta = meta[key];".to_owned());
+    out.push("      if (!fieldMeta || fieldMeta.kind !== \"scalar\") continue;".to_owned());
+    out.push("      parts.push(`${key} ${value.toUpperCase()}`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return parts.length === 0 ? \"\" : `ORDER BY ${parts.join(\", \")}`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function appendLimitStart(".to_owned());
+    out.push("  sql: string,".to_owned());
+    out.push("  take: number | undefined,".to_owned());
+    out.push("  skip: number | undefined,".to_owned());
+    out.push("  vars: Record<string, unknown>,".to_owned());
+    out.push("): string {".to_owned());
+    out.push("  let out = sql;".to_owned());
+    out.push("  if (take !== undefined) {".to_owned());
+    out.push("    if (!Number.isFinite(take) || take < 0) throw new Error(\"take must be a non-negative number\");".to_owned());
+    out.push("    vars.__take = Math.floor(take);".to_owned());
+    out.push("    out = out + \" LIMIT $__take\";".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (skip !== undefined) {".to_owned());
+    out.push("    if (!Number.isFinite(skip) || skip < 0) throw new Error(\"skip must be a non-negative number\");".to_owned());
+    out.push("    vars.__skip = Math.floor(skip);".to_owned());
+    out.push("    out = out + \" START $__skip\";".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return out;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 }
@@ -1622,6 +1715,12 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
         ));
         out.push("        select?: S;".to_owned());
         out.push(format!("        where?: {}WhereInput;", model.name));
+        out.push(format!(
+            "        orderBy?: {}OrderByInput | {}OrderByInput[];",
+            model.name, model.name
+        ));
+        out.push("        take?: number;".to_owned());
+        out.push("        skip?: number;".to_owned());
         out.push("        whereSql?: string;".to_owned());
         out.push("        vars?: Record<string, unknown>;".to_owned());
         out.push(format!(
@@ -1629,7 +1728,7 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             model.name
         ));
         out.push(format!(
-            "        findManyRecords(db, \"{table}\", args as {{ select?: Record<string, unknown>; where?: Record<string, unknown>; whereSql?: string; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S>[]>,",
+            "        findManyRecords(db, \"{table}\", args as {{ select?: Record<string, unknown>; where?: Record<string, unknown>; orderBy?: Record<string, unknown> | Record<string, unknown>[]; take?: number; skip?: number; whereSql?: string; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S>[]>,",
             model.name
         ));
         out.push(format!(

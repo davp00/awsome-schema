@@ -35,9 +35,9 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 
 ## 6. Client generators — TypeScript client done (select + hybrid where + e2e)
 
-TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` on `findMany` and `findUnique` (bare equals sugar + Prisma-lite operators / `some`/`every`/`none`; id-only fast path; else `LIMIT 1`), shared `buildProjection`/`buildWhere`, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers CRUD, nested select, and where filters. Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` on `findMany`/`findUnique`, `orderBy` + `take`/`skip` on `findMany`, shared `buildProjection`/`buildWhere`/`buildOrderBy`, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers CRUD, select, where, and ordering/pagination. Still deferred:
 
-- Cursors/`orderBy`; multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
+- Cursor pagination; nested relation `orderBy`; multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
@@ -48,4 +48,4 @@ TypeScript `generate --target typescript` writes to `generator.output` by defaul
 
 ## Last live check
 
-2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + nested select + hybrid where against SurrealDB v3.3.0.
+2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + select + where + orderBy/take/skip against SurrealDB v3.3.0.

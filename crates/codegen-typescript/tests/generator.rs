@@ -268,6 +268,25 @@ fn emits_find_unique_hybrid_where() {
 }
 
 #[test]
+fn emits_order_by_take_skip() {
+    let output = generate_fixture();
+    assert!(output.contains("export type SortOrder = \"asc\" | \"desc\""));
+    assert!(output.contains("export type UserOrderByInput = {"));
+    assert!(output.contains("email?: SortOrder"));
+    assert!(output.contains("age?: SortOrder"));
+    assert!(output.contains("export type LikesOrderByInput = {"));
+    assert!(output.contains("score?: SortOrder"));
+    assert!(output.contains("function buildOrderBy("));
+    assert!(output.contains("function appendLimitStart("));
+    assert!(output.contains("ORDER BY ${parts.join(\", \")}"));
+    assert!(output.contains("LIMIT $__take"));
+    assert!(output.contains("START $__skip"));
+    assert!(output.contains("orderBy?: UserOrderByInput | UserOrderByInput[]"));
+    assert!(output.contains("take?: number"));
+    assert!(output.contains("skip?: number"));
+}
+
+#[test]
 fn emits_fluent_create_client() {
     let output = generate_fixture();
     assert!(output.contains("export function createClient(db: SurrealLike)"));
@@ -277,6 +296,7 @@ fn emits_fluent_create_client() {
     assert!(output.contains("select?: S;"));
     assert!(output.contains("where?: UserWhereInput"));
     assert!(output.contains("where: UserWhereInput"));
+    assert!(output.contains("orderBy?: UserOrderByInput | UserOrderByInput[]"));
     assert!(output.contains("findUniqueRecord(db, \"user\""));
     assert!(output.contains("findManyRecords(db, \"user\""));
     assert!(output.contains("createUser(db, data)"));
