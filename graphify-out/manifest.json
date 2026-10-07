@@ -186,21 +186,21 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/Cargo.toml": {
-    "mtime": 1791294398.6611576,
-    "seen": 1791298873.1438909,
-    "ast_hash": "f59729f17c85072ecaaf1ba5a839d494",
-    "semantic_hash": "f59729f17c85072ecaaf1ba5a839d494"
+    "mtime": 1791369113.3375466,
+    "seen": 1791369738.299207,
+    "ast_hash": "75b47dd462a4e18ee12fe7a875409e8a",
+    "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791294398.6613524,
-    "seen": 1791298873.143892,
-    "ast_hash": "3637af212924bf68d563cb6bda454699",
-    "semantic_hash": "3637af212924bf68d563cb6bda454699"
+    "mtime": 1791369297.1020863,
+    "seen": 1791369738.299208,
+    "ast_hash": "98a6329392db8291226290e6e754eaa0",
+    "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791320689.7323077,
-    "seen": 1791367123.602595,
-    "ast_hash": "bc3a18582150564fae61dc32522d79cb",
+    "mtime": 1791369312.8209088,
+    "seen": 1791369738.299208,
+    "ast_hash": "edfa87376eedf06e476295ab4c8dab64",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791366967.9722657,
-    "seen": 1791367123.602637,
-    "ast_hash": "94eaffdd7d3a5075f7ade936933fa8c8",
+    "mtime": 1791369273.6596415,
+    "seen": 1791369738.2992482,
+    "ast_hash": "238fbeefba2768c4b0f1e629b38a0fac",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791315161.1241376,
-    "seen": 1791315617.001106,
-    "ast_hash": "c2c71f5353951b0433993ce0a1c55c72",
+    "mtime": 1791369254.903472,
+    "seen": 1791369738.299249,
+    "ast_hash": "7869d53641d897ffb8f8472543d2c27d",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791315170.7994394,
-    "seen": 1791315617.001107,
-    "ast_hash": "b80efc1ce84b1718ad73527a17a8c4cd",
+    "mtime": 1791369252.7566128,
+    "seen": 1791369738.29925,
+    "ast_hash": "6377745aa84c0c18b4693970fc67e5c5",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
