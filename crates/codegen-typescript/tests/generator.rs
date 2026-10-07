@@ -105,8 +105,8 @@ fn computed_link_and_relation_omitted_on_record_present_on_selected() {
 
     let selected_start = user_end;
     let selected_end = output
-        .find("export type UserCreateInput = {")
-        .expect("UserCreateInput");
+        .find("export type UserCreateScalars = {")
+        .expect("UserCreateScalars");
     let user_selected = &output[selected_start..selected_end];
     assert!(user_selected.contains("posts?: PostSelected[]"));
     assert!(user_selected.contains("liked?: LikesSelected[]"));
@@ -145,24 +145,38 @@ fn emits_thin_select_helpers_with_fetch() {
 #[test]
 fn emits_create_update_inputs_without_computed_fields() {
     let output = generate_fixture();
-    let create_start = output.find("export type UserCreateInput = {").expect("create");
+    let scalars_start = output
+        .find("export type UserCreateScalars = {")
+        .expect("scalars");
+    let create_start = output
+        .find("export type UserCreateInput = ")
+        .expect("create");
+    let scalars = &output[scalars_start..create_start];
+    assert!(scalars.contains("email: string"));
+    assert!(!scalars.contains("posts"));
+    assert!(!scalars.contains("liked"));
+    assert!(!scalars.contains("id:"));
+
     let create_end = output.find("export type UserUpdateInput = {").expect("update");
     let create = &output[create_start..create_end];
-    assert!(create.contains("email: string"));
-    assert!(!create.contains("posts"));
-    assert!(!create.contains("liked"));
-    assert!(!create.contains("id:"));
+    assert!(create.contains("posts?: {"));
+    assert!(create.contains("liked?: {"));
+    assert!(create.contains("create?: Array<Omit<PostCreateScalars, \"author\">>"));
 
     let update_start = create_end;
-    let update_end = output.find("export type PostCreateInput").expect("PostCreate");
+    let update_end = output.find("export type PostCreateScalars").expect("PostCreateScalars");
     let update = &output[update_start..update_end];
     assert!(update.contains("email?: string"));
-    assert!(!update.contains("posts"));
+    assert!(update.contains("posts?: {"));
 
-    let post_create_start = output.find("export type PostCreateInput = {").expect("PostCreate");
+    let post_create_start = output
+        .find("export type PostCreateInput = ")
+        .expect("PostCreate");
     let post_create_end = output.find("export type PostUpdateInput = {").expect("PostUpdate");
     let post_create = &output[post_create_start..post_create_end];
-    assert!(post_create.contains("author: RecordId<\"user\">"));
+    assert!(post_create.contains("author:"));
+    assert!(post_create.contains("connect: { id: string }"));
+    assert!(post_create.contains("create: UserCreateScalars"));
 }
 
 #[test]
@@ -188,7 +202,9 @@ fn emits_as_record_id_and_crud_query_helpers() {
     assert!(output.contains("export async function queryUsersRelated("));
     assert!(output.contains("return queryRows<UserSelected>(db, sql, vars)"));
     assert!(output.contains("export async function createLikes("));
-    assert!(output.contains("RELATE $in->likes->$out"));
+    assert!(output.contains("async function relateEdge("));
+    assert!(output.contains("RELATE $in->${edgeTable}->$out"));
+    assert!(output.contains("relateEdge(db, \"likes\""));
 }
 
 #[test]
@@ -344,6 +360,23 @@ fn emits_where_unique_and_bulk_upsert() {
     assert!(output.contains("upsertRecord(db, \"user\""));
     assert!(output.contains("createManyVia(db, \"likes\""));
     assert!(output.contains("deleteManyRecords(db, \"likes\""));
+}
+
+#[test]
+fn emits_nested_writes() {
+    let output = generate_fixture();
+    assert!(output.contains("export type FieldWriteMeta ="));
+    assert!(output.contains("export const WriteMetaByTable"));
+    assert!(output.contains("backLinkField: \"author\""));
+    assert!(output.contains("kind: \"edge\""));
+    assert!(output.contains("async function createWithNested<"));
+    assert!(output.contains("async function updateWithNested<"));
+    assert!(output.contains("async function applyNestedWrites("));
+    assert!(output.contains("async function relateEdge("));
+    assert!(output.contains("createWithNested<User>(db, \"user\""));
+    assert!(output.contains("updateWithNested(db, \"user\""));
+    assert!(output.contains("nested writes are one hop only"));
+    assert!(output.contains("cannot disconnect required link"));
 }
 
 #[test]

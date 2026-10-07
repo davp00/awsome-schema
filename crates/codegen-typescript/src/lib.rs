@@ -1,5 +1,7 @@
 #![allow(clippy::missing_errors_doc, clippy::too_many_lines)]
 
+use std::fmt::Write as _;
+
 use codegen::CodeGenerator;
 use core::usecases::CodeGeneratorPort;
 use core::{
@@ -96,6 +98,7 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
 
     emit_tables_const(&mut out, schema, &naming);
     emit_select_meta_registry(&mut out, schema, &naming);
+    emit_write_meta_registry(&mut out, schema, &naming);
     emit_record_id_helpers(&mut out);
     emit_surreal_like(&mut out);
     emit_shared_runtime(&mut out);
@@ -169,7 +172,7 @@ fn emit_model_inputs(
     model: &Model,
     naming: &NamingContext<'_>,
 ) {
-    out.push(format!("export type {}CreateInput = {{", model.name));
+    out.push(format!("export type {}CreateScalars = {{", model.name));
     for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
         if field.is_id || should_omit_on_record(field) {
             continue;
@@ -182,17 +185,162 @@ fn emit_model_inputs(
     out.push("};".to_owned());
     out.push(String::new());
 
+    let stored_overrides: Vec<(&Field, String)> = model
+        .fields
+        .iter()
+        .filter(|f| !f.name.contains('.') && f.is_stored_link())
+        .map(|f| (f, naming.field_name(f)))
+        .collect();
+
+    if stored_overrides.is_empty() {
+        out.push(format!(
+            "export type {}CreateInput = {}CreateScalars & {{",
+            model.name, model.name
+        ));
+    } else {
+        let omit_keys = stored_overrides
+            .iter()
+            .map(|(_, n)| format!("\"{n}\""))
+            .collect::<Vec<_>>()
+            .join(" | ");
+        out.push(format!(
+            "export type {}CreateInput = Omit<{}CreateScalars, {omit_keys}> & {{",
+            model.name, model.name
+        ));
+        for (field, name) in &stored_overrides {
+            let target = field
+                .link_target
+                .as_deref()
+                .or_else(|| field.field_type.link_model_name())
+                .unwrap_or("unknown");
+            let table = table_for_model_name(schema, target, naming);
+            let optional = if field.optional { "?" } else { "" };
+            out.push(format!(
+                "  {name}{optional}: RecordId<\"{table}\"> | string | {{ connect: {{ id: string }} }} | {{ create: {target}CreateScalars }};"
+            ));
+        }
+    }
+    emit_model_nested_write_bags(out, schema, model, naming, false);
+    out.push("};".to_owned());
+    out.push(String::new());
+
     out.push(format!("export type {}UpdateInput = {{", model.name));
     for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
         if field.is_id || should_omit_on_record(field) {
             continue;
         }
-        let ts = map_model_field_record(schema, model, field, naming);
         let name = naming.field_name(field);
-        out.push(format!("  {name}?: {ts};"));
+        if field.is_stored_link() {
+            let target = field
+                .link_target
+                .as_deref()
+                .or_else(|| field.field_type.link_model_name())
+                .unwrap_or("unknown");
+            let table = table_for_model_name(schema, target, naming);
+            if field.optional {
+                out.push(format!(
+                    "  {name}?: RecordId<\"{table}\"> | string | {{ connect: {{ id: string }} }} | {{ create: {target}CreateScalars }} | {{ disconnect: true }};"
+                ));
+            } else {
+                out.push(format!(
+                    "  {name}?: RecordId<\"{table}\"> | string | {{ connect: {{ id: string }} }} | {{ create: {target}CreateScalars }};"
+                ));
+            }
+        } else {
+            let ts = map_model_field_record(schema, model, field, naming);
+            out.push(format!("  {name}?: {ts};"));
+        }
     }
+    emit_model_nested_write_bags(out, schema, model, naming, true);
     out.push("};".to_owned());
     out.push(String::new());
+}
+
+fn emit_model_nested_write_bags(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    model: &Model,
+    naming: &NamingContext<'_>,
+    _for_update: bool,
+) {
+    for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        if let Some(relation) = &field.relation_name {
+            let edge_name = resolve_edge_type_name(schema, relation);
+            let Some(edge) = schema.edges.iter().find(|e| e.name == edge_name) else {
+                continue;
+            };
+            let dir = if edge.in_model == model.name {
+                "out"
+            } else if edge.out_model == model.name {
+                "in"
+            } else {
+                continue;
+            };
+            let far = dir;
+            let far_model_name = if dir == "out" {
+                edge.out_model.as_str()
+            } else {
+                edge.in_model.as_str()
+            };
+            let omit_keys = schema
+                .models
+                .iter()
+                .find(|m| m.name == far_model_name)
+                .map(|far_model| {
+                    far_model
+                        .fields
+                        .iter()
+                        .filter(|f| {
+                            f.is_stored_link()
+                                && f.link_target.as_deref() == Some(model.name.as_str())
+                        })
+                        .map(|f| format!("\"{}\"", naming.field_name(f)))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let far_create_ty = if omit_keys.is_empty() {
+                format!("{far_model_name}CreateScalars")
+            } else {
+                format!(
+                    "Omit<{far_model_name}CreateScalars, {}>",
+                    omit_keys.join(" | ")
+                )
+            };
+            let mut payload_fields = String::new();
+            for ef in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+                let ef_name = naming.field_name(ef);
+                let ts = map_scalar_or_object(None, &ef.field_type, ef, naming);
+                let optional = if ef.optional { "?" } else { "" };
+                let _ = write!(payload_fields, " {ef_name}{optional}: {ts};");
+            }
+            out.push(format!("  {name}?: {{"));
+            out.push(format!(
+                "    create?: Array<{{{payload_fields} {far}: string | {{ create: {far_create_ty} }}; }}>;"
+            ));
+            out.push(format!(
+                "    connect?: Array<({{ {far}: string }} & {{{payload_fields}}}) | {{ id: string }}>;"
+            ));
+            out.push(format!(
+                "    disconnect?: Array<{{ {far}: string }} | {{ id: string }}>;"
+            ));
+            out.push("  };".to_owned());
+        } else if field.is_computed_link() {
+            let target = field
+                .link_target
+                .as_deref()
+                .or_else(|| field.field_type.link_model_name())
+                .unwrap_or("unknown");
+            let back = field.link_opposite_field.as_deref().unwrap_or("id");
+            out.push(format!("  {name}?: {{"));
+            out.push(format!(
+                "    create?: Array<Omit<{target}CreateScalars, \"{back}\">>;"
+            ));
+            out.push("    connect?: Array<{ id: string }>;".to_owned());
+            out.push("    disconnect?: Array<{ id: string }>;".to_owned());
+            out.push("  };".to_owned());
+        }
+    }
 }
 
 fn emit_select_type_utils(out: &mut Vec<String>) {
@@ -1084,6 +1232,136 @@ fn emit_select_meta_registry(
     out.push(String::new());
 }
 
+fn emit_write_meta_registry(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    naming: &NamingContext<'_>,
+) {
+    out.push("export type FieldWriteMeta =".to_owned());
+    out.push("  | { kind: \"scalar\" }".to_owned());
+    out.push(
+        "  | { kind: \"stored\"; targetTable: string; list: boolean; optional: boolean }"
+            .to_owned(),
+    );
+    out.push(
+        "  | { kind: \"computed\"; targetTable: string; list: boolean; backLinkField: string; backLinkOptional: boolean }"
+            .to_owned(),
+    );
+    out.push(
+        "  | { kind: \"edge\"; edgeTable: string; dir: \"out\" | \"in\"; list: boolean; inTable: string; outTable: string; payloadFields: string[] };"
+            .to_owned(),
+    );
+    out.push(String::new());
+    out.push(
+        "export const WriteMetaByTable: Record<string, Record<string, FieldWriteMeta>> = {"
+            .to_owned(),
+    );
+
+    for model in &schema.models {
+        let table = model.table_name(naming.convention());
+        out.push(format!("  \"{table}\": {{"));
+        for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+            let name = naming.field_name(field);
+            if let Some(relation) = &field.relation_name {
+                let edge_name = resolve_edge_type_name(schema, relation);
+                let Some(edge) = schema.edges.iter().find(|e| e.name == edge_name) else {
+                    continue;
+                };
+                let edge_table = edge.table_name(naming.convention());
+                let dir = if edge.in_model == model.name {
+                    "out"
+                } else if edge.out_model == model.name {
+                    "in"
+                } else {
+                    continue;
+                };
+                let in_table = table_for_model_name(schema, &edge.in_model, naming);
+                let out_table = table_for_model_name(schema, &edge.out_model, naming);
+                let payload = edge
+                    .fields
+                    .iter()
+                    .filter(|f| !f.name.contains('.'))
+                    .map(|f| format!("\"{}\"", naming.field_name(f)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let list = field.is_list_link() || matches!(field.field_type, FieldType::Array(_));
+                out.push(format!(
+                    "    {name}: {{ kind: \"edge\", edgeTable: \"{edge_table}\", dir: \"{dir}\", list: {list}, inTable: \"{in_table}\", outTable: \"{out_table}\", payloadFields: [{payload}] }},"
+                ));
+            } else if field.is_computed_link() {
+                let target = field
+                    .link_target
+                    .as_deref()
+                    .or_else(|| field.field_type.link_model_name())
+                    .unwrap_or("unknown");
+                let target_table = table_for_model_name(schema, target, naming);
+                let back = field
+                    .link_opposite_field
+                    .clone()
+                    .or_else(|| {
+                        find_stored_opposite_field_name(schema, field, naming)
+                    })
+                    .unwrap_or_else(|| "id".to_owned());
+                let back_optional = find_stored_opposite_optional(schema, field).unwrap_or(false);
+                let list = field.is_list_link();
+                out.push(format!(
+                    "    {name}: {{ kind: \"computed\", targetTable: \"{target_table}\", list: {list}, backLinkField: \"{back}\", backLinkOptional: {back_optional} }},"
+                ));
+            } else if field.is_stored_link() {
+                let target = field
+                    .link_target
+                    .as_deref()
+                    .or_else(|| field.field_type.link_model_name())
+                    .unwrap_or("unknown");
+                let target_table = table_for_model_name(schema, target, naming);
+                let list = field.is_list_link();
+                out.push(format!(
+                    "    {name}: {{ kind: \"stored\", targetTable: \"{target_table}\", list: {list}, optional: {} }},",
+                    field.optional
+                ));
+            } else if !field.is_id {
+                out.push(format!("    {name}: {{ kind: \"scalar\" }},"));
+            }
+        }
+        out.push("  },".to_owned());
+    }
+
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn find_stored_opposite_field_name(
+    schema: &DatabaseSchema,
+    computed: &Field,
+    naming: &NamingContext<'_>,
+) -> Option<String> {
+    let link_name = computed.link_name.as_deref()?;
+    let target = computed
+        .link_target
+        .as_deref()
+        .or_else(|| computed.field_type.link_model_name())?;
+    let target_model = schema.models.iter().find(|m| m.name == target)?;
+    target_model
+        .fields
+        .iter()
+        .find(|f| f.is_stored_link() && f.link_name.as_deref() == Some(link_name))
+        .map(|f| naming.field_name(f))
+}
+
+fn find_stored_opposite_optional(schema: &DatabaseSchema, computed: &Field) -> Option<bool> {
+    let link_name = computed.link_name.as_deref()?;
+    let target = computed
+        .link_target
+        .as_deref()
+        .or_else(|| computed.field_type.link_model_name())?;
+    let target_model = schema.models.iter().find(|m| m.name == target)?;
+    target_model
+        .fields
+        .iter()
+        .find(|f| f.is_stored_link() && f.link_name.as_deref() == Some(link_name))
+        .map(|f| f.optional)
+}
+
 fn emit_record_id_helpers(out: &mut Vec<String>) {
     out.push("export function recordId<Table extends string>(".to_owned());
     out.push("  table: Table,".to_owned());
@@ -1234,6 +1512,311 @@ fn emit_surreal_like(out: &mut Vec<String>) {
     out.push(String::new());
 }
 
+fn emit_nested_write_runtime(out: &mut Vec<String>) {
+    out.push("function isNestedWriteBag(value: unknown): value is Record<string, unknown> {".to_owned());
+    out.push("  return !!value && typeof value === \"object\" && !Array.isArray(value) && (".to_owned());
+    out.push("    \"create\" in value || \"connect\" in value || \"disconnect\" in value".to_owned());
+    out.push("  );".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function assertNoNestedWrites(".to_owned());
+    out.push("  data: Record<string, unknown>,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  context: string,".to_owned());
+    out.push("): void {".to_owned());
+    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  for (const [key, value] of Object.entries(data)) {".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta || fieldMeta.kind === \"scalar\") continue;".to_owned());
+    out.push("    if (fieldMeta.kind === \"stored\" && isNestedWriteBag(value)) {".to_owned());
+    out.push("      throw new Error(`${context}: nested writes are one hop only (${table}.${key})`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if ((fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") && value != null) {".to_owned());
+    out.push("      throw new Error(`${context}: nested writes are one hop only (${table}.${key})`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function withWriteTransaction<T>(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  needsTxn: boolean,".to_owned());
+    out.push("  fn: (ops: SurrealOpsLike) => Promise<T>,".to_owned());
+    out.push("): Promise<T> {".to_owned());
+    out.push("  if (!needsTxn) return fn(db);".to_owned());
+    out.push("  const begin = (db as SurrealLike).beginTransaction;".to_owned());
+    out.push("  if (typeof begin !== \"function\") return fn(db);".to_owned());
+    out.push("  const txn = await begin.call(db);".to_owned());
+    out.push("  try {".to_owned());
+    out.push("    const result = await fn(txn);".to_owned());
+    out.push("    await txn.commit();".to_owned());
+    out.push("    return result;".to_owned());
+    out.push("  } catch (error) {".to_owned());
+    out.push("    await txn.cancel();".to_owned());
+    out.push("    throw error;".to_owned());
+    out.push("  }".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function relateEdge(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  edgeTable: string,".to_owned());
+    out.push("  inTable: string,".to_owned());
+    out.push("  outTable: string,".to_owned());
+    out.push("  inId: string,".to_owned());
+    out.push("  outId: string,".to_owned());
+    out.push("  content: Record<string, unknown> = {},".to_owned());
+    out.push("): Promise<Record<string, unknown>> {".to_owned());
+    out.push(
+        "  const row = await db.query(`RELATE $in->${edgeTable}->$out CONTENT $content`, {"
+            .to_owned(),
+    );
+    out.push("    in: normalizeThing(inTable, inId),".to_owned());
+    out.push("    out: normalizeThing(outTable, outId),".to_owned());
+    out.push("    content,".to_owned());
+    out.push("  });".to_owned());
+    out.push("  const created = await firstRow<Record<string, unknown>>(row);".to_owned());
+    out.push("  if (!created) throw new Error(`relate ${edgeTable} returned no row`);".to_owned());
+    out.push("  return created;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function resolveStoredLinkValue(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  field: string,".to_owned());
+    out.push("  value: unknown,".to_owned());
+    out.push("  meta: Extract<FieldWriteMeta, { kind: \"stored\" }>,".to_owned());
+    out.push("): Promise<unknown> {".to_owned());
+    out.push("  if (value == null || typeof value !== \"object\" || Array.isArray(value)) return value;".to_owned());
+    out.push("  const bag = value as Record<string, unknown>;".to_owned());
+    out.push("  if (\"disconnect\" in bag) {".to_owned());
+    out.push("    if (!meta.optional) throw new Error(`update ${table}: cannot disconnect required link ${field}`);".to_owned());
+    out.push("    return null;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (\"connect\" in bag) {".to_owned());
+    out.push("    const id = (bag.connect as { id?: unknown } | undefined)?.id;".to_owned());
+    out.push("    if (typeof id !== \"string\") throw new Error(`update ${table}: ${field}.connect.id required`);".to_owned());
+    out.push("    return normalizeThing(meta.targetTable, id);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (\"create\" in bag) {".to_owned());
+    out.push("    const data = (bag.create ?? {}) as Record<string, unknown>;".to_owned());
+    out.push("    assertNoNestedWrites(data, meta.targetTable, `create ${table}.${field}`);".to_owned());
+    out.push("    const created = await createRecord<{ id?: unknown }>(db, meta.targetTable, data);".to_owned());
+    out.push("    return String(created.id);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return value;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function splitAndResolveWriteData(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  data: Record<string, unknown>,".to_owned());
+    out.push("): Promise<{ scalars: Record<string, unknown>; nested: Record<string, unknown> }> {".to_owned());
+    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  const scalars: Record<string, unknown> = {};".to_owned());
+    out.push("  const nested: Record<string, unknown> = {};".to_owned());
+    out.push("  for (const [key, value] of Object.entries(data)) {".to_owned());
+    out.push("    if (value === undefined) continue;".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta || fieldMeta.kind === \"scalar\") {".to_owned());
+    out.push("      scalars[key] = value;".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (fieldMeta.kind === \"stored\") {".to_owned());
+    out.push("      scalars[key] = await resolveStoredLinkValue(db, table, key, value, fieldMeta);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") {".to_owned());
+    out.push("      if (!isNestedWriteBag(value)) {".to_owned());
+    out.push("        throw new Error(`${table}.${key}: expected { create|connect|disconnect }`);".to_owned());
+    out.push("      }".to_owned());
+    out.push("      nested[key] = value;".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return { scalars, nested };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function applyComputedNested(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  parentTable: string,".to_owned());
+    out.push("  parentId: string,".to_owned());
+    out.push("  field: string,".to_owned());
+    out.push("  bag: Record<string, unknown>,".to_owned());
+    out.push("  meta: Extract<FieldWriteMeta, { kind: \"computed\" }>,".to_owned());
+    out.push("): Promise<void> {".to_owned());
+    out.push("  const parentThing = normalizeThing(parentTable, parentId);".to_owned());
+    out.push("  const creates = Array.isArray(bag.create) ? bag.create : [];".to_owned());
+    out.push("  for (const item of creates) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    const data = { ...(item as Record<string, unknown>), [meta.backLinkField]: parentThing };".to_owned());
+    out.push("    assertNoNestedWrites(data, meta.targetTable, `create ${parentTable}.${field}`);".to_owned());
+    out.push("    await createRecord(db, meta.targetTable, data);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const connects = Array.isArray(bag.connect) ? bag.connect : [];".to_owned());
+    out.push("  for (const item of connects) {".to_owned());
+    out.push("    const id = item && typeof item === \"object\" ? (item as { id?: unknown }).id : undefined;".to_owned());
+    out.push("    if (typeof id !== \"string\") throw new Error(`${parentTable}.${field}.connect.id required`);".to_owned());
+    out.push("    const thing = normalizeThing(meta.targetTable, id);".to_owned());
+    out.push(
+        "    await db.merge(thing, { [meta.backLinkField]: parentThing });".to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("  const disconnects = Array.isArray(bag.disconnect) ? bag.disconnect : [];".to_owned());
+    out.push("  for (const item of disconnects) {".to_owned());
+    out.push("    const id = item && typeof item === \"object\" ? (item as { id?: unknown }).id : undefined;".to_owned());
+    out.push("    if (typeof id !== \"string\") throw new Error(`${parentTable}.${field}.disconnect.id required`);".to_owned());
+    out.push("    if (!meta.backLinkOptional) {".to_owned());
+    out.push(
+        "      throw new Error(`${parentTable}.${field}: cannot disconnect required back-link ${meta.backLinkField}`);"
+            .to_owned(),
+    );
+    out.push("    }".to_owned());
+    out.push("    const thing = normalizeThing(meta.targetTable, id);".to_owned());
+    out.push(
+        "    await queryRows(db, `UPDATE type::record($thing) UNSET ${meta.backLinkField}`, { thing });"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function applyEdgeNested(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  parentTable: string,".to_owned());
+    out.push("  parentId: string,".to_owned());
+    out.push("  field: string,".to_owned());
+    out.push("  bag: Record<string, unknown>,".to_owned());
+    out.push("  meta: Extract<FieldWriteMeta, { kind: \"edge\" }>,".to_owned());
+    out.push("): Promise<void> {".to_owned());
+    out.push("  const farKey = meta.dir;".to_owned());
+    out.push("  const farTable = meta.dir === \"out\" ? meta.outTable : meta.inTable;".to_owned());
+    out.push("  const creates = Array.isArray(bag.create) ? bag.create : [];".to_owned());
+    out.push("  for (const item of creates) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    const row = item as Record<string, unknown>;".to_owned());
+    out.push("    let farId: string;".to_owned());
+    out.push("    const farVal = row[farKey];".to_owned());
+    out.push("    if (typeof farVal === \"string\") {".to_owned());
+    out.push("      farId = farVal;".to_owned());
+    out.push("    } else if (farVal && typeof farVal === \"object\" && \"create\" in (farVal as object)) {".to_owned());
+    out.push("      const createData = { ...((farVal as { create?: Record<string, unknown> }).create ?? {}) };".to_owned());
+    out.push("      assertNoNestedWrites(createData, farTable, `create ${parentTable}.${field}.${farKey}`);".to_owned());
+    out.push("      const parentMeta = WriteMetaByTable[farTable] ?? {};".to_owned());
+    out.push("      for (const [pkey, pmeta] of Object.entries(parentMeta)) {".to_owned());
+    out.push("        if (pmeta.kind === \"stored\" && pmeta.targetTable === parentTable && createData[pkey] == null) {".to_owned());
+    out.push("          createData[pkey] = normalizeThing(parentTable, parentId);".to_owned());
+    out.push("        }".to_owned());
+    out.push("      }".to_owned());
+    out.push("      const created = await createRecord<{ id?: unknown }>(db, farTable, createData);".to_owned());
+    out.push("      farId = String(created.id);".to_owned());
+    out.push("    } else {".to_owned());
+    out.push("      throw new Error(`${parentTable}.${field}.create.${farKey} required`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const content: Record<string, unknown> = {};".to_owned());
+    out.push("    for (const key of meta.payloadFields) {".to_owned());
+    out.push("      if (row[key] !== undefined) content[key] = row[key];".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const inId = meta.dir === \"out\" ? parentId : farId;".to_owned());
+    out.push("    const outId = meta.dir === \"out\" ? farId : parentId;".to_owned());
+    out.push("    await relateEdge(db, meta.edgeTable, meta.inTable, meta.outTable, inId, outId, content);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const connects = Array.isArray(bag.connect) ? bag.connect : [];".to_owned());
+    out.push("  for (const item of connects) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    const row = item as Record<string, unknown>;".to_owned());
+    out.push("    if (typeof row.id === \"string\") {".to_owned());
+    out.push("      throw new Error(`${parentTable}.${field}.connect by edge id is not supported for connect (use create or out/in)`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const farId = row[farKey];".to_owned());
+    out.push("    if (typeof farId !== \"string\") throw new Error(`${parentTable}.${field}.connect.${farKey} required`);".to_owned());
+    out.push("    const content: Record<string, unknown> = {};".to_owned());
+    out.push("    for (const key of meta.payloadFields) {".to_owned());
+    out.push("      if (row[key] !== undefined) content[key] = row[key];".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const inId = meta.dir === \"out\" ? parentId : farId;".to_owned());
+    out.push("    const outId = meta.dir === \"out\" ? farId : parentId;".to_owned());
+    out.push("    await relateEdge(db, meta.edgeTable, meta.inTable, meta.outTable, inId, outId, content);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const disconnects = Array.isArray(bag.disconnect) ? bag.disconnect : [];".to_owned());
+    out.push("  for (const item of disconnects) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    const row = item as Record<string, unknown>;".to_owned());
+    out.push("    if (typeof row.id === \"string\") {".to_owned());
+    out.push("      await deleteRecord(db, meta.edgeTable, row.id);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const farId = row[farKey];".to_owned());
+    out.push("    if (typeof farId !== \"string\") throw new Error(`${parentTable}.${field}.disconnect.${farKey} required`);".to_owned());
+    out.push("    const inThing = normalizeThing(meta.inTable, meta.dir === \"out\" ? parentId : farId);".to_owned());
+    out.push("    const outThing = normalizeThing(meta.outTable, meta.dir === \"out\" ? farId : parentId);".to_owned());
+    out.push(
+        "    await queryRows(db, `DELETE ${meta.edgeTable} WHERE in = type::record($in) AND out = type::record($out)`, { in: inThing, out: outThing });"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function applyNestedWrites(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  parentId: string,".to_owned());
+    out.push("  nested: Record<string, unknown>,".to_owned());
+    out.push("): Promise<void> {".to_owned());
+    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  for (const [field, value] of Object.entries(nested)) {".to_owned());
+    out.push("    const fieldMeta = meta[field];".to_owned());
+    out.push("    if (!fieldMeta || !isNestedWriteBag(value)) continue;".to_owned());
+    out.push("    if (fieldMeta.kind === \"computed\") {".to_owned());
+    out.push("      await applyComputedNested(db, table, parentId, field, value, fieldMeta);".to_owned());
+    out.push("    } else if (fieldMeta.kind === \"edge\") {".to_owned());
+    out.push("      await applyEdgeNested(db, table, parentId, field, value, fieldMeta);".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function createWithNested<T extends { id?: unknown }>(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  data: Record<string, unknown>,".to_owned());
+    out.push("): Promise<T> {".to_owned());
+    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  const hasNested = Object.entries(data).some(([key, value]) => {".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta) return false;".to_owned());
+    out.push("    if (fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") return value != null;".to_owned());
+    out.push("    if (fieldMeta.kind === \"stored\") return isNestedWriteBag(value);".to_owned());
+    out.push("    return false;".to_owned());
+    out.push("  });".to_owned());
+    out.push("  return withWriteTransaction(db, hasNested, async (ops) => {".to_owned());
+    out.push("    const { scalars, nested } = await splitAndResolveWriteData(ops, table, data);".to_owned());
+    out.push("    const created = await createRecord<T>(ops, table, scalars);".to_owned());
+    out.push("    await applyNestedWrites(ops, table, String(created.id), nested);".to_owned());
+    out.push("    return created;".to_owned());
+    out.push("  });".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function updateWithNested<T>(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  id: string,".to_owned());
+    out.push("  data: Record<string, unknown>,".to_owned());
+    out.push("  opts?: { select?: Record<string, unknown>; return?: MutationReturn },".to_owned());
+    out.push("): Promise<T | undefined | void | unknown> {".to_owned());
+    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  const hasNested = Object.entries(data).some(([key, value]) => {".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta) return false;".to_owned());
+    out.push("    if (fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") return value != null;".to_owned());
+    out.push("    if (fieldMeta.kind === \"stored\") return isNestedWriteBag(value);".to_owned());
+    out.push("    return false;".to_owned());
+    out.push("  });".to_owned());
+    out.push("  return withWriteTransaction(db, hasNested, async (ops) => {".to_owned());
+    out.push("    const { scalars, nested } = await splitAndResolveWriteData(ops, table, data);".to_owned());
+    out.push("    const updated = await updateOneRecord<T>(ops, table, id, scalars, opts);".to_owned());
+    out.push("    await applyNestedWrites(ops, table, id, nested);".to_owned());
+    out.push("    return updated;".to_owned());
+    out.push("  });".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+}
+
 fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("async function selectRecord<T>(".to_owned());
     out.push("  db: SurrealOpsLike,".to_owned());
@@ -1271,6 +1854,8 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  return created;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
+
+    emit_nested_write_runtime(out);
 
     out.push("async function updateRecord<T>(".to_owned());
     out.push("  db: SurrealOpsLike,".to_owned());
@@ -2347,7 +2932,7 @@ fn emit_crud_helpers(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &Na
             model.name, model.name, model.name
         ));
         out.push(format!(
-            "  return createRecord<{}>(db, \"{table}\", data as Record<string, unknown>);",
+            "  return createWithNested<{}>(db, \"{table}\", data as Record<string, unknown>);",
             model.name
         ));
         out.push("}".to_owned());
@@ -2358,8 +2943,8 @@ fn emit_crud_helpers(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &Na
             model.name, model.name, model.name
         ));
         out.push(format!(
-            "  return updateRecord<{}>(db, \"{table}\", id, data as Record<string, unknown>);",
-            model.name
+            "  return updateWithNested<{}>(db, \"{table}\", String(id), data as Record<string, unknown>) as Promise<{} | undefined>;",
+            model.name, model.name
         ));
         out.push("}".to_owned());
         out.push(String::new());
@@ -2381,27 +2966,16 @@ fn emit_crud_helpers(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &Na
             "export async function create{}(db: SurrealOpsLike, data: {}CreateInput): Promise<{}> {{",
             edge.name, edge.name, edge.name
         ));
-        out.push(format!(
-            "  const row = await db.query(`RELATE $in->{table}->$out CONTENT $content`, {{"
-        ));
-        out.push(format!("    in: normalizeThing(\"{in_table}\", String(data.in)),"));
-        out.push(format!("    out: normalizeThing(\"{out_table}\", String(data.out)),"));
-        out.push("    content: Object.fromEntries(".to_owned());
+        out.push("  const content = Object.fromEntries(".to_owned());
         out.push(
-            "      Object.entries(data).filter(([key]) => key !== \"in\" && key !== \"out\"),"
+            "    Object.entries(data).filter(([key]) => key !== \"in\" && key !== \"out\"),"
                 .to_owned(),
         );
-        out.push("    ),".to_owned());
-        out.push("  });".to_owned());
+        out.push("  );".to_owned());
         out.push(format!(
-            "  const created = await firstRow<{}>(row);",
+            "  return relateEdge(db, \"{table}\", \"{in_table}\", \"{out_table}\", String(data.in), String(data.out), content) as Promise<{}>;",
             edge.name
         ));
-        out.push(format!(
-            "  if (!created) throw new Error(\"create{} returned no row\");",
-            edge.name
-        ));
-        out.push("  return created;".to_owned());
         out.push("}".to_owned());
         out.push(String::new());
 
@@ -2570,9 +3144,7 @@ fn emit_fluent_model_delegate(out: &mut Vec<String>, model: &Model, naming: &Nam
     out.push(format!(
         "        countRecords(db, \"{table}\", args as {{ where?: Record<string, unknown> }}),"
     ));
-    out.push(format!(
-        "      groupBy: (args: {{",
-    ));
+    out.push("      groupBy: (args: {".to_owned());
     out.push(format!("        by: {}ScalarFieldEnum[];", model.name));
     out.push(format!("        where?: {}WhereInput;", model.name));
     out.push(format!(
@@ -2637,7 +3209,7 @@ fn emit_fluent_model_delegate(out: &mut Vec<String>, model: &Model, naming: &Nam
         model.name, model.name
     ));
     out.push(format!(
-        "        updateOneRecord(db, \"{table}\", String(id), data as Record<string, unknown>, opts as {{ select?: Record<string, unknown>; return?: MutationReturn }} | undefined) as Promise<SingleUpdateResult<S, R, {}, {}GetPayload<S>>>,",
+        "        updateWithNested(db, \"{table}\", String(id), data as Record<string, unknown>, opts as {{ select?: Record<string, unknown>; return?: MutationReturn }} | undefined) as Promise<SingleUpdateResult<S, R, {}, {}GetPayload<S>>>,",
         model.name, model.name
     ));
     out.push(format!(

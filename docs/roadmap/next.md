@@ -35,9 +35,9 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 
 ## 6. Client generators — TypeScript client done (select + hybrid where + e2e)
 
-TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` on `findMany`/`findUnique`, `orderBy` + `take`/`skip` on `findMany`, `createMany`/`updateMany`/`deleteMany`/`upsert` (count / select / return), single `update`/`delete` with `{ select|return }` opts, `count({ where? })` + `groupBy` (`_count`/`_sum`/`_avg`/`_min`/`_max`), `*WhereUniqueInput`, `$transaction` (interactive Surreal txn; WS/embedded), shared builders, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e covers CRUD, select, where, order, bulk, return modes, single mutation opts, count/groupBy, and transactions. Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` on `findMany`/`findUnique`, `orderBy` + `take`/`skip` on `findMany`, bulk/`upsert`/`return`, single `update`/`delete` opts, `count`/`groupBy`, one-hop nested writes (`create`/`connect`/`disconnect` on stored/computed `@link` and `@relation` edges via `RELATE`/`DELETE`), `*WhereUniqueInput`, `$transaction`, shared builders, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e covers CRUD, select, where, order, bulk, return, count/groupBy, nested writes, and transactions. Still deferred:
 
-- `having`; top-level `aggregate()`; relation-field `count` select; `skipDuplicates`; single-script `BEGIN`/`COMMIT` helpers; nested tx / savepoints; cursor pagination; nested relation `orderBy`; multi-hop paths beyond the select tree; zod / runtime validators; live wrappers
+- Nested `set` / nested `update`/`delete`/`upsert` / `connectOrCreate`; multi-hop nested writes; nested bags on edge fluent API; `having`; top-level `aggregate()`; relation-field `count` select; `skipDuplicates`; single-script `BEGIN`/`COMMIT` helpers; nested tx / savepoints; cursor pagination; nested relation `orderBy`; multi-hop select paths; zod / runtime validators; live wrappers
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
@@ -48,4 +48,4 @@ TypeScript `generate --target typescript` writes to `generator.output` by defaul
 
 ## Last live check
 
-2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + select + where + order + bulk + return modes + single update/delete/upsert opts + count/groupBy + `$transaction` against SurrealDB v3.3.0.
+2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + select + where + order + bulk + return + count/groupBy + nested writes (links + edges) + `$transaction` against SurrealDB v3.3.0.
