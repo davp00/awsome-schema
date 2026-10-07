@@ -1,12 +1,13 @@
 # Status
 
-Checked on 2026-10-07 against `main` (`c344710`).
+Checked on 2026-10-07 against `main` (TypeScript client e2e).
 
 Check so far:
 
 - Read the CLI, domain, parser, differ, SurrealDB renderer, codegen, and `db` adapters.
-- `cargo test --workspace --exclude e2e` — **312 tests passed**, 0 failed.
-- `cargo test -p e2e --locked` — **9 tests passed** (topic binaries: `offline_cli`, `migrate`, `db_sync`, `graph_edges`, `record_refs`) against SurrealDB **v3.3.0** via Docker/testcontainers. No soft-skips.
+- `cargo test --workspace --exclude e2e` — unit/integration suite.
+- `cargo test -p e2e --locked` — topic binaries against SurrealDB **v3.3.0** via Docker/testcontainers.
+- `cd e2e/typescript && npm test` — Vitest generated-client CRUD e2e (hybrid URL / testcontainers).
 
 Legend: **done** means the behavior exists and is covered by unit or CLI tests. **partial** means some of the path works and a specific gap remains. **not started** means the command or type exists but does not do the job.
 
@@ -27,7 +28,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Index kinds | `@@index` `@unique` / `@fulltext("…")` / `@vector(N)` `@dist(…)` → UNIQUE, FULLTEXT ANALYZER BM25, HNSW | parser + renderer + introspect |
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e offline_cli |
-| TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; nested scalar/relation `Select` + recursive `GetPayload`; shared `buildProjection` / `SelectMetaByTable` (stored `field.{…}`, computed field name, edge `->`/`<-`); thin CRUD wrappers; `createClient`; writes `generator.output` unless `--stdout` | `crates/codegen-typescript`; CLI tests. No zod; no tx/live wrappers |
+| TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; nested scalar/relation `Select` + recursive `GetPayload`; shared `buildProjection` / `SelectMetaByTable` (stored `field.{…}`, computed field name, edge `->`/`<-`); thin CRUD wrappers; `createClient`; writes `generator.output` unless `--stdout` | `crates/codegen-typescript`; CLI tests; live CRUD via `e2e/typescript` (Vitest). No zod; no tx/live wrappers; nested select e2e deferred |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` |
 | `migrate create` | Empty migration directory | use case + CLI tests |
 | `migrate status` | Applied vs pending via `_awesome_migrations` ledger; snapshot flag | use case tests; e2e migrate |

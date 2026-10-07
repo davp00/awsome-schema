@@ -1,0 +1,47 @@
+datasource db {
+  provider = "surrealdb"
+  url      = "ws://127.0.0.1:8000"
+  namespace = "test"
+  database  = "main"
+  username  = "root"
+  password  = "root"
+}
+
+naming {
+  tables = "snake_case"
+}
+
+generator client {
+  provider = "typescript"
+  output   = "../generated"
+}
+
+type UserMetadata @flexible {
+  user_id int?
+  source string
+}
+
+model User {
+  id @id
+  email string @unique
+  age int?
+  metadata UserMetadata
+  tags string[]
+  posts Post[] @link("PostAuthor")
+  liked Post[] @relation("Likes")
+  @@table(schemafull)
+}
+
+model Post {
+  id @id
+  title string
+  author User @link("PostAuthor") @onDelete(Cascade)
+  @@table(schemafull)
+}
+
+edge Likes {
+  in User
+  out Post
+  score int
+  @@table(schemafull)
+}
