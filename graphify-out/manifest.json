@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791392112.9585867,
-    "seen": 1791392387.511727,
-    "ast_hash": "275e0b72d9b8e47ef6fe3062ca9d3823",
+    "mtime": 1791394208.3000445,
+    "seen": 1791397337.826946,
+    "ast_hash": "b3e77b3abf8921c9575f24724f01d49a",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791392119.251577,
-    "seen": 1791392387.511728,
-    "ast_hash": "30f4d3e0caca52fd6bd2df9c8c8afdd0",
+    "mtime": 1791394256.0247867,
+    "seen": 1791397337.8269482,
+    "ast_hash": "a77082c807957a16c400b10942087ce5",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791392116.280864,
-    "seen": 1791392387.511729,
-    "ast_hash": "314fabfb8f33bc995a371a505bae7cb0",
+    "mtime": 1791394254.324017,
+    "seen": 1791397337.8269491,
+    "ast_hash": "427900bac5b051bb394daf811b6181c0",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -813,6 +813,54 @@
     "mtime": 1791366960.7796357,
     "seen": 1791367123.602636,
     "ast_hash": "06d1c0ec91a1a843ac6dd55ed75cd338",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/globalSetup.ts": {
+    "mtime": 1791394259.6992173,
+    "seen": 1791397337.826931,
+    "ast_hash": "185f99ee5deebffcc7dc552cab7fea06",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/package.json": {
+    "mtime": 1791394036.5174997,
+    "seen": 1791397337.826932,
+    "ast_hash": "259e17f94c88f85f342be19f30bf91f7",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/src/paths.ts": {
+    "mtime": 1791393760.2958145,
+    "seen": 1791397337.826932,
+    "ast_hash": "a34f3dec9e13b05d5f753c70120a931b",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/src/setupClient.ts": {
+    "mtime": 1791394063.1890166,
+    "seen": 1791397337.826933,
+    "ast_hash": "347e6c04d7d489cbee371508e51c9720",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/src/surrealAdapter.ts": {
+    "mtime": 1791394123.9973917,
+    "seen": 1791397337.826933,
+    "ast_hash": "5c978844fa05f141f4794e7206845c59",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/tests/crud.test.ts": {
+    "mtime": 1791394260.6955729,
+    "seen": 1791397337.826933,
+    "ast_hash": "2e4bf47dabca43e15fe4abe426f3784f",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/tsconfig.json": {
+    "mtime": 1791393739.6318712,
+    "seen": 1791397337.826934,
+    "ast_hash": "a31fa4f7f200f6e0e9711d5b33de25b1",
+    "semantic_hash": ""
+  },
+  "e2e/typescript/vitest.config.ts": {
+    "mtime": 1791393741.8809168,
+    "seen": 1791397337.826934,
+    "ast_hash": "3d90cdf5f9ab1da4fd0346bb5a0e0f67",
     "semantic_hash": ""
   }
 }
