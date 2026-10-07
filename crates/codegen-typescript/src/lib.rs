@@ -1087,6 +1087,23 @@ fn emit_surreal_like(out: &mut Vec<String>) {
     out.push("  beginTransaction(): Promise<SurrealTransactionLike>;".to_owned());
     out.push("};".to_owned());
     out.push(String::new());
+    out.push("/** Surreal RETURN mode for createMany / updateMany / deleteMany (exclusive with select). */".to_owned());
+    out.push("export type MutationReturn = \"NONE\" | \"BEFORE\" | \"AFTER\" | \"DIFF\";".to_owned());
+    out.push(String::new());
+    out.push("/** Result of *Many when using select and/or return (select wins typed projection). */".to_owned());
+    out.push("export type ManyReturnResult<".to_owned());
+    out.push("  S,".to_owned());
+    out.push("  R extends MutationReturn | undefined,".to_owned());
+    out.push("  Full,".to_owned());
+    out.push("  Payload,".to_owned());
+    out.push("> = [S] extends [undefined]".to_owned());
+    out.push("  ? R extends \"DIFF\"".to_owned());
+    out.push("    ? unknown[]".to_owned());
+    out.push("    : R extends \"AFTER\" | \"BEFORE\"".to_owned());
+    out.push("      ? Full[]".to_owned());
+    out.push("      : { count: number }".to_owned());
+    out.push("  : Payload[];".to_owned());
+    out.push(String::new());
 }
 
 fn emit_shared_runtime(out: &mut Vec<String>) {
@@ -1337,6 +1354,35 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
+    out.push("function assertReturnSelectExclusive(".to_owned());
+    out.push("  op: string,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  select: Record<string, unknown> | undefined,".to_owned());
+    out.push("  ret: MutationReturn | undefined,".to_owned());
+    out.push("): void {".to_owned());
+    out.push("  if (select && ret !== undefined) {".to_owned());
+    out.push(
+        "    throw new Error(`${op} ${table}: select and return are mutually exclusive`);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("async function countMatching(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  whereClause: string,".to_owned());
+    out.push("  vars: Record<string, unknown>,".to_owned());
+    out.push("): Promise<number> {".to_owned());
+    out.push(
+        "  const rows = await queryRows<{ count?: number }>(db, `SELECT count() AS count FROM ${table} WHERE ${whereClause} GROUP ALL`, vars);"
+            .to_owned(),
+    );
+    out.push("  return Number(rows[0]?.count ?? 0);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
     out.push("function projectRow(".to_owned());
     out.push("  row: Record<string, unknown>,".to_owned());
     out.push("  select: Record<string, unknown> | undefined,".to_owned());
@@ -1381,34 +1427,63 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("async function createManyVia<T extends { id?: unknown }>(".to_owned());
     out.push("  db: SurrealOpsLike,".to_owned());
     out.push("  table: string,".to_owned());
-    out.push("  args: { data: Record<string, unknown>[]; select?: Record<string, unknown> },".to_owned());
+    out.push("  args: {".to_owned());
+    out.push("    data: Record<string, unknown>[];".to_owned());
+    out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("    return?: MutationReturn;".to_owned());
+    out.push("  },".to_owned());
     out.push("  createOne: (data: Record<string, unknown>) => Promise<T>,".to_owned());
-    out.push("): Promise<{ count: number } | T[]> {".to_owned());
-    out.push("  if (!args.select) {".to_owned());
+    out.push("): Promise<{ count: number } | T[] | unknown[]> {".to_owned());
+    out.push("  assertReturnSelectExclusive(\"createMany\", table, args.select, args.return);".to_owned());
+    out.push("  if (args.return === \"BEFORE\") {".to_owned());
+    out.push(
+        "    throw new Error(`createMany ${table}: return BEFORE is not supported (no prior row)`);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"DIFF\") {".to_owned());
+    out.push("    const diffs: unknown[] = [];".to_owned());
     out.push("    for (const data of args.data) {".to_owned());
-    out.push("      await createOne(data);".to_owned());
+    out.push(
+        "      const part = await queryRows<unknown>(db, `CREATE ${table} CONTENT $__row RETURN DIFF`, { __row: data });"
+            .to_owned(),
+    );
+    out.push("      diffs.push(...part);".to_owned());
     out.push("    }".to_owned());
-    out.push("    return { count: args.data.length };".to_owned());
+    out.push("    return diffs;".to_owned());
     out.push("  }".to_owned());
-    out.push("  const rows: T[] = [];".to_owned());
+    out.push("  if (args.select) {".to_owned());
+    out.push("    const rows: T[] = [];".to_owned());
+    out.push("    for (const data of args.data) {".to_owned());
+    out.push("      const created = await createOne(data);".to_owned());
+    out.push("      const id = created?.id != null ? String(created.id) : undefined;".to_owned());
+    out.push(
+        "      if (id === undefined) throw new Error(`createMany ${table}: created row missing id`);"
+            .to_owned(),
+    );
+    out.push(
+        "      const projected = await findUniqueRecord<T>(db, table, { where: { id }, select: args.select });"
+            .to_owned(),
+    );
+    out.push(
+        "      if (!projected) throw new Error(`createMany ${table}: could not reload ${id}`);"
+            .to_owned(),
+    );
+    out.push("      rows.push(projected);".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return rows;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"AFTER\") {".to_owned());
+    out.push("    const rows: T[] = [];".to_owned());
+    out.push("    for (const data of args.data) {".to_owned());
+    out.push("      rows.push(await createOne(data));".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return rows;".to_owned());
+    out.push("  }".to_owned());
     out.push("  for (const data of args.data) {".to_owned());
-    out.push("    const created = await createOne(data);".to_owned());
-    out.push("    const id = created?.id != null ? String(created.id) : undefined;".to_owned());
-    out.push(
-        "    if (id === undefined) throw new Error(`createMany ${table}: created row missing id`);"
-            .to_owned(),
-    );
-    out.push(
-        "    const projected = await findUniqueRecord<T>(db, table, { where: { id }, select: args.select });"
-            .to_owned(),
-    );
-    out.push(
-        "    if (!projected) throw new Error(`createMany ${table}: could not reload ${id}`);"
-            .to_owned(),
-    );
-    out.push("    rows.push(projected);".to_owned());
+    out.push("    await createOne(data);".to_owned());
     out.push("  }".to_owned());
-    out.push("  return rows;".to_owned());
+    out.push("  return { count: args.data.length };".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 
@@ -1419,9 +1494,11 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("    where: Record<string, unknown>;".to_owned());
     out.push("    data: Record<string, unknown>;".to_owned());
     out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("    return?: MutationReturn;".to_owned());
     out.push("  },".to_owned());
-    out.push("): Promise<{ count: number } | T[]> {".to_owned());
+    out.push("): Promise<{ count: number } | T[] | unknown[]> {".to_owned());
     out.push("  assertNonEmptyWhere(args.where, \"updateMany\", table);".to_owned());
+    out.push("  assertReturnSelectExclusive(\"updateMany\", table, args.select, args.return);".to_owned());
     out.push("  const vars: Record<string, unknown> = { __data: args.data };".to_owned());
     out.push(
         "  const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
@@ -1431,15 +1508,37 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
         "  if (!whereClause) throw new Error(`updateMany ${table}: where must not be empty`);"
             .to_owned(),
     );
+    out.push("  if (args.select) {".to_owned());
+    out.push("    const projection = buildProjection(args.select, table);".to_owned());
     out.push(
-        "  const ret = args.select ? buildProjection(args.select, table) : \"AFTER\";"
+        "    return queryRows<T>(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN ${projection}`, vars);"
             .to_owned(),
     );
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"NONE\") {".to_owned());
+    out.push("    const count = await countMatching(db, table, whereClause, vars);".to_owned());
     out.push(
-        "  const rows = await queryRows<T>(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN ${ret}`, vars);"
+        "    await queryRows(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN NONE`, vars);"
             .to_owned(),
     );
-    out.push("  if (args.select) return rows;".to_owned());
+    out.push("    return { count };".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"DIFF\") {".to_owned());
+    out.push(
+        "    return queryRows<unknown>(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN DIFF`, vars);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"BEFORE\" || args.return === \"AFTER\") {".to_owned());
+    out.push(
+        "    return queryRows<T>(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN ${args.return}`, vars);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push(
+        "  const rows = await queryRows<T>(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN AFTER`, vars);"
+            .to_owned(),
+    );
     out.push("  return { count: rows.length };".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
@@ -1450,9 +1549,17 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  args: {".to_owned());
     out.push("    where: Record<string, unknown>;".to_owned());
     out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("    return?: MutationReturn;".to_owned());
     out.push("  },".to_owned());
-    out.push("): Promise<{ count: number } | T[]> {".to_owned());
+    out.push("): Promise<{ count: number } | T[] | unknown[]> {".to_owned());
     out.push("  assertNonEmptyWhere(args.where, \"deleteMany\", table);".to_owned());
+    out.push("  assertReturnSelectExclusive(\"deleteMany\", table, args.select, args.return);".to_owned());
+    out.push("  if (args.return === \"AFTER\") {".to_owned());
+    out.push(
+        "    throw new Error(`deleteMany ${table}: return AFTER is not supported (use BEFORE)`);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
     out.push("  const vars: Record<string, unknown> = {};".to_owned());
     out.push(
         "  const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
@@ -1462,13 +1569,37 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
         "  if (!whereClause) throw new Error(`deleteMany ${table}: where must not be empty`);"
             .to_owned(),
     );
+    out.push("  if (args.select) {".to_owned());
+    out.push(
+        "    const rows = await queryRows<Record<string, unknown>>(db, `DELETE ${table} WHERE ${whereClause} RETURN BEFORE`, vars);"
+            .to_owned(),
+    );
+    out.push("    return rows.map((row) => projectRow(row, args.select) as T);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"NONE\") {".to_owned());
+    out.push("    const count = await countMatching(db, table, whereClause, vars);".to_owned());
+    out.push(
+        "    await queryRows(db, `DELETE ${table} WHERE ${whereClause} RETURN NONE`, vars);"
+            .to_owned(),
+    );
+    out.push("    return { count };".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"DIFF\") {".to_owned());
+    out.push(
+        "    return queryRows<unknown>(db, `DELETE ${table} WHERE ${whereClause} RETURN DIFF`, vars);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"BEFORE\") {".to_owned());
+    out.push(
+        "    return queryRows<T>(db, `DELETE ${table} WHERE ${whereClause} RETURN BEFORE`, vars);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
     out.push(
         "  const rows = await queryRows<Record<string, unknown>>(db, `DELETE ${table} WHERE ${whereClause} RETURN BEFORE`, vars);"
             .to_owned(),
     );
-    out.push("  if (args.select) {".to_owned());
-    out.push("    return rows.map((row) => projectRow(row, args.select) as T);".to_owned());
-    out.push("  }".to_owned());
     out.push("  return { count: rows.length };".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
@@ -2031,55 +2162,58 @@ fn emit_fluent_model_delegate(out: &mut Vec<String>, model: &Model, naming: &Nam
         model.name, model.name, model.name
     ));
     out.push(format!(
-        "      createMany: <S extends {}Select | undefined = undefined>(args: {{",
+        "      createMany: <S extends {}Select | undefined = undefined, R extends Exclude<MutationReturn, \"BEFORE\"> | undefined = undefined>(args: {{",
         model.name
     ));
     out.push(format!("        data: {}CreateInput[];", model.name));
     out.push("        select?: S;".to_owned());
+    out.push("        return?: R;".to_owned());
     out.push(format!(
-        "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
-        model.name
+        "      }}): Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>> =>",
+        model.name, model.name
     ));
     out.push(format!(
-        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown> }}, (data) => create{}(db, data as {}CreateInput)) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
-        model.name, model.name, model.name
+        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown>; return?: MutationReturn }}, (data) => create{}(db, data as {}CreateInput)) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        model.name, model.name, model.name, model.name
     ));
     out.push(format!(
         "      update: (id: RecordId<\"{table}\"> | string, data: {}UpdateInput): Promise<{} | undefined> => update{}(db, id, data),",
         model.name, model.name, model.name
     ));
     out.push(format!(
-        "      updateMany: <S extends {}Select | undefined = undefined>(args: {{",
+        "      updateMany: <S extends {}Select | undefined = undefined, R extends MutationReturn | undefined = undefined>(args: {{",
         model.name
     ));
     out.push(format!("        where: {}WhereInput;", model.name));
     out.push(format!("        data: {}UpdateInput;", model.name));
     out.push("        select?: S;".to_owned());
+    out.push("        return?: R;".to_owned());
     out.push(format!(
-        "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
-        model.name
+        "      }}): Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>> =>",
+        model.name, model.name
     ));
     out.push(format!(
-        "        updateManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; data: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
-        model.name
+        "        updateManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; data: Record<string, unknown>; select?: Record<string, unknown>; return?: MutationReturn }}) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        model.name, model.name
     ));
     out.push(format!(
         "      delete: (id: RecordId<\"{table}\"> | string): Promise<void> => delete{}(db, id),",
         model.name
     ));
     out.push(format!(
-        "      deleteMany: <S extends {}Select | undefined = undefined>(args: {{",
+        "      deleteMany: <S extends {}Select | undefined = undefined, R extends Exclude<MutationReturn, \"AFTER\"> | undefined = undefined>(args: {{",
         model.name
     ));
     out.push(format!("        where: {}WhereInput;", model.name));
     out.push("        select?: S;".to_owned());
+    out.push("        return?: R;".to_owned());
     out.push(format!(
-        "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
-        model.name
+        "      }}): Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>> =>",
+        model.name, model.name
     ));
     out.push(format!(
-        "        deleteManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
-        model.name
+        "        deleteManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown>; return?: MutationReturn }}) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        model.name, model.name
     ));
     out.push(format!(
         "      upsert: <S extends {}Select | undefined = undefined>(args: {{",
@@ -2124,55 +2258,58 @@ fn emit_fluent_edge_delegate(out: &mut Vec<String>, edge: &Edge, naming: &Naming
         edge.name, edge.name, edge.name
     ));
     out.push(format!(
-        "      createMany: <S extends {}Select | undefined = undefined>(args: {{",
+        "      createMany: <S extends {}Select | undefined = undefined, R extends Exclude<MutationReturn, \"BEFORE\"> | undefined = undefined>(args: {{",
         edge.name
     ));
     out.push(format!("        data: {}CreateInput[];", edge.name));
     out.push("        select?: S;".to_owned());
+    out.push("        return?: R;".to_owned());
     out.push(format!(
-        "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
-        edge.name
+        "      }}): Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>> =>",
+        edge.name, edge.name
     ));
     out.push(format!(
-        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown> }}, (data) => create{}(db, data as {}CreateInput)) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
-        edge.name, edge.name, edge.name
+        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown>; return?: MutationReturn }}, (data) => create{}(db, data as {}CreateInput)) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        edge.name, edge.name, edge.name, edge.name
     ));
     out.push(format!(
         "      update: (id: RecordId<\"{table}\"> | string, data: {}UpdateInput): Promise<{} | undefined> => update{}(db, id, data),",
         edge.name, edge.name, edge.name
     ));
     out.push(format!(
-        "      updateMany: <S extends {}Select | undefined = undefined>(args: {{",
+        "      updateMany: <S extends {}Select | undefined = undefined, R extends MutationReturn | undefined = undefined>(args: {{",
         edge.name
     ));
     out.push(format!("        where: {}WhereInput;", edge.name));
     out.push(format!("        data: {}UpdateInput;", edge.name));
     out.push("        select?: S;".to_owned());
+    out.push("        return?: R;".to_owned());
     out.push(format!(
-        "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
-        edge.name
+        "      }}): Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>> =>",
+        edge.name, edge.name
     ));
     out.push(format!(
-        "        updateManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; data: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
-        edge.name
+        "        updateManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; data: Record<string, unknown>; select?: Record<string, unknown>; return?: MutationReturn }}) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        edge.name, edge.name
     ));
     out.push(format!(
         "      delete: (id: RecordId<\"{table}\"> | string): Promise<void> => delete{}(db, id),",
         edge.name
     ));
     out.push(format!(
-        "      deleteMany: <S extends {}Select | undefined = undefined>(args: {{",
+        "      deleteMany: <S extends {}Select | undefined = undefined, R extends Exclude<MutationReturn, \"AFTER\"> | undefined = undefined>(args: {{",
         edge.name
     ));
     out.push(format!("        where: {}WhereInput;", edge.name));
     out.push("        select?: S;".to_owned());
+    out.push("        return?: R;".to_owned());
     out.push(format!(
-        "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
-        edge.name
+        "      }}): Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>> =>",
+        edge.name, edge.name
     ));
     out.push(format!(
-        "        deleteManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
-        edge.name
+        "        deleteManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown>; return?: MutationReturn }}) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        edge.name, edge.name
     ));
     out.push(format!(
         "      upsert: <S extends {}Select | undefined = undefined>(args: {{",

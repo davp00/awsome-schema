@@ -330,22 +330,40 @@ fn emits_where_unique_and_bulk_upsert() {
     assert!(output.contains("async function updateManyRecords<T>("));
     assert!(output.contains("async function deleteManyRecords<T>("));
     assert!(output.contains("async function upsertRecord<T extends { id?: unknown }>("));
-    assert!(output.contains("UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN ${ret}"));
+    assert!(output.contains("UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN AFTER"));
     assert!(output.contains("DELETE ${table} WHERE ${whereClause} RETURN BEFORE"));
     assert!(output.contains("createMany: <S extends UserSelect"));
     assert!(output.contains("updateMany: <S extends UserSelect"));
     assert!(output.contains("deleteMany: <S extends UserSelect"));
     assert!(output.contains("upsert: <S extends UserSelect"));
     assert!(output.contains("where: UserWhereUniqueInput"));
-    assert!(output.contains(
-        "Promise<S extends undefined ? { count: number } : UserGetPayload<S>[]>"
-    ));
+    assert!(output.contains("ManyReturnResult<S, R, User, UserGetPayload<S>>"));
     assert!(output.contains("createManyVia(db, \"user\""));
     assert!(output.contains("updateManyRecords(db, \"user\""));
     assert!(output.contains("deleteManyRecords(db, \"user\""));
     assert!(output.contains("upsertRecord(db, \"user\""));
     assert!(output.contains("createManyVia(db, \"likes\""));
     assert!(output.contains("deleteManyRecords(db, \"likes\""));
+}
+
+#[test]
+fn emits_mutation_return_modes() {
+    let output = generate_fixture();
+    assert!(output.contains("export type MutationReturn = \"NONE\" | \"BEFORE\" | \"AFTER\" | \"DIFF\""));
+    assert!(output.contains("export type ManyReturnResult<"));
+    assert!(output.contains("function assertReturnSelectExclusive("));
+    assert!(output.contains("async function countMatching("));
+    assert!(output.contains("SELECT count() AS count FROM ${table} WHERE ${whereClause} GROUP ALL"));
+    assert!(output.contains("return?: MutationReturn"));
+    assert!(output.contains("CREATE ${table} CONTENT $__row RETURN DIFF"));
+    assert!(output.contains("RETURN NONE"));
+    assert!(output.contains("RETURN DIFF"));
+    assert!(output.contains("return BEFORE is not supported"));
+    assert!(output.contains("return AFTER is not supported"));
+    assert!(output.contains("select and return are mutually exclusive"));
+    assert!(output.contains("Exclude<MutationReturn, \"BEFORE\">"));
+    assert!(output.contains("Exclude<MutationReturn, \"AFTER\">"));
+    assert!(output.contains("return?: R"));
 }
 
 #[test]

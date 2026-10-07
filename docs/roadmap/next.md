@@ -35,9 +35,9 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 
 ## 6. Client generators — TypeScript client done (select + hybrid where + e2e)
 
-TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` on `findMany`/`findUnique`, `orderBy` + `take`/`skip` on `findMany`, `createMany`/`updateMany`/`deleteMany`/`upsert` (default `{ count }`, optional `select` → RETURN projection / BEFORE+project), `*WhereUniqueInput`, `$transaction` (interactive Surreal `beginTransaction` / commit / cancel; WS/embedded), shared `buildProjection`/`buildWhere`/`buildOrderBy`, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers CRUD, select, where, ordering/pagination, bulk/upsert, and transactions. Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` on `findMany`/`findUnique`, `orderBy` + `take`/`skip` on `findMany`, `createMany`/`updateMany`/`deleteMany`/`upsert` (default `{ count }`, optional `select`, or `return` NONE/BEFORE/AFTER/DIFF on *Many), `*WhereUniqueInput`, `$transaction` (interactive Surreal `beginTransaction` / commit / cancel; WS/embedded), shared `buildProjection`/`buildWhere`/`buildOrderBy`, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers CRUD, select, where, ordering/pagination, bulk/upsert, return modes, and transactions. Still deferred:
 
-- `skipDuplicates`; single-script `BEGIN`/`COMMIT` helpers; nested tx / savepoints; cursor pagination; nested relation `orderBy`; multi-hop paths beyond the select tree; zod / runtime validators; live wrappers; public RETURN NONE/DIFF/BEFORE/AFTER mode option
+- `skipDuplicates`; single-script `BEGIN`/`COMMIT` helpers; nested tx / savepoints; cursor pagination; nested relation `orderBy`; multi-hop paths beyond the select tree; zod / runtime validators; live wrappers; upsert `return` modes
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
@@ -48,4 +48,4 @@ TypeScript `generate --target typescript` writes to `generator.output` by defaul
 
 ## Last live check
 
-2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + select + where + orderBy/take/skip + bulk/upsert + `$transaction` against SurrealDB v3.3.0.
+2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + select + where + orderBy/take/skip + bulk/upsert + return modes + `$transaction` against SurrealDB v3.3.0.
