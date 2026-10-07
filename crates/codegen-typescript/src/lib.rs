@@ -87,9 +87,11 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
     emit_order_by_shared_types(&mut out);
     for model in &schema.models {
         emit_model_order_by_input(&mut out, model, &naming);
+        emit_model_aggregate_types(&mut out, model, &naming);
     }
     for edge in &schema.edges {
         emit_edge_order_by_input(&mut out, edge, &naming);
+        emit_edge_aggregate_types(&mut out, edge, &naming);
     }
 
     emit_tables_const(&mut out, schema, &naming);
@@ -420,6 +422,86 @@ fn emit_edge_order_by_input(out: &mut Vec<String>, edge: &Edge, naming: &NamingC
     }
     out.push("};".to_owned());
     out.push(String::new());
+}
+
+fn emit_model_aggregate_types(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
+    let scalars = model_groupby_scalar_fields(model, naming);
+    let numerics = model_groupby_numeric_fields(model, naming);
+    emit_field_enum(out, &format!("{}ScalarFieldEnum", model.name), &scalars);
+    emit_field_enum(out, &format!("{}NumericFieldEnum", model.name), &numerics);
+    out.push(format!("export type {}GroupByOrderByInput = {{", model.name));
+    for name in &scalars {
+        out.push(format!("  {name}?: SortOrder;"));
+    }
+    out.push("  _count?: { _all?: SortOrder };".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_edge_aggregate_types(out: &mut Vec<String>, edge: &Edge, naming: &NamingContext<'_>) {
+    let scalars = edge_groupby_scalar_fields(edge, naming);
+    let numerics = edge_groupby_numeric_fields(edge, naming);
+    emit_field_enum(out, &format!("{}ScalarFieldEnum", edge.name), &scalars);
+    emit_field_enum(out, &format!("{}NumericFieldEnum", edge.name), &numerics);
+    out.push(format!("export type {}GroupByOrderByInput = {{", edge.name));
+    for name in &scalars {
+        out.push(format!("  {name}?: SortOrder;"));
+    }
+    out.push("  _count?: { _all?: SortOrder };".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_field_enum(out: &mut Vec<String>, name: &str, fields: &[String]) {
+    if fields.is_empty() {
+        out.push(format!("export type {name} = never;"));
+    } else {
+        let union = fields
+            .iter()
+            .map(|f| format!("\"{f}\""))
+            .collect::<Vec<_>>()
+            .join(" | ");
+        out.push(format!("export type {name} = {union};"));
+    }
+    out.push(String::new());
+}
+
+fn model_groupby_scalar_fields(model: &Model, naming: &NamingContext<'_>) -> Vec<String> {
+    model
+        .fields
+        .iter()
+        .filter(|f| !f.name.contains('.'))
+        .filter(|f| !f.is_link() && f.relation_name.is_none() && !should_omit_on_record(f))
+        .map(|f| naming.field_name(f))
+        .collect()
+}
+
+fn model_groupby_numeric_fields(model: &Model, naming: &NamingContext<'_>) -> Vec<String> {
+    model
+        .fields
+        .iter()
+        .filter(|f| !f.name.contains('.'))
+        .filter(|f| !f.is_link() && f.relation_name.is_none() && !should_omit_on_record(f))
+        .filter(|f| matches!(f.field_type, FieldType::Int | FieldType::Float))
+        .map(|f| naming.field_name(f))
+        .collect()
+}
+
+fn edge_groupby_scalar_fields(edge: &Edge, naming: &NamingContext<'_>) -> Vec<String> {
+    let mut fields = vec!["id".to_owned()];
+    for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+        fields.push(naming.field_name(field));
+    }
+    fields
+}
+
+fn edge_groupby_numeric_fields(edge: &Edge, naming: &NamingContext<'_>) -> Vec<String> {
+    edge.fields
+        .iter()
+        .filter(|f| !f.name.contains('.'))
+        .filter(|f| matches!(f.field_type, FieldType::Int | FieldType::Float))
+        .map(|f| naming.field_name(f))
+        .collect()
 }
 
 fn emit_model_select_payload(
@@ -1511,6 +1593,28 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
+    out.push("async function countRecords(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: { where?: Record<string, unknown>; vars?: Record<string, unknown> } = {},".to_owned());
+    out.push("): Promise<number> {".to_owned());
+    out.push("  const vars: Record<string, unknown> = { ...(args.vars ?? {}) };".to_owned());
+    out.push("  let sql = `SELECT count() AS count FROM ${table}`;".to_owned());
+    out.push("  if (args.where) {".to_owned());
+    out.push(
+        "    const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+            .to_owned(),
+    );
+    out.push("    if (whereClause) sql += ` WHERE ${whereClause}`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  sql += \" GROUP ALL\";".to_owned());
+    out.push(
+        "  const rows = await queryRows<{ count?: number }>(db, sql, vars);".to_owned(),
+    );
+    out.push("  return Number(rows[0]?.count ?? 0);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
     out.push("async function countMatching(".to_owned());
     out.push("  db: SurrealOpsLike,".to_owned());
     out.push("  table: string,".to_owned());
@@ -1522,6 +1626,133 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
             .to_owned(),
     );
     out.push("  return Number(rows[0]?.count ?? 0);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("type GroupByAlias = { kind: string; field: string; alias: string };".to_owned());
+    out.push(String::new());
+    out.push("function buildGroupByOrderBy(".to_owned());
+    out.push("  orderBy: Record<string, unknown> | Record<string, unknown>[] | undefined,".to_owned());
+    out.push("  by: string[],".to_owned());
+    out.push("): string {".to_owned());
+    out.push("  if (!orderBy) return \"\";".to_owned());
+    out.push("  const items = Array.isArray(orderBy) ? orderBy : [orderBy];".to_owned());
+    out.push("  const bySet = new Set(by);".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  for (const item of items) {".to_owned());
+    out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
+    out.push("    for (const [key, value] of Object.entries(item)) {".to_owned());
+    out.push("      if (key === \"_count\" && value && typeof value === \"object\") {".to_owned());
+    out.push("        const all = (value as { _all?: unknown })._all;".to_owned());
+    out.push("        if (all === \"asc\" || all === \"desc\") {".to_owned());
+    out.push("          parts.push(`__count_all ${String(all).toUpperCase()}`);".to_owned());
+    out.push("        }".to_owned());
+    out.push("        continue;".to_owned());
+    out.push("      }".to_owned());
+    out.push("      if ((value === \"asc\" || value === \"desc\") && bySet.has(key)) {".to_owned());
+    out.push("        parts.push(`${key} ${value.toUpperCase()}`);".to_owned());
+    out.push("      }".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return parts.length === 0 ? \"\" : `ORDER BY ${parts.join(\", \")}`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("function reshapeGroupByRow(".to_owned());
+    out.push("  row: Record<string, unknown>,".to_owned());
+    out.push("  by: string[],".to_owned());
+    out.push("  aliases: GroupByAlias[],".to_owned());
+    out.push("): Record<string, unknown> {".to_owned());
+    out.push("  const out: Record<string, unknown> = {};".to_owned());
+    out.push("  for (const field of by) out[field] = row[field];".to_owned());
+    out.push("  for (const { kind, field, alias } of aliases) {".to_owned());
+    out.push("    if (!out[kind]) out[kind] = {};".to_owned());
+    out.push("    const bucket = out[kind] as Record<string, unknown>;".to_owned());
+    out.push("    if (kind === \"_count\") {".to_owned());
+    out.push("      bucket[field] = Number(row[alias] ?? 0);".to_owned());
+    out.push("    } else {".to_owned());
+    out.push("      bucket[field] = row[alias] ?? null;".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return out;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("async function groupByRecords(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: {".to_owned());
+    out.push("    by: string[];".to_owned());
+    out.push("    where?: Record<string, unknown>;".to_owned());
+    out.push("    _count?: true | Record<string, boolean | undefined>;".to_owned());
+    out.push("    _sum?: Record<string, boolean | undefined>;".to_owned());
+    out.push("    _avg?: Record<string, boolean | undefined>;".to_owned());
+    out.push("    _min?: Record<string, boolean | undefined>;".to_owned());
+    out.push("    _max?: Record<string, boolean | undefined>;".to_owned());
+    out.push("    orderBy?: Record<string, unknown> | Record<string, unknown>[];".to_owned());
+    out.push("    take?: number;".to_owned());
+    out.push("    skip?: number;".to_owned());
+    out.push("    vars?: Record<string, unknown>;".to_owned());
+    out.push("  },".to_owned());
+    out.push("): Promise<Record<string, unknown>[]> {".to_owned());
+    out.push("  if (!args.by || args.by.length === 0) {".to_owned());
+    out.push("    throw new Error(`groupBy ${table}: by must not be empty`);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const countSpec = args._count === true ? { _all: true as const } : args._count;".to_owned());
+    out.push("  const hasCount = !!(countSpec && Object.values(countSpec).some((v) => v === true));".to_owned());
+    out.push("  const hasMath = [args._sum, args._avg, args._min, args._max].some(".to_owned());
+    out.push("    (spec) => !!spec && Object.values(spec).some((v) => v === true),".to_owned());
+    out.push("  );".to_owned());
+    out.push("  if (!hasCount && !hasMath) {".to_owned());
+    out.push(
+        "    throw new Error(`groupBy ${table}: at least one aggregate (_count/_sum/_avg/_min/_max) is required`);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("  const vars: Record<string, unknown> = { ...(args.vars ?? {}) };".to_owned());
+    out.push("  const selectParts: string[] = [...args.by];".to_owned());
+    out.push("  const aliases: GroupByAlias[] = [];".to_owned());
+    out.push("  if (countSpec) {".to_owned());
+    out.push("    if (countSpec._all === true) {".to_owned());
+    out.push("      selectParts.push(\"count() AS __count_all\");".to_owned());
+    out.push("      aliases.push({ kind: \"_count\", field: \"_all\", alias: \"__count_all\" });".to_owned());
+    out.push("    }".to_owned());
+    out.push("    for (const [field, on] of Object.entries(countSpec)) {".to_owned());
+    out.push("      if (field === \"_all\" || on !== true) continue;".to_owned());
+    out.push("      const alias = `__count_${field}`;".to_owned());
+    out.push("      selectParts.push(`count(${field}) AS ${alias}`);".to_owned());
+    out.push("      aliases.push({ kind: \"_count\", field, alias });".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const mathOps: Array<[string, string, Record<string, boolean | undefined> | undefined]> = [".to_owned());
+    out.push("    [\"_sum\", \"math::sum\", args._sum],".to_owned());
+    out.push("    [\"_avg\", \"math::mean\", args._avg],".to_owned());
+    out.push("    [\"_min\", \"math::min\", args._min],".to_owned());
+    out.push("    [\"_max\", \"math::max\", args._max],".to_owned());
+    out.push("  ];".to_owned());
+    out.push("  for (const [kind, fn, spec] of mathOps) {".to_owned());
+    out.push("    if (!spec) continue;".to_owned());
+    out.push("    for (const [field, on] of Object.entries(spec)) {".to_owned());
+    out.push("      if (on !== true) continue;".to_owned());
+    out.push("      const alias = `__${kind.slice(1)}_${field}`;".to_owned());
+    out.push("      selectParts.push(`${fn}(${field}) AS ${alias}`);".to_owned());
+    out.push("      aliases.push({ kind, field, alias });".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  let sql = `SELECT ${selectParts.join(\", \")} FROM ${table}`;".to_owned());
+    out.push("  if (args.where) {".to_owned());
+    out.push(
+        "    const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+            .to_owned(),
+    );
+    out.push("    if (whereClause) sql += ` WHERE ${whereClause}`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  sql += ` GROUP BY ${args.by.join(\", \")}`;".to_owned());
+    out.push("  const orderClause = buildGroupByOrderBy(args.orderBy, args.by);".to_owned());
+    out.push("  if (orderClause) sql += ` ${orderClause}`;".to_owned());
+    out.push("  sql = appendLimitStart(sql, args.take, args.skip, vars);".to_owned());
+    out.push("  const rows = await queryRows<Record<string, unknown>>(db, sql, vars);".to_owned());
+    out.push("  return rows.map((row) => reshapeGroupByRow(row, args.by, aliases));".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 
@@ -2333,6 +2564,48 @@ fn emit_fluent_model_delegate(out: &mut Vec<String>, model: &Model, naming: &Nam
         model.name
     ));
     out.push(format!(
+        "      count: (args: {{ where?: {}WhereInput }} = {{}}): Promise<number> =>",
+        model.name
+    ));
+    out.push(format!(
+        "        countRecords(db, \"{table}\", args as {{ where?: Record<string, unknown> }}),"
+    ));
+    out.push(format!(
+        "      groupBy: (args: {{",
+    ));
+    out.push(format!("        by: {}ScalarFieldEnum[];", model.name));
+    out.push(format!("        where?: {}WhereInput;", model.name));
+    out.push(format!(
+        "        _count?: true | {{ _all?: true }} & Partial<Record<{}ScalarFieldEnum, true>>;",
+        model.name
+    ));
+    out.push(format!(
+        "        _sum?: Partial<Record<{}NumericFieldEnum, true>>;",
+        model.name
+    ));
+    out.push(format!(
+        "        _avg?: Partial<Record<{}NumericFieldEnum, true>>;",
+        model.name
+    ));
+    out.push(format!(
+        "        _min?: Partial<Record<{}NumericFieldEnum, true>>;",
+        model.name
+    ));
+    out.push(format!(
+        "        _max?: Partial<Record<{}NumericFieldEnum, true>>;",
+        model.name
+    ));
+    out.push(format!(
+        "        orderBy?: {}GroupByOrderByInput | {}GroupByOrderByInput[];",
+        model.name, model.name
+    ));
+    out.push("        take?: number;".to_owned());
+    out.push("        skip?: number;".to_owned());
+    out.push("      }): Promise<Record<string, unknown>[]> =>".to_owned());
+    out.push(format!(
+        "        groupByRecords(db, \"{table}\", args as {{ by: string[]; where?: Record<string, unknown>; _count?: true | Record<string, boolean | undefined>; _sum?: Record<string, boolean | undefined>; _avg?: Record<string, boolean | undefined>; _min?: Record<string, boolean | undefined>; _max?: Record<string, boolean | undefined>; orderBy?: Record<string, unknown> | Record<string, unknown>[]; take?: number; skip?: number }}),"
+    ));
+    out.push(format!(
         "      create: (data: {}CreateInput): Promise<{}> => create{}(db, data),",
         model.name, model.name, model.name
     ));
@@ -2451,6 +2724,46 @@ fn emit_fluent_edge_delegate(out: &mut Vec<String>, edge: &Edge, naming: &Naming
     out.push(format!(
         "        findUniqueRecord(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown>; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S> | undefined>,",
         edge.name
+    ));
+    out.push(format!(
+        "      count: (args: {{ where?: {}WhereInput }} = {{}}): Promise<number> =>",
+        edge.name
+    ));
+    out.push(format!(
+        "        countRecords(db, \"{table}\", args as {{ where?: Record<string, unknown> }}),"
+    ));
+    out.push("      groupBy: (args: {".to_owned());
+    out.push(format!("        by: {}ScalarFieldEnum[];", edge.name));
+    out.push(format!("        where?: {}WhereInput;", edge.name));
+    out.push(format!(
+        "        _count?: true | {{ _all?: true }} & Partial<Record<{}ScalarFieldEnum, true>>;",
+        edge.name
+    ));
+    out.push(format!(
+        "        _sum?: Partial<Record<{}NumericFieldEnum, true>>;",
+        edge.name
+    ));
+    out.push(format!(
+        "        _avg?: Partial<Record<{}NumericFieldEnum, true>>;",
+        edge.name
+    ));
+    out.push(format!(
+        "        _min?: Partial<Record<{}NumericFieldEnum, true>>;",
+        edge.name
+    ));
+    out.push(format!(
+        "        _max?: Partial<Record<{}NumericFieldEnum, true>>;",
+        edge.name
+    ));
+    out.push(format!(
+        "        orderBy?: {}GroupByOrderByInput | {}GroupByOrderByInput[];",
+        edge.name, edge.name
+    ));
+    out.push("        take?: number;".to_owned());
+    out.push("        skip?: number;".to_owned());
+    out.push("      }): Promise<Record<string, unknown>[]> =>".to_owned());
+    out.push(format!(
+        "        groupByRecords(db, \"{table}\", args as {{ by: string[]; where?: Record<string, unknown>; _count?: true | Record<string, boolean | undefined>; _sum?: Record<string, boolean | undefined>; _avg?: Record<string, boolean | undefined>; _min?: Record<string, boolean | undefined>; _max?: Record<string, boolean | undefined>; orderBy?: Record<string, unknown> | Record<string, unknown>[]; take?: number; skip?: number }}),"
     ));
     out.push(format!(
         "      create: (data: {}CreateInput): Promise<{}> => create{}(db, data),",

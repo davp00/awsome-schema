@@ -347,6 +347,31 @@ fn emits_where_unique_and_bulk_upsert() {
 }
 
 #[test]
+fn emits_count_and_groupby() {
+    let output = generate_fixture();
+    assert!(output.contains("export type UserScalarFieldEnum ="));
+    assert!(output.contains("export type UserNumericFieldEnum = \"age\""));
+    assert!(output.contains("export type UserGroupByOrderByInput = {"));
+    assert!(output.contains("export type LikesScalarFieldEnum ="));
+    assert!(output.contains("export type LikesNumericFieldEnum = \"score\""));
+    assert!(output.contains("async function countRecords("));
+    assert!(output.contains("async function groupByRecords("));
+    assert!(output.contains("GROUP ALL"));
+    assert!(output.contains("GROUP BY ${args.by.join(\", \")}"));
+    assert!(output.contains("math::sum"));
+    assert!(output.contains("math::mean"));
+    assert!(output.contains("count() AS __count_all"));
+    assert!(output.contains("groupBy ${table}: by must not be empty"));
+    assert!(output.contains("at least one aggregate"));
+    assert!(output.contains("countRecords(db, \"user\""));
+    assert!(output.contains("groupByRecords(db, \"user\""));
+    assert!(output.contains("countRecords(db, \"likes\""));
+    assert!(output.contains("groupByRecords(db, \"likes\""));
+    assert!(output.contains("count: (args: { where?: UserWhereInput } = {}): Promise<number>"));
+    assert!(output.contains("by: UserScalarFieldEnum[]"));
+}
+
+#[test]
 fn emits_single_update_delete_opts() {
     let output = generate_fixture();
     assert!(output.contains("export type SingleUpdateResult<"));
