@@ -33,11 +33,11 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 - Vector indexes render `HNSW DIMENSION … DIST …` (default Euclidean).
 - Differ recreates indexes when params change.
 
-## 6. Client generators — TypeScript client done (nested select + CRUD e2e)
+## 6. Client generators — TypeScript client done (select + hybrid where + e2e)
 
-TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested scalar/relation `Select` + recursive `GetPayload`, shared `buildProjection` (link `field.{…}`, edge `->`/`<-`), thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers sequential create/update/delete and nested field `select` (stored/computed links + edge `->`/`<-`; hybrid `SURREALDB_URL` or testcontainers). Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested `Select`/`GetPayload`, hybrid `*WhereInput` (bare equals sugar + Prisma-lite operators / `some`/`every`/`none`), shared `buildProjection`/`buildWhere`, thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers CRUD, nested select, and where filters. Still deferred:
 
-- Multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
+- `findUnique` compound/nested where; cursors/`orderBy`; multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
@@ -48,4 +48,4 @@ TypeScript `generate --target typescript` writes to `generator.output` by defaul
 
 ## Last live check
 
-2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + nested select against SurrealDB v3.3.0 (external URL and owned testcontainers).
+2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + nested select + hybrid where against SurrealDB v3.3.0.

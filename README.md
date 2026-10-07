@@ -2,7 +2,7 @@
 
 Awesome Schema is a **schema modeling, migration, and code generation toolkit** for modern databases. It is inspired by [Prisma](https://www.prisma.io/) and [TypeORM](https://typeorm.io/), but designed from the ground up to express database-native capabilities—starting with **SurrealDB 3.x**.
 
-Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate a TypeScript Surreal client (dual shapes, CRUD, fluent `.select`) — Rust client models still stubbed.
+Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate a TypeScript Surreal client (dual shapes, CRUD, fluent `.select` / hybrid `.where`) — Rust client models still stubbed.
 
 ## Why Awesome Schema exists
 
@@ -109,7 +109,7 @@ cargo test -p e2e --test graph_edges   # TYPE RELATION roundtrip
 cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
 ```
 
-TypeScript generated-client e2e (Vitest; sequential create/update/delete and nested field `select`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
+TypeScript generated-client e2e (Vitest; CRUD, nested `select`, hybrid `where`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
 
 ```bash
 cd e2e/typescript && npm i && npm test
@@ -157,6 +157,7 @@ cargo run -p cli -- format --write
 # TypeScript writes to generator.output by default; use --stdout to print only
 # Generated client shares select/create/update/delete/query helpers; named APIs are thin wrappers
 # Nested select: scalars + links/relations with typed GetPayload; SurrealQL via buildProjection
+# Hybrid where on findMany: bare equals sugar + Prisma-lite operators / some|every|none (buildWhere)
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript

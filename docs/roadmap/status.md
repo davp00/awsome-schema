@@ -28,7 +28,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Index kinds | `@@index` `@unique` / `@fulltext("…")` / `@vector(N)` `@dist(…)` → UNIQUE, FULLTEXT ANALYZER BM25, HNSW | parser + renderer + introspect |
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e offline_cli |
-| TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; nested scalar/relation `Select` + recursive `GetPayload`; shared `buildProjection` / `SelectMetaByTable` (stored `field.{…}`, computed field name, edge `->`/`<-`); thin CRUD wrappers; `createClient`; writes `generator.output` unless `--stdout` | `crates/codegen-typescript`; CLI tests; live CRUD + nested select via `e2e/typescript` (Vitest). No zod; no tx/live wrappers |
+| TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; nested `Select`/`GetPayload`; hybrid `*WhereInput` + shared `buildWhere` (bare equals + operators / `some`/`every`/`none`); `buildProjection` / `SelectMetaByTable`; thin CRUD wrappers; `createClient`; writes `generator.output` unless `--stdout` | `crates/codegen-typescript`; CLI tests; live CRUD + select + where via `e2e/typescript` (Vitest). No zod; no tx/live wrappers |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` |
 | `migrate create` | Empty migration directory | use case + CLI tests |
 | `migrate status` | Applied vs pending via `_awesome_migrations` ledger; snapshot flag | use case tests; e2e migrate |

@@ -230,6 +230,32 @@ fn emits_select_meta_and_projection_builder() {
 }
 
 #[test]
+fn emits_where_inputs_and_build_where() {
+    let output = generate_fixture();
+    assert!(output.contains("export type StringFilter = {"));
+    assert!(output.contains("export type NumberFilter = {"));
+    assert!(output.contains("export type ListRelationFilter<W> = {"));
+    assert!(output.contains("some?: W;"));
+    assert!(output.contains("every?: W;"));
+    assert!(output.contains("none?: W;"));
+    assert!(output.contains("export type RelationFilter<W> = {"));
+    assert!(output.contains("export type UserWhereInput = {"));
+    assert!(output.contains("email?: string | StringFilter"));
+    assert!(output.contains("posts?: PostWhereInput | ListRelationFilter<PostWhereInput>"));
+    assert!(output.contains("liked?: LikesWhereInput | ListRelationFilter<LikesWhereInput>"));
+    assert!(output.contains("author?: UserWhereInput | RelationFilter<UserWhereInput>"));
+    assert!(output.contains("export type LikesWhereInput = {"));
+    assert!(output.contains("score?: number | NumberFilter"));
+    assert!(output.contains("function buildWhere("));
+    assert!(output.contains("function scalarPredicate("));
+    assert!(output.contains("array::len(${collectionExpr}[WHERE ${nestedClause}]) > 0"));
+    assert!(output.contains("string::contains(${path}, ${nextWhereVar(ctx, value.contains)})"));
+    assert!(output.contains("filter: \"string\""));
+    assert!(output.contains("where?: Record<string, unknown>"));
+    assert!(output.contains("WHERE ${whereClause}"));
+}
+
+#[test]
 fn emits_fluent_create_client() {
     let output = generate_fixture();
     assert!(output.contains("export function createClient(db: SurrealLike)"));
@@ -237,6 +263,7 @@ fn emits_fluent_create_client() {
     assert!(output.contains("findUnique: <S extends UserSelect"));
     assert!(output.contains("findMany: <S extends UserSelect"));
     assert!(output.contains("select?: S;"));
+    assert!(output.contains("where?: UserWhereInput"));
     assert!(output.contains("findUniqueRecord(db, \"user\""));
     assert!(output.contains("findManyRecords(db, \"user\""));
     assert!(output.contains("createUser(db, data)"));

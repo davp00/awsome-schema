@@ -74,6 +74,14 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
         emit_edge_select_payload(&mut out, schema, edge, &naming);
     }
 
+    emit_where_shared_types(&mut out);
+    for model in &schema.models {
+        emit_model_where_input(&mut out, schema, model, &naming);
+    }
+    for edge in &schema.edges {
+        emit_edge_where_input(&mut out, schema, edge, &naming);
+    }
+
     emit_tables_const(&mut out, schema, &naming);
     emit_select_meta_registry(&mut out, schema, &naming);
     emit_record_id_helpers(&mut out);
@@ -194,6 +202,154 @@ fn emit_select_type_utils(out: &mut Vec<String>) {
     out.push("    ? NestedPayload".to_owned());
     out.push("    : never;".to_owned());
     out.push(String::new());
+}
+
+fn emit_where_shared_types(out: &mut Vec<String>) {
+    out.push("export type StringFilter = {".to_owned());
+    out.push("  equals?: string;".to_owned());
+    out.push("  in?: string[];".to_owned());
+    out.push("  contains?: string;".to_owned());
+    out.push("  gt?: string;".to_owned());
+    out.push("  gte?: string;".to_owned());
+    out.push("  lt?: string;".to_owned());
+    out.push("  lte?: string;".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+    out.push("export type NumberFilter = {".to_owned());
+    out.push("  equals?: number;".to_owned());
+    out.push("  in?: number[];".to_owned());
+    out.push("  gt?: number;".to_owned());
+    out.push("  gte?: number;".to_owned());
+    out.push("  lt?: number;".to_owned());
+    out.push("  lte?: number;".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+    out.push("export type BooleanFilter = { equals?: boolean };".to_owned());
+    out.push(String::new());
+    out.push("export type DateFilter = {".to_owned());
+    out.push("  equals?: Date | string;".to_owned());
+    out.push("  in?: Array<Date | string>;".to_owned());
+    out.push("  gt?: Date | string;".to_owned());
+    out.push("  gte?: Date | string;".to_owned());
+    out.push("  lt?: Date | string;".to_owned());
+    out.push("  lte?: Date | string;".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+    out.push("export type JsonFilter = { equals?: unknown };".to_owned());
+    out.push(String::new());
+    out.push("export type ArrayFilter = {".to_owned());
+    out.push("  equals?: unknown[];".to_owned());
+    out.push("  contains?: unknown;".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+    out.push("export type IdFilter = { equals?: string; in?: string[] };".to_owned());
+    out.push(String::new());
+    out.push("export type ListRelationFilter<W> = {".to_owned());
+    out.push("  some?: W;".to_owned());
+    out.push("  every?: W;".to_owned());
+    out.push("  none?: W;".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+    out.push("export type RelationFilter<W> = {".to_owned());
+    out.push("  is?: W;".to_owned());
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_model_where_input(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    model: &Model,
+    naming: &NamingContext<'_>,
+) {
+    out.push(format!("export type {}WhereInput = {{", model.name));
+    out.push(format!("  AND?: {}WhereInput | {}WhereInput[];", model.name, model.name));
+    out.push(format!("  OR?: {}WhereInput[];", model.name));
+    out.push(format!("  NOT?: {}WhereInput | {}WhereInput[];", model.name, model.name));
+    for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        if let Some(relation) = &field.relation_name {
+            let edge = resolve_edge_type_name(schema, relation);
+            out.push(format!(
+                "  {name}?: {edge}WhereInput | ListRelationFilter<{edge}WhereInput>;"
+            ));
+        } else if field.is_link() {
+            let target = field
+                .link_target
+                .as_deref()
+                .or_else(|| field.field_type.link_model_name())
+                .unwrap_or("unknown");
+            if field.is_list_link() {
+                out.push(format!(
+                    "  {name}?: {target}WhereInput | ListRelationFilter<{target}WhereInput>;"
+                ));
+            } else {
+                out.push(format!(
+                    "  {name}?: {target}WhereInput | RelationFilter<{target}WhereInput>;"
+                ));
+            }
+        } else if !should_omit_on_record(field) {
+            let filter_ts = where_scalar_union(&field.field_type, field.is_id);
+            out.push(format!("  {name}?: {filter_ts};"));
+        }
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_edge_where_input(
+    out: &mut Vec<String>,
+    _schema: &DatabaseSchema,
+    edge: &Edge,
+    naming: &NamingContext<'_>,
+) {
+    out.push(format!("export type {}WhereInput = {{", edge.name));
+    out.push(format!("  AND?: {}WhereInput | {}WhereInput[];", edge.name, edge.name));
+    out.push(format!("  OR?: {}WhereInput[];", edge.name));
+    out.push(format!("  NOT?: {}WhereInput | {}WhereInput[];", edge.name, edge.name));
+    out.push("  id?: string | IdFilter;".to_owned());
+    out.push(format!(
+        "  in?: {}WhereInput | RelationFilter<{}WhereInput>;",
+        edge.in_model, edge.in_model
+    ));
+    out.push(format!(
+        "  out?: {}WhereInput | RelationFilter<{}WhereInput>;",
+        edge.out_model, edge.out_model
+    ));
+    for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        let filter_ts = where_scalar_union(&field.field_type, false);
+        out.push(format!("  {name}?: {filter_ts};"));
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+const fn scalar_filter_kind(field_type: &FieldType, is_id: bool) -> &'static str {
+    if is_id {
+        return "id";
+    }
+    match field_type {
+        FieldType::String => "string",
+        FieldType::Int | FieldType::Float => "number",
+        FieldType::Bool => "boolean",
+        FieldType::Datetime => "datetime",
+        FieldType::Array(_) => "array",
+        FieldType::RecordId(_) => "id",
+        FieldType::Object | FieldType::Model(_) | FieldType::Custom(_) => "json",
+    }
+}
+
+fn where_scalar_union(field_type: &FieldType, is_id: bool) -> String {
+    match scalar_filter_kind(field_type, is_id) {
+        "string" => "string | StringFilter".to_owned(),
+        "number" => "number | NumberFilter".to_owned(),
+        "boolean" => "boolean | BooleanFilter".to_owned(),
+        "datetime" => "Date | string | DateFilter".to_owned(),
+        "array" => "unknown[] | ArrayFilter".to_owned(),
+        "id" => "string | IdFilter".to_owned(),
+        _ => "unknown | JsonFilter".to_owned(),
+    }
 }
 
 fn emit_model_select_payload(
@@ -682,7 +838,10 @@ fn emit_select_meta_registry(
     naming: &NamingContext<'_>,
 ) {
     out.push("export type FieldSelectMeta =".to_owned());
-    out.push("  | { kind: \"scalar\" }".to_owned());
+    out.push(
+        "  | { kind: \"scalar\"; filter: \"string\" | \"number\" | \"boolean\" | \"datetime\" | \"json\" | \"array\" | \"id\" }"
+            .to_owned(),
+    );
     out.push(
         "  | { kind: \"stored\" | \"computed\"; targetTable: string; list: boolean }".to_owned(),
     );
@@ -736,7 +895,10 @@ fn emit_select_meta_registry(
                     "    {name}: {{ kind: \"{kind}\", targetTable: \"{target_table}\", list: {list} }},"
                 ));
             } else if !should_omit_on_record(field) {
-                out.push(format!("    {name}: {{ kind: \"scalar\" }},"));
+                let filter = scalar_filter_kind(&field.field_type, field.is_id);
+                out.push(format!(
+                    "    {name}: {{ kind: \"scalar\", filter: \"{filter}\" }},"
+                ));
             }
         }
         out.push("  },".to_owned());
@@ -747,7 +909,9 @@ fn emit_select_meta_registry(
         let in_table = table_for_model_name(schema, &edge.in_model, naming);
         let out_table = table_for_model_name(schema, &edge.out_model, naming);
         out.push(format!("  \"{table}\": {{"));
-        out.push("    id: { kind: \"scalar\" },".to_owned());
+        out.push(
+            "    id: { kind: \"scalar\", filter: \"id\" },".to_owned(),
+        );
         out.push(format!(
             "    in: {{ kind: \"stored\", targetTable: \"{in_table}\", list: false }},"
         ));
@@ -756,7 +920,10 @@ fn emit_select_meta_registry(
         ));
         for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
             let name = naming.field_name(field);
-            out.push(format!("    {name}: {{ kind: \"scalar\" }},"));
+            let filter = scalar_filter_kind(&field.field_type, false);
+            out.push(format!(
+                "    {name}: {{ kind: \"scalar\", filter: \"{filter}\" }},"
+            ));
         }
         out.push("  },".to_owned());
     }
@@ -990,34 +1157,201 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
+    emit_build_where(out);
+
     out.push("async function findManyRecords<T>(".to_owned());
     out.push("  db: SurrealLike,".to_owned());
     out.push("  table: string,".to_owned());
     out.push("  args: {".to_owned());
     out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("    where?: Record<string, unknown>;".to_owned());
     out.push("    whereSql?: string;".to_owned());
     out.push("    vars?: Record<string, unknown>;".to_owned());
     out.push("  } = {},".to_owned());
     out.push("): Promise<T[]> {".to_owned());
-    out.push("  if (!args.select) {".to_owned());
     out.push(
-        "    const sql = args.whereSql ?? `SELECT * FROM ${table}`;"
+        "  const projection = args.select ? buildProjection(args.select, table) : \"*\";"
             .to_owned(),
     );
-    out.push("    return queryRows<T>(db, sql, args.vars);".to_owned());
-    out.push("  }".to_owned());
-    out.push("  const projection = buildProjection(args.select, table);".to_owned());
-    out.push("  if (args.whereSql) {".to_owned());
+    out.push("  const vars: Record<string, unknown> = { ...(args.vars ?? {}) };".to_owned());
+    out.push("  let whereClause = \"\";".to_owned());
+    out.push("  if (args.where) {".to_owned());
+    out.push(
+        "    whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+            .to_owned(),
+    );
+    out.push("  } else if (args.whereSql) {".to_owned());
     out.push(
         "    const sql = args.whereSql.replace(/^\\s*SELECT\\s+\\*/i, `SELECT ${projection}`);"
             .to_owned(),
     );
     out.push("    return queryRows<T>(db, sql, args.vars);".to_owned());
     out.push("  }".to_owned());
+    out.push("  const sql = whereClause".to_owned());
     out.push(
-        "  return queryRows<T>(db, `SELECT ${projection} FROM ${table}`, args.vars);"
+        "    ? `SELECT ${projection} FROM ${table} WHERE ${whereClause}`"
             .to_owned(),
     );
+    out.push("    : `SELECT ${projection} FROM ${table}`;".to_owned());
+    out.push("  return queryRows<T>(db, sql, vars);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+}
+
+fn emit_build_where(out: &mut Vec<String>) {
+    out.push("type WhereBuildCtx = { vars: Record<string, unknown>; n: number };".to_owned());
+    out.push(String::new());
+    out.push("function nextWhereVar(ctx: WhereBuildCtx, value: unknown): string {".to_owned());
+    out.push("  const key = `w${ctx.n++}`;".to_owned());
+    out.push("  ctx.vars[key] = value;".to_owned());
+    out.push("  return `$${key}`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function isScalarFilterObject(value: unknown): value is Record<string, unknown> {".to_owned());
+    out.push("  if (!value || typeof value !== \"object\" || Array.isArray(value)) return false;".to_owned());
+    out.push("  return [\"equals\", \"in\", \"contains\", \"gt\", \"gte\", \"lt\", \"lte\"].some((k) =>".to_owned());
+    out.push("    Object.prototype.hasOwnProperty.call(value, k),".to_owned());
+    out.push("  );".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function scalarPredicate(".to_owned());
+    out.push("  path: string,".to_owned());
+    out.push("  value: unknown,".to_owned());
+    out.push("  filter: string,".to_owned());
+    out.push("  ctx: WhereBuildCtx,".to_owned());
+    out.push("): string[] {".to_owned());
+    out.push("  if (value === undefined) return [];".to_owned());
+    out.push("  if (!isScalarFilterObject(value)) {".to_owned());
+    out.push("    return [`${path} = ${nextWhereVar(ctx, value)}`];".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  if (value.equals !== undefined) parts.push(`${path} = ${nextWhereVar(ctx, value.equals)}`);".to_owned());
+    out.push("  if (value.in !== undefined) parts.push(`${path} IN ${nextWhereVar(ctx, value.in)}`);".to_owned());
+    out.push("  if (value.contains !== undefined) {".to_owned());
+    out.push("    if (filter === \"array\") parts.push(`${path} CONTAINS ${nextWhereVar(ctx, value.contains)}`);".to_owned());
+    out.push(
+        "    else parts.push(`string::contains(${path}, ${nextWhereVar(ctx, value.contains)})`);"
+            .to_owned(),
+    );
+    out.push("  }".to_owned());
+    out.push("  if (value.gt !== undefined) parts.push(`${path} > ${nextWhereVar(ctx, value.gt)}`);".to_owned());
+    out.push("  if (value.gte !== undefined) parts.push(`${path} >= ${nextWhereVar(ctx, value.gte)}`);".to_owned());
+    out.push("  if (value.lt !== undefined) parts.push(`${path} < ${nextWhereVar(ctx, value.lt)}`);".to_owned());
+    out.push("  if (value.lte !== undefined) parts.push(`${path} <= ${nextWhereVar(ctx, value.lte)}`);".to_owned());
+    out.push("  return parts;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function relationMode(value: Record<string, unknown>, list: boolean): {".to_owned());
+    out.push("  mode: \"some\" | \"every\" | \"none\" | \"is\";".to_owned());
+    out.push("  nested: unknown;".to_owned());
+    out.push("} {".to_owned());
+    out.push("  if (\"some\" in value) return { mode: \"some\", nested: value.some };".to_owned());
+    out.push("  if (\"every\" in value) return { mode: \"every\", nested: value.every };".to_owned());
+    out.push("  if (\"none\" in value) return { mode: \"none\", nested: value.none };".to_owned());
+    out.push("  if (\"is\" in value) return { mode: \"is\", nested: value.is };".to_owned());
+    out.push("  return { mode: list ? \"some\" : \"is\", nested: value };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function listRelationPredicate(".to_owned());
+    out.push("  collectionExpr: string,".to_owned());
+    out.push("  mode: \"some\" | \"every\" | \"none\" | \"is\",".to_owned());
+    out.push("  nestedClause: string,".to_owned());
+    out.push("): string | null {".to_owned());
+    out.push("  if (mode === \"is\") return null;".to_owned());
+    out.push("  if (mode === \"some\") {".to_owned());
+    out.push("    return nestedClause".to_owned());
+    out.push("      ? `array::len(${collectionExpr}[WHERE ${nestedClause}]) > 0`".to_owned());
+    out.push("      : `array::len(${collectionExpr}) > 0`;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (mode === \"every\") {".to_owned());
+    out.push("    return nestedClause".to_owned());
+    out.push("      ? `array::len(${collectionExpr}[WHERE ${nestedClause}]) = array::len(${collectionExpr})`".to_owned());
+    out.push("      : \"true\";".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return nestedClause".to_owned());
+    out.push("    ? `array::len(${collectionExpr}[WHERE ${nestedClause}]) = 0`".to_owned());
+    out.push("    : `array::len(${collectionExpr}) = 0`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function buildWhere(".to_owned());
+    out.push("  where: Record<string, unknown> | undefined,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  allMeta: Record<string, Record<string, FieldSelectMeta>> = SelectMetaByTable,".to_owned());
+    out.push("  ctx: WhereBuildCtx = { vars: {}, n: 0 },".to_owned());
+    out.push("  pathPrefix = \"\",".to_owned());
+    out.push("): string {".to_owned());
+    out.push("  if (!where) return \"\";".to_owned());
+    out.push("  const meta = allMeta[table] ?? {};".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  for (const [key, value] of Object.entries(where)) {".to_owned());
+    out.push("    if (value === undefined) continue;".to_owned());
+    out.push("    if (key === \"AND\") {".to_owned());
+    out.push("      const items = Array.isArray(value) ? value : [value];".to_owned());
+    out.push("      const inner = items".to_owned());
+    out.push("        .map((item) => buildWhere(item as Record<string, unknown>, table, allMeta, ctx, pathPrefix))".to_owned());
+    out.push("        .filter(Boolean);".to_owned());
+    out.push("      if (inner.length) parts.push(`(${inner.join(\" AND \")})`);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (key === \"OR\") {".to_owned());
+    out.push("      const items = Array.isArray(value) ? value : [value];".to_owned());
+    out.push("      const inner = items".to_owned());
+    out.push("        .map((item) => buildWhere(item as Record<string, unknown>, table, allMeta, ctx, pathPrefix))".to_owned());
+    out.push("        .filter(Boolean);".to_owned());
+    out.push("      if (inner.length) parts.push(`(${inner.join(\" OR \")})`);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (key === \"NOT\") {".to_owned());
+    out.push("      const items = Array.isArray(value) ? value : [value];".to_owned());
+    out.push("      const inner = items".to_owned());
+    out.push("        .map((item) => buildWhere(item as Record<string, unknown>, table, allMeta, ctx, pathPrefix))".to_owned());
+    out.push("        .filter(Boolean);".to_owned());
+    out.push("      if (inner.length === 1) parts.push(`!(${inner[0]})`);".to_owned());
+    out.push("      else if (inner.length > 1) parts.push(`!((${inner.join(\" AND \")}))`);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta) continue;".to_owned());
+    out.push("    const path = pathPrefix ? `${pathPrefix}.${key}` : key;".to_owned());
+    out.push("    if (fieldMeta.kind === \"scalar\") {".to_owned());
+    out.push("      parts.push(...scalarPredicate(path, value, fieldMeta.filter, ctx));".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (!value || typeof value !== \"object\" || Array.isArray(value)) continue;".to_owned());
+    out.push("    const { mode, nested } = relationMode(value as Record<string, unknown>, fieldMeta.list);".to_owned());
+    out.push("    if (fieldMeta.kind === \"edge\") {".to_owned());
+    out.push("      const arrow = fieldMeta.dir === \"out\" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;".to_owned());
+    out.push("      const nestedClause = buildWhere(".to_owned());
+    out.push("        nested as Record<string, unknown> | undefined,".to_owned());
+    out.push("        fieldMeta.edgeTable,".to_owned());
+    out.push("        allMeta,".to_owned());
+    out.push("        ctx,".to_owned());
+    out.push("      );".to_owned());
+    out.push("      const pred = listRelationPredicate(arrow, mode, nestedClause);".to_owned());
+    out.push("      if (pred) parts.push(pred);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (fieldMeta.list) {".to_owned());
+    out.push("      const nestedClause = buildWhere(".to_owned());
+    out.push("        nested as Record<string, unknown> | undefined,".to_owned());
+    out.push("        fieldMeta.targetTable,".to_owned());
+    out.push("        allMeta,".to_owned());
+    out.push("        ctx,".to_owned());
+    out.push("      );".to_owned());
+    out.push("      const pred = listRelationPredicate(path, mode, nestedClause);".to_owned());
+    out.push("      if (pred) parts.push(pred);".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    const nestedClause = buildWhere(".to_owned());
+    out.push("      nested as Record<string, unknown> | undefined,".to_owned());
+    out.push("      fieldMeta.targetTable,".to_owned());
+    out.push("      allMeta,".to_owned());
+    out.push("      ctx,".to_owned());
+    out.push("      path,".to_owned());
+    out.push("    );".to_owned());
+    out.push("    if (nestedClause) parts.push(nestedClause);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return parts.join(\" AND \");".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
 }
@@ -1251,6 +1585,7 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             model.name
         ));
         out.push("        select?: S;".to_owned());
+        out.push(format!("        where?: {}WhereInput;", model.name));
         out.push("        whereSql?: string;".to_owned());
         out.push("        vars?: Record<string, unknown>;".to_owned());
         out.push(format!(
@@ -1258,7 +1593,7 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             model.name
         ));
         out.push(format!(
-            "        findManyRecords(db, \"{table}\", args as {{ select?: Record<string, unknown>; whereSql?: string; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S>[]>,",
+            "        findManyRecords(db, \"{table}\", args as {{ select?: Record<string, unknown>; where?: Record<string, unknown>; whereSql?: string; vars?: Record<string, unknown> }}) as Promise<{}GetPayload<S>[]>,",
             model.name
         ));
         out.push(format!(
