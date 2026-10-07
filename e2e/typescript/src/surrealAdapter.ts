@@ -2,6 +2,9 @@ import {
   RecordId,
   StringRecordId,
   Table,
+  Uuid,
+  type LiveMessage,
+  type LiveSubscription,
   type Surreal,
   type SurrealTransaction,
 } from "surrealdb";
@@ -20,8 +23,17 @@ export type SurrealTransactionLike = SurrealOpsLike & {
   cancel(): Promise<void>;
 };
 
+export type LiveAction = "CREATE" | "UPDATE" | "DELETE";
+
+export type LiveHandle<T> = {
+  subscribe(listener: (action: LiveAction, result: T) => void): void;
+  kill(): Promise<void>;
+};
+
 export type SurrealLike = SurrealOpsLike & {
   beginTransaction(): Promise<SurrealTransactionLike>;
+  live<T>(table: string): Promise<LiveHandle<T>>;
+  liveOf<T>(id: unknown): Promise<LiveHandle<T>>;
 };
 
 const RECORD_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*:[^\s]+$/;
@@ -38,6 +50,15 @@ export function asSurrealLike(db: Surreal): SurrealLike {
     async beginTransaction(): Promise<SurrealTransactionLike> {
       const txn = await db.beginTransaction();
       return asSurrealTransaction(txn);
+    },
+    async live<T>(table: string): Promise<LiveHandle<T>> {
+      const subscription = await db.live<T>(new Table(table));
+      await whenReady(subscription);
+      return wrapLive(subscription);
+    },
+    async liveOf<T>(id: unknown): Promise<LiveHandle<T>> {
+      const subscription = await db.liveOf(asUuid(id));
+      return wrapLive(subscription);
     },
   };
 }
@@ -82,6 +103,31 @@ function toRecordId(thing: string): StringRecordId {
 /** Generated create helpers pass a table name. */
 function toTable(thing: string): Table {
   return new Table(thing);
+}
+
+function wrapLive<T>(subscription: LiveSubscription): LiveHandle<T> {
+  return {
+    subscribe(listener) {
+      subscription.subscribe((message: LiveMessage) => {
+        if (message.action === "KILLED" || message.value === undefined) return;
+        listener(message.action, message.value as T);
+      });
+    },
+    kill: () => subscription.kill(),
+  };
+}
+
+async function whenReady(subscription: LiveSubscription): Promise<void> {
+  const ready = (subscription as LiveSubscription & { ready?: () => Promise<void> }).ready;
+  if (typeof ready === "function") {
+    await ready.call(subscription);
+  }
+}
+
+function asUuid(id: unknown): Uuid {
+  if (id instanceof Uuid) return id;
+  if (typeof id === "string") return new Uuid(id);
+  throw new Error("liveOf: expected a live query id");
 }
 
 function encodeDeep(value: unknown): unknown {

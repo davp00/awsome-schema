@@ -168,6 +168,7 @@ cargo run -p cli -- format --write
 # Nested writes (one hop): create/update with posts/liked { create|connect|disconnect }; stored links accept connect/create(/disconnect)
 # $transaction(async (tx) => { … }) — interactive Surreal txn (WS/embedded); commit on success, cancel on throw
 # $queryRaw<T>(sql, vars?) returns the first statement's rows; $executeRaw(sql, vars?) returns the raw db.query result (also on the transaction client)
+# user.live() / $live(sql, vars?) — session LIVE SELECT (CREATE|UPDATE|DELETE); not on the transaction client
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript

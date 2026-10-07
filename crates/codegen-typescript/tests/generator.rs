@@ -51,10 +51,7 @@ fn generate_fixture() -> String {
 
 #[test]
 fn default_generator_is_constructible() {
-    assert_eq!(
-        CodeGenerator::language(&TypeScriptGenerator::new()),
-        "typescript"
-    );
+    assert_eq!(CodeGenerator::language(&TypeScriptGenerator::new()), "typescript");
 }
 
 #[test]
@@ -104,9 +101,7 @@ fn computed_link_and_relation_omitted_on_record_present_on_selected() {
     assert!(!user_record.contains("liked"));
 
     let selected_start = user_end;
-    let selected_end = output
-        .find("export type UserCreateScalars = {")
-        .expect("UserCreateScalars");
+    let selected_end = output.find("export type UserCreateScalars = {").expect("UserCreateScalars");
     let user_selected = &output[selected_start..selected_end];
     assert!(user_selected.contains("posts?: PostSelected[]"));
     assert!(user_selected.contains("liked?: LikesSelected[]"));
@@ -137,20 +132,22 @@ fn emits_thin_select_helpers_with_fetch() {
     assert!(output.contains("export async function selectUserRelated("));
     assert!(output.contains("export async function selectPostRelated("));
     assert!(output.contains("export async function selectLikesRelated("));
-    assert!(output.contains("selectRecordRelated<UserSelected>(db, \"user\", id, [\"posts\", \"liked\"])"));
+    assert!(
+        output.contains(
+            "selectRecordRelated<UserSelected>(db, \"user\", id, [\"posts\", \"liked\"])"
+        )
+    );
     assert!(output.contains("selectRecordRelated<PostSelected>(db, \"post\", id, [\"author\"])"));
-    assert!(output.contains("selectRecordRelated<LikesSelected>(db, \"likes\", id, [\"in\", \"out\"])"));
+    assert!(
+        output.contains("selectRecordRelated<LikesSelected>(db, \"likes\", id, [\"in\", \"out\"])")
+    );
 }
 
 #[test]
 fn emits_create_update_inputs_without_computed_fields() {
     let output = generate_fixture();
-    let scalars_start = output
-        .find("export type UserCreateScalars = {")
-        .expect("scalars");
-    let create_start = output
-        .find("export type UserCreateInput = ")
-        .expect("create");
+    let scalars_start = output.find("export type UserCreateScalars = {").expect("scalars");
+    let create_start = output.find("export type UserCreateInput = ").expect("create");
     let scalars = &output[scalars_start..create_start];
     assert!(scalars.contains("email: string"));
     assert!(!scalars.contains("posts"));
@@ -169,9 +166,7 @@ fn emits_create_update_inputs_without_computed_fields() {
     assert!(update.contains("email?: string"));
     assert!(update.contains("posts?: {"));
 
-    let post_create_start = output
-        .find("export type PostCreateInput = ")
-        .expect("PostCreate");
+    let post_create_start = output.find("export type PostCreateInput = ").expect("PostCreate");
     let post_create_end = output.find("export type PostUpdateInput = {").expect("PostUpdate");
     let post_create = &output[post_create_start..post_create_end];
     assert!(post_create.contains("author:"));
@@ -218,7 +213,9 @@ fn emits_get_payload_and_select_types() {
     assert!(output.contains("posts?: SelectArg<PostSelect, PostOrderByInput>"));
     assert!(output.contains("liked?: SelectArg<LikesSelect, LikesOrderByInput>"));
     assert!(output.contains("author?: SelectArg<UserSelect, UserOrderByInput>"));
-    assert!(output.contains("export type UserGetPayload<S extends UserSelect | undefined = undefined>"));
+    assert!(
+        output.contains("export type UserGetPayload<S extends UserSelect | undefined = undefined>")
+    );
     assert!(output.contains("PostGetPayload<N>[]"));
     assert!(output.contains("LikesGetPayload<N>[]"));
     assert!(output.contains("export type LikesSelect = {"));
@@ -252,9 +249,7 @@ fn emits_nested_relation_order_by() {
     assert!(output.contains("posts?: SelectArg<PostSelect, PostOrderByInput>"));
     assert!(output.contains("liked?: SelectArg<LikesSelect, LikesOrderByInput>"));
     assert!(output.contains("buildOrderBy(bag.orderBy, nestedTable, allMeta)"));
-    assert!(output.contains(
-        "(SELECT ${nested} FROM $parent.${key} ${orderClause}) AS ${key}"
-    ));
+    assert!(output.contains("(SELECT ${nested} FROM $parent.${key} ${orderClause}) AS ${key}"));
     assert!(output.contains(
         "${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable} ${orderClause}) AS ${key}"
     ));
@@ -352,8 +347,14 @@ fn emits_transaction_client() {
     assert!(output.contains("beginTransaction(): Promise<SurrealTransactionLike>"));
     assert!(output.contains("async function runTransaction<T>("));
     assert!(output.contains("function buildClientDelegates(db: SurrealOpsLike)"));
-    assert!(output.contains("export type TransactionClient = ReturnType<typeof buildClientDelegates>"));
-    assert!(output.contains("$transaction: <T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> =>"));
+    assert!(
+        output.contains("export type TransactionClient = ReturnType<typeof buildClientDelegates>")
+    );
+    assert!(
+        output.contains(
+            "$transaction: <T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> =>"
+        )
+    );
     assert!(output.contains("runTransaction(db, fn)"));
     assert!(output.contains("await txn.commit()"));
     assert!(output.contains("await txn.cancel()"));
@@ -370,6 +371,28 @@ fn emits_raw_query_on_client() {
         "$executeRaw: (sql: string, vars?: Record<string, unknown>): Promise<unknown> =>"
     ));
     assert!(output.contains("      db.query(sql, vars),"));
+}
+
+#[test]
+fn emits_live_select_on_session_client() {
+    let output = generate_fixture();
+    assert!(output.contains("export type LiveAction = \"CREATE\" | \"UPDATE\" | \"DELETE\";"));
+    assert!(output.contains("export type LiveHandle<T> = {"));
+    assert!(output.contains("live<T>(table: string): Promise<LiveHandle<T>>;"));
+    assert!(output.contains("liveOf<T>(id: unknown): Promise<LiveHandle<T>>;"));
+    assert!(output.contains("async function openLiveSelect<T>("));
+    assert!(output.contains("throw new Error(\"$live: sql must be a LIVE SELECT statement\")"));
+    assert!(output.contains("live: (): Promise<LiveHandle<User>> => db.live<User>(\"user\")"));
+    assert!(output.contains("live: (): Promise<LiveHandle<Likes>> => db.live<Likes>(\"likes\")"));
+    assert!(output.contains(
+        "$live: <T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<LiveHandle<T>> =>"
+    ));
+    assert!(output.contains("openLiveSelect<T>(db, sql, vars)"));
+
+    let delegates_start = output.find("function buildClientDelegates").expect("delegates");
+    let create_start = output.find("export function createClient").expect("createClient");
+    let delegates = &output[delegates_start..create_start];
+    assert!(!delegates.contains("LiveHandle"));
 }
 
 #[test]
@@ -464,11 +487,16 @@ fn emits_single_update_delete_opts() {
 #[test]
 fn emits_mutation_return_modes() {
     let output = generate_fixture();
-    assert!(output.contains("export type MutationReturn = \"NONE\" | \"BEFORE\" | \"AFTER\" | \"DIFF\""));
+    assert!(
+        output
+            .contains("export type MutationReturn = \"NONE\" | \"BEFORE\" | \"AFTER\" | \"DIFF\"")
+    );
     assert!(output.contains("export type ManyReturnResult<"));
     assert!(output.contains("function assertReturnSelectExclusive("));
     assert!(output.contains("async function countMatching("));
-    assert!(output.contains("SELECT count() AS count FROM ${table} WHERE ${whereClause} GROUP ALL"));
+    assert!(
+        output.contains("SELECT count() AS count FROM ${table} WHERE ${whereClause} GROUP ALL")
+    );
     assert!(output.contains("return?: MutationReturn"));
     assert!(output.contains("CREATE ${table} CONTENT $__row RETURN DIFF"));
     assert!(output.contains("RETURN NONE"));
@@ -499,8 +527,7 @@ model Sample {
 "#,
     )
     .expect("parse");
-    let output =
-        CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
     assert!(output.contains("flag: boolean"));
     assert!(output.contains("count: number"));
     assert!(output.contains("ratio: number"));
@@ -556,8 +583,7 @@ fn maps_custom_field_type_passthrough() {
         }],
         edges: Vec::new(),
     };
-    let output =
-        CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
     assert!(output.contains("custom: GeoPoint"));
 }
 
@@ -606,7 +632,6 @@ fn respects_optional_marker() {
         }],
         edges: Vec::new(),
     };
-    let output =
-        CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
     assert!(output.contains("value?: string"));
 }
