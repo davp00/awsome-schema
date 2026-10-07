@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791400117.9878428,
-    "seen": 1791400487.287692,
-    "ast_hash": "f07b79ef7f14c741ad682d72b0918ddc",
+    "mtime": 1791400701.5327268,
+    "seen": 1791402422.8969018,
+    "ast_hash": "0d1f2aea3eb191565847cf89b3297bbc",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791400113.5232933,
-    "seen": 1791400487.287692,
-    "ast_hash": "cb023fa56360b5ec19ce791d240fc236",
+    "mtime": 1791400703.7524383,
+    "seen": 1791402422.8969028,
+    "ast_hash": "5ff2d558a8b222efe6ad05d805db48e1",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791400133.9298108,
-    "seen": 1791400487.287738,
-    "ast_hash": "e9395b6be8f4a302e888656cab7c27d9",
+    "mtime": 1791400717.5745718,
+    "seen": 1791402422.896949,
+    "ast_hash": "29e6dceab8713068e87124347dcf52cb",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791400141.0782847,
-    "seen": 1791400487.2877388,
-    "ast_hash": "efc2644ea69ce24359a2681907a12258",
+    "mtime": 1791400714.6940885,
+    "seen": 1791402422.89695,
+    "ast_hash": "164abe630536d4ef115efd154c0eab8e",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791400143.2956626,
-    "seen": 1791400487.28774,
-    "ast_hash": "ac25b0f6ad60224fe84d40f89a486148",
+    "mtime": 1791400716.656972,
+    "seen": 1791402422.896951,
+    "ast_hash": "1a864ae6ce5718fcd4e0543e64d78904",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -888,9 +888,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/tests/where.test.ts": {
-    "mtime": 1791400126.403242,
-    "seen": 1791400487.287724,
-    "ast_hash": "3fe9c9b14e8eed5f08064fc31be40743",
+    "mtime": 1791400710.5326521,
+    "seen": 1791402422.896935,
+    "ast_hash": "3e3bf7d015e37925c61c4013460ae802",
     "semantic_hash": ""
   }
 }
