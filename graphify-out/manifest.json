@@ -874,5 +874,17 @@
     "seen": 1791398491.044683,
     "ast_hash": "124b11c965b2f3125f8fd0e2743a853d",
     "semantic_hash": ""
+  },
+  ".agents/skills/awesome-feature/SKILL.md": {
+    "mtime": 1791399496.5839157,
+    "seen": 1791399550.100001,
+    "ast_hash": "5be041761a643cd53e41c6ab8ff509c2",
+    "semantic_hash": ""
+  },
+  ".agents/skills/awesome-feature/checklist.md": {
+    "mtime": 1791399389.1536453,
+    "seen": 1791399550.100002,
+    "ast_hash": "da4d3bee9a8bb7374040fb6638e8bdb9",
+    "semantic_hash": ""
   }
 }
