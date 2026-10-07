@@ -50,6 +50,10 @@ export default async function globalSetup() {
       ownedContainer = true;
     } catch (error) {
       const reason = `skipping typescript e2e: Docker unavailable (${formatError(error)})`;
+      // Soft-skip locally; CI / REQUIRE_SURREAL must fail the job.
+      if (process.env.CI === "true" || process.env.REQUIRE_SURREAL === "1") {
+        throw new Error(reason);
+      }
       console.warn(reason);
       writeEnv({
         skipped: true,

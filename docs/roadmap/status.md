@@ -7,7 +7,7 @@ Check so far:
 - Read the CLI, domain, parser, differ, SurrealDB renderer, codegen, and `db` adapters.
 - `cargo test --workspace --exclude e2e` — unit/integration suite.
 - `cargo test -p e2e --locked` — topic binaries against SurrealDB **v3.3.0** via Docker/testcontainers.
-- `cd e2e/typescript && npm test` — Vitest generated-client CRUD e2e (hybrid URL / testcontainers).
+- `cd e2e/typescript && npm test` — Vitest generated-client CRUD + nested select e2e (hybrid URL / testcontainers); CI via `.github/workflows/typescript-e2e.yml`.
 
 Legend: **done** means the behavior exists and is covered by unit or CLI tests. **partial** means some of the path works and a specific gap remains. **not started** means the command or type exists but does not do the job.
 
