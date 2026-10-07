@@ -360,6 +360,19 @@ fn emits_transaction_client() {
 }
 
 #[test]
+fn emits_raw_query_on_client() {
+    let output = generate_fixture();
+    assert!(output.contains(
+        "$queryRaw: <T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<T[]> =>"
+    ));
+    assert!(output.contains("      queryRows<T>(db, sql, vars),"));
+    assert!(output.contains(
+        "$executeRaw: (sql: string, vars?: Record<string, unknown>): Promise<unknown> =>"
+    ));
+    assert!(output.contains("      db.query(sql, vars),"));
+}
+
+#[test]
 fn emits_where_unique_and_bulk_upsert() {
     let output = generate_fixture();
     assert!(output.contains("export type UserWhereUniqueInput = {"));

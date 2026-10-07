@@ -3234,6 +3234,17 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
         emit_fluent_edge_delegate(out, edge, naming);
     }
 
+    out.push(
+        "    $queryRaw: <T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<T[]> =>"
+            .to_owned(),
+    );
+    out.push("      queryRows<T>(db, sql, vars),".to_owned());
+    out.push(
+        "    $executeRaw: (sql: string, vars?: Record<string, unknown>): Promise<unknown> =>"
+            .to_owned(),
+    );
+    out.push("      db.query(sql, vars),".to_owned());
+
     out.push("  } as const;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
