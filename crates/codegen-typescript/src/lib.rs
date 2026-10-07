@@ -1832,14 +1832,7 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("  table: string,".to_owned());
     out.push("  data: Record<string, unknown>,".to_owned());
     out.push("): Promise<T> {".to_owned());
-    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
-    out.push("  const hasNested = Object.entries(data).some(([key, value]) => {".to_owned());
-    out.push("    const fieldMeta = meta[key];".to_owned());
-    out.push("    if (!fieldMeta) return false;".to_owned());
-    out.push("    if (fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") return value != null;".to_owned());
-    out.push("    if (fieldMeta.kind === \"stored\") return isNestedWriteBag(value);".to_owned());
-    out.push("    return false;".to_owned());
-    out.push("  });".to_owned());
+    out.push("  const hasNested = rowHasNestedWrite(table, data);".to_owned());
     out.push("  return withWriteTransaction(db, hasNested, async (ops) => {".to_owned());
     out.push(
         "    const { scalars, nested } = await splitAndResolveWriteData(ops, table, data);"
@@ -1858,14 +1851,7 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("  data: Record<string, unknown>,".to_owned());
     out.push("  opts?: { select?: Record<string, unknown>; return?: MutationReturn },".to_owned());
     out.push("): Promise<T | undefined | void | unknown> {".to_owned());
-    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
-    out.push("  const hasNested = Object.entries(data).some(([key, value]) => {".to_owned());
-    out.push("    const fieldMeta = meta[key];".to_owned());
-    out.push("    if (!fieldMeta) return false;".to_owned());
-    out.push("    if (fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") return value != null;".to_owned());
-    out.push("    if (fieldMeta.kind === \"stored\") return isNestedWriteBag(value);".to_owned());
-    out.push("    return false;".to_owned());
-    out.push("  });".to_owned());
+    out.push("  const hasNested = rowHasNestedWrite(table, data);".to_owned());
     out.push("  return withWriteTransaction(db, hasNested, async (ops) => {".to_owned());
     out.push(
         "    const { scalars, nested } = await splitAndResolveWriteData(ops, table, data);"
@@ -2499,6 +2485,35 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("}".to_owned());
     out.push(String::new());
 
+    out.push(
+        "function rowHasNestedWrite(table: string, data: Record<string, unknown>): boolean {"
+            .to_owned(),
+    );
+    out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  return Object.entries(data).some(([key, value]) => {".to_owned());
+    out.push("    const fieldMeta = meta[key];".to_owned());
+    out.push("    if (!fieldMeta) return false;".to_owned());
+    out.push("    if (fieldMeta.kind === \"computed\" || fieldMeta.kind === \"edge\") return value != null;".to_owned());
+    out.push("    if (fieldMeta.kind === \"stored\") return isNestedWriteBag(value);".to_owned());
+    out.push("    return false;".to_owned());
+    out.push("  });".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function insertManyRows<T>(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  rows: Record<string, unknown>[],".to_owned());
+    out.push("  relation: boolean,".to_owned());
+    out.push("  returning: string,".to_owned());
+    out.push("): Promise<T[]> {".to_owned());
+    out.push("  if (rows.length === 0) return [];".to_owned());
+    out.push("  const keyword = relation ? \"INSERT RELATION INTO\" : \"INSERT INTO\";".to_owned());
+    out.push(
+        "  return queryRows<T>(db, `${keyword} ${table} $rows RETURN ${returning}`, { rows });"
+            .to_owned(),
+    );
+    out.push("}".to_owned());
+    out.push(String::new());
     out.push("async function createManyVia<T extends { id?: unknown }>(".to_owned());
     out.push("  db: SurrealOpsLike,".to_owned());
     out.push("  table: string,".to_owned());
@@ -2508,6 +2523,7 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("    return?: MutationReturn;".to_owned());
     out.push("  },".to_owned());
     out.push("  createOne: (data: Record<string, unknown>) => Promise<T>,".to_owned());
+    out.push("  relation: boolean,".to_owned());
     out.push("): Promise<{ count: number } | T[] | unknown[]> {".to_owned());
     out.push(
         "  assertReturnSelectExclusive(\"createMany\", table, args.select, args.return);"
@@ -2519,48 +2535,71 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
             .to_owned(),
     );
     out.push("  }".to_owned());
-    out.push("  if (args.return === \"DIFF\") {".to_owned());
-    out.push("    const diffs: unknown[] = [];".to_owned());
-    out.push("    for (const data of args.data) {".to_owned());
     out.push(
-        "      const part = await queryRows<unknown>(db, `CREATE ${table} CONTENT $__row RETURN DIFF`, { __row: data });"
+        "  const hasNested = args.data.some((data) => rowHasNestedWrite(table, data));".to_owned(),
+    );
+    out.push("  if (hasNested) {".to_owned());
+    out.push("    if (args.return === \"DIFF\") {".to_owned());
+    out.push("      const diffs: unknown[] = [];".to_owned());
+    out.push("      for (const data of args.data) {".to_owned());
+    out.push(
+        "        const part = await queryRows<unknown>(db, `CREATE ${table} CONTENT $__row RETURN DIFF`, { __row: data });"
             .to_owned(),
     );
-    out.push("      diffs.push(...part);".to_owned());
+    out.push("        diffs.push(...part);".to_owned());
+    out.push("      }".to_owned());
+    out.push("      return diffs;".to_owned());
     out.push("    }".to_owned());
-    out.push("    return diffs;".to_owned());
+    out.push("    if (args.select) {".to_owned());
+    out.push("      const rows: T[] = [];".to_owned());
+    out.push("      for (const data of args.data) {".to_owned());
+    out.push("        const created = await createOne(data);".to_owned());
+    out.push("        const id = created?.id != null ? String(created.id) : undefined;".to_owned());
+    out.push(
+        "        if (id === undefined) throw new Error(`createMany ${table}: created row missing id`);"
+            .to_owned(),
+    );
+    out.push(
+        "        const projected = await findUniqueRecord<T>(db, table, { where: { id }, select: args.select });"
+            .to_owned(),
+    );
+    out.push(
+        "        if (!projected) throw new Error(`createMany ${table}: could not reload ${id}`);"
+            .to_owned(),
+    );
+    out.push("        rows.push(projected);".to_owned());
+    out.push("      }".to_owned());
+    out.push("      return rows;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (args.return === \"AFTER\") {".to_owned());
+    out.push("      const rows: T[] = [];".to_owned());
+    out.push("      for (const data of args.data) {".to_owned());
+    out.push("        rows.push(await createOne(data));".to_owned());
+    out.push("      }".to_owned());
+    out.push("      return rows;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    for (const data of args.data) {".to_owned());
+    out.push("      await createOne(data);".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return { count: args.data.length };".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (args.return === \"DIFF\") {".to_owned());
+    out.push(
+        "    const parts = await insertManyRows<unknown[]>(db, table, args.data, relation, \"DIFF\");"
+            .to_owned(),
+    );
+    out.push("    return parts.flat();".to_owned());
     out.push("  }".to_owned());
     out.push("  if (args.select) {".to_owned());
-    out.push("    const rows: T[] = [];".to_owned());
-    out.push("    for (const data of args.data) {".to_owned());
-    out.push("      const created = await createOne(data);".to_owned());
-    out.push("      const id = created?.id != null ? String(created.id) : undefined;".to_owned());
+    out.push("    const projection = buildProjection(args.select, table);".to_owned());
     out.push(
-        "      if (id === undefined) throw new Error(`createMany ${table}: created row missing id`);"
-            .to_owned(),
+        "    return insertManyRows<T>(db, table, args.data, relation, projection);".to_owned(),
     );
-    out.push(
-        "      const projected = await findUniqueRecord<T>(db, table, { where: { id }, select: args.select });"
-            .to_owned(),
-    );
-    out.push(
-        "      if (!projected) throw new Error(`createMany ${table}: could not reload ${id}`);"
-            .to_owned(),
-    );
-    out.push("      rows.push(projected);".to_owned());
-    out.push("    }".to_owned());
-    out.push("    return rows;".to_owned());
     out.push("  }".to_owned());
     out.push("  if (args.return === \"AFTER\") {".to_owned());
-    out.push("    const rows: T[] = [];".to_owned());
-    out.push("    for (const data of args.data) {".to_owned());
-    out.push("      rows.push(await createOne(data));".to_owned());
-    out.push("    }".to_owned());
-    out.push("    return rows;".to_owned());
+    out.push("    return insertManyRows<T>(db, table, args.data, relation, \"AFTER\");".to_owned());
     out.push("  }".to_owned());
-    out.push("  for (const data of args.data) {".to_owned());
-    out.push("    await createOne(data);".to_owned());
-    out.push("  }".to_owned());
+    out.push("  await insertManyRows(db, table, args.data, relation, \"NONE\");".to_owned());
     out.push("  return { count: args.data.length };".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
@@ -3482,7 +3521,7 @@ fn emit_fluent_model_delegate(out: &mut Vec<String>, model: &Model, naming: &Nam
         model.name, model.name
     ));
     out.push(format!(
-        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown>; return?: MutationReturn }}, (data) => create{}(db, data as {}CreateInput)) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown>; return?: MutationReturn }}, (data) => create{}(db, data as {}CreateInput), false) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
         model.name, model.name, model.name, model.name
     ));
     out.push(format!(
@@ -3627,7 +3666,7 @@ fn emit_fluent_edge_delegate(out: &mut Vec<String>, edge: &Edge, naming: &Naming
         edge.name, edge.name
     ));
     out.push(format!(
-        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown>; return?: MutationReturn }}, (data) => create{}(db, data as {}CreateInput)) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
+        "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown>; return?: MutationReturn }}, (data) => create{}(db, data as {}CreateInput), true) as Promise<ManyReturnResult<S, R, {}, {}GetPayload<S>>>,",
         edge.name, edge.name, edge.name, edge.name
     ));
     out.push(format!(

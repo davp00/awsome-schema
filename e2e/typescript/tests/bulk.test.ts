@@ -52,10 +52,23 @@ describe("generated TypeScript client bulk ops + upsert", () => {
     });
     expect(result).toEqual({ count: 3 });
 
+    const projected = await client.user.createMany({
+      data: [
+        {
+          email: `bulk-d-${suffix}@example.com`,
+          age: 24,
+          metadata: { source: "bulk-e2e" },
+          tags: ["bulk"],
+        },
+      ],
+      select: { email: true, age: true },
+    });
+    expect(projected).toEqual([{ email: `bulk-d-${suffix}@example.com`, age: 24 }]);
+
     const found = await client.user.findMany({
       where: { email: { contains: suffix } },
     });
-    expect(found).toHaveLength(3);
+    expect(found).toHaveLength(4);
   });
 
   it.skipIf(skip)("updateMany count and select RETURN projection", async () => {

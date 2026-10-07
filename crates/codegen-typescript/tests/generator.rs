@@ -506,6 +506,11 @@ fn emits_mutation_return_modes() {
     );
     assert!(output.contains("return?: MutationReturn"));
     assert!(output.contains("CREATE ${table} CONTENT $__row RETURN DIFF"));
+    assert!(output.contains("INSERT RELATION INTO"));
+    assert!(output.contains("INSERT INTO"));
+    assert!(output.contains("`${keyword} ${table} $rows RETURN ${returning}`"));
+    assert!(output.contains("createUser(db, data as UserCreateInput), false)"));
+    assert!(output.contains("createLikes(db, data as LikesCreateInput), true)"));
     assert!(output.contains("RETURN NONE"));
     assert!(output.contains("RETURN DIFF"));
     assert!(output.contains("return BEFORE is not supported"));
