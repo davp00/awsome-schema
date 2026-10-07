@@ -303,6 +303,37 @@ fn emits_fluent_create_client() {
 }
 
 #[test]
+fn emits_where_unique_and_bulk_upsert() {
+    let output = generate_fixture();
+    assert!(output.contains("export type UserWhereUniqueInput = {"));
+    assert!(output.contains("email?: string | StringFilter"));
+    assert!(output.contains("export type LikesWhereUniqueInput = {"));
+    assert!(output.contains("id?: string | IdFilter"));
+    assert!(output.contains("function assertNonEmptyWhere("));
+    assert!(output.contains("function projectRow("));
+    assert!(output.contains("async function createManyVia<T extends { id?: unknown }>("));
+    assert!(output.contains("async function updateManyRecords<T>("));
+    assert!(output.contains("async function deleteManyRecords<T>("));
+    assert!(output.contains("async function upsertRecord<T extends { id?: unknown }>("));
+    assert!(output.contains("UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN ${ret}"));
+    assert!(output.contains("DELETE ${table} WHERE ${whereClause} RETURN BEFORE"));
+    assert!(output.contains("createMany: <S extends UserSelect"));
+    assert!(output.contains("updateMany: <S extends UserSelect"));
+    assert!(output.contains("deleteMany: <S extends UserSelect"));
+    assert!(output.contains("upsert: <S extends UserSelect"));
+    assert!(output.contains("where: UserWhereUniqueInput"));
+    assert!(output.contains(
+        "Promise<S extends undefined ? { count: number } : UserGetPayload<S>[]>"
+    ));
+    assert!(output.contains("createManyVia(db, \"user\""));
+    assert!(output.contains("updateManyRecords(db, \"user\""));
+    assert!(output.contains("deleteManyRecords(db, \"user\""));
+    assert!(output.contains("upsertRecord(db, \"user\""));
+    assert!(output.contains("createManyVia(db, \"likes\""));
+    assert!(output.contains("deleteManyRecords(db, \"likes\""));
+}
+
+#[test]
 fn maps_scalar_field_types() {
     let schema = parse(
         r#"

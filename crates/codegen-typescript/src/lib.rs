@@ -77,9 +77,11 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
     emit_where_shared_types(&mut out);
     for model in &schema.models {
         emit_model_where_input(&mut out, schema, model, &naming);
+        emit_model_where_unique_input(&mut out, model, &naming);
     }
     for edge in &schema.edges {
         emit_edge_where_input(&mut out, schema, edge, &naming);
+        emit_edge_where_unique_input(&mut out, edge, &naming);
     }
 
     emit_order_by_shared_types(&mut out);
@@ -325,6 +327,37 @@ fn emit_edge_where_input(
         edge.out_model, edge.out_model
     ));
     for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+        let name = naming.field_name(field);
+        let filter_ts = where_scalar_union(&field.field_type, false);
+        out.push(format!("  {name}?: {filter_ts};"));
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_model_where_unique_input(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
+    out.push(format!("export type {}WhereUniqueInput = {{", model.name));
+    for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+        if field.is_link() || field.relation_name.is_some() {
+            continue;
+        }
+        if field.is_id {
+            let name = naming.field_name(field);
+            out.push(format!("  {name}?: string | IdFilter;"));
+        } else if field.unique {
+            let name = naming.field_name(field);
+            let filter_ts = where_scalar_union(&field.field_type, false);
+            out.push(format!("  {name}?: {filter_ts};"));
+        }
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+}
+
+fn emit_edge_where_unique_input(out: &mut Vec<String>, edge: &Edge, naming: &NamingContext<'_>) {
+    out.push(format!("export type {}WhereUniqueInput = {{", edge.name));
+    out.push("  id?: string | IdFilter;".to_owned());
+    for field in edge.fields.iter().filter(|f| !f.name.contains('.') && f.unique) {
         let name = naming.field_name(field);
         let filter_ts = where_scalar_union(&field.field_type, false);
         out.push(format!("  {name}?: {filter_ts};"));
@@ -1277,6 +1310,212 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  return queryRows<T>(db, sql, vars);".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
+
+    out.push("function assertNonEmptyWhere(".to_owned());
+    out.push("  where: Record<string, unknown> | undefined,".to_owned());
+    out.push("  op: string,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("): void {".to_owned());
+    out.push("  if (!where) throw new Error(`${op} ${table}: where must not be empty`);".to_owned());
+    out.push(
+        "  const keys = Object.keys(where).filter((key) => where[key] !== undefined);"
+            .to_owned(),
+    );
+    out.push("  if (keys.length === 0) throw new Error(`${op} ${table}: where must not be empty`);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("function projectRow(".to_owned());
+    out.push("  row: Record<string, unknown>,".to_owned());
+    out.push("  select: Record<string, unknown> | undefined,".to_owned());
+    out.push("): Record<string, unknown> {".to_owned());
+    out.push("  if (!select) return row;".to_owned());
+    out.push("  const out: Record<string, unknown> = {};".to_owned());
+    out.push("  for (const [key, value] of Object.entries(select)) {".to_owned());
+    out.push("    if (value === false || value == null) continue;".to_owned());
+    out.push("    if (value === true) {".to_owned());
+    out.push("      out[key] = row[key];".to_owned());
+    out.push("      continue;".to_owned());
+    out.push("    }".to_owned());
+    out.push("    if (typeof value === \"object\" && value !== null && \"select\" in value) {".to_owned());
+    out.push(
+        "      const nestedSelect = (value as { select?: Record<string, unknown> }).select;"
+            .to_owned(),
+    );
+    out.push("      const nested = row[key];".to_owned());
+    out.push("      if (Array.isArray(nested)) {".to_owned());
+    out.push("        out[key] = nested.map((item) =>".to_owned());
+    out.push("          item && typeof item === \"object\"".to_owned());
+    out.push(
+        "            ? projectRow(item as Record<string, unknown>, nestedSelect)"
+            .to_owned(),
+    );
+    out.push("            : item,".to_owned());
+    out.push("        );".to_owned());
+    out.push("      } else if (nested && typeof nested === \"object\") {".to_owned());
+    out.push(
+        "        out[key] = projectRow(nested as Record<string, unknown>, nestedSelect);"
+            .to_owned(),
+    );
+    out.push("      } else {".to_owned());
+    out.push("        out[key] = nested;".to_owned());
+    out.push("      }".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return out;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("async function createManyVia<T extends { id?: unknown }>(".to_owned());
+    out.push("  db: SurrealLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: { data: Record<string, unknown>[]; select?: Record<string, unknown> },".to_owned());
+    out.push("  createOne: (data: Record<string, unknown>) => Promise<T>,".to_owned());
+    out.push("): Promise<{ count: number } | T[]> {".to_owned());
+    out.push("  if (!args.select) {".to_owned());
+    out.push("    for (const data of args.data) {".to_owned());
+    out.push("      await createOne(data);".to_owned());
+    out.push("    }".to_owned());
+    out.push("    return { count: args.data.length };".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const rows: T[] = [];".to_owned());
+    out.push("  for (const data of args.data) {".to_owned());
+    out.push("    const created = await createOne(data);".to_owned());
+    out.push("    const id = created?.id != null ? String(created.id) : undefined;".to_owned());
+    out.push(
+        "    if (id === undefined) throw new Error(`createMany ${table}: created row missing id`);"
+            .to_owned(),
+    );
+    out.push(
+        "    const projected = await findUniqueRecord<T>(db, table, { where: { id }, select: args.select });"
+            .to_owned(),
+    );
+    out.push(
+        "    if (!projected) throw new Error(`createMany ${table}: could not reload ${id}`);"
+            .to_owned(),
+    );
+    out.push("    rows.push(projected);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return rows;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("async function updateManyRecords<T>(".to_owned());
+    out.push("  db: SurrealLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: {".to_owned());
+    out.push("    where: Record<string, unknown>;".to_owned());
+    out.push("    data: Record<string, unknown>;".to_owned());
+    out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("  },".to_owned());
+    out.push("): Promise<{ count: number } | T[]> {".to_owned());
+    out.push("  assertNonEmptyWhere(args.where, \"updateMany\", table);".to_owned());
+    out.push("  const vars: Record<string, unknown> = { __data: args.data };".to_owned());
+    out.push(
+        "  const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+            .to_owned(),
+    );
+    out.push(
+        "  if (!whereClause) throw new Error(`updateMany ${table}: where must not be empty`);"
+            .to_owned(),
+    );
+    out.push(
+        "  const ret = args.select ? buildProjection(args.select, table) : \"AFTER\";"
+            .to_owned(),
+    );
+    out.push(
+        "  const rows = await queryRows<T>(db, `UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN ${ret}`, vars);"
+            .to_owned(),
+    );
+    out.push("  if (args.select) return rows;".to_owned());
+    out.push("  return { count: rows.length };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("async function deleteManyRecords<T>(".to_owned());
+    out.push("  db: SurrealLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: {".to_owned());
+    out.push("    where: Record<string, unknown>;".to_owned());
+    out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("  },".to_owned());
+    out.push("): Promise<{ count: number } | T[]> {".to_owned());
+    out.push("  assertNonEmptyWhere(args.where, \"deleteMany\", table);".to_owned());
+    out.push("  const vars: Record<string, unknown> = {};".to_owned());
+    out.push(
+        "  const whereClause = buildWhere(args.where, table, SelectMetaByTable, { vars, n: 0 });"
+            .to_owned(),
+    );
+    out.push(
+        "  if (!whereClause) throw new Error(`deleteMany ${table}: where must not be empty`);"
+            .to_owned(),
+    );
+    out.push(
+        "  const rows = await queryRows<Record<string, unknown>>(db, `DELETE ${table} WHERE ${whereClause} RETURN BEFORE`, vars);"
+            .to_owned(),
+    );
+    out.push("  if (args.select) {".to_owned());
+    out.push("    return rows.map((row) => projectRow(row, args.select) as T);".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return { count: rows.length };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+
+    out.push("async function upsertRecord<T extends { id?: unknown }>(".to_owned());
+    out.push("  db: SurrealLike,".to_owned());
+    out.push("  table: string,".to_owned());
+    out.push("  args: {".to_owned());
+    out.push("    where: Record<string, unknown>;".to_owned());
+    out.push("    create: Record<string, unknown>;".to_owned());
+    out.push("    update: Record<string, unknown>;".to_owned());
+    out.push("    select?: Record<string, unknown>;".to_owned());
+    out.push("  },".to_owned());
+    out.push("  createOne: (data: Record<string, unknown>) => Promise<T> = (data) =>".to_owned());
+    out.push("    createRecord<T>(db, table, data),".to_owned());
+    out.push("): Promise<T> {".to_owned());
+    out.push("  assertNonEmptyWhere(args.where, \"upsert\", table);".to_owned());
+    out.push(
+        "  const existing = await findUniqueRecord<{ id?: unknown }>(db, table, { where: args.where });"
+            .to_owned(),
+    );
+    out.push("  if (existing?.id != null) {".to_owned());
+    out.push(
+        "    const updated = await updateRecord<T>(db, table, String(existing.id), args.update);"
+            .to_owned(),
+    );
+    out.push(
+        "    if (!updated) throw new Error(`upsert ${table}: update returned no row`);"
+            .to_owned(),
+    );
+    out.push("    if (!args.select) return updated;".to_owned());
+    out.push(
+        "    const projected = await findUniqueRecord<T>(db, table, { where: { id: String(existing.id) }, select: args.select });"
+            .to_owned(),
+    );
+    out.push(
+        "    if (!projected) throw new Error(`upsert ${table}: could not reload after update`);"
+            .to_owned(),
+    );
+    out.push("    return projected;".to_owned());
+    out.push("  }".to_owned());
+    out.push("  const created = await createOne(args.create);".to_owned());
+    out.push("  if (!args.select) return created;".to_owned());
+    out.push("  const id = created?.id != null ? String(created.id) : undefined;".to_owned());
+    out.push(
+        "  if (id === undefined) throw new Error(`upsert ${table}: created row missing id`);"
+            .to_owned(),
+    );
+    out.push(
+        "  const projected = await findUniqueRecord<T>(db, table, { where: { id }, select: args.select });"
+            .to_owned(),
+    );
+    out.push(
+        "  if (!projected) throw new Error(`upsert ${table}: could not reload after create`);"
+            .to_owned(),
+    );
+    out.push("  return projected;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
 }
 
 fn emit_build_order_by(out: &mut Vec<String>) {
@@ -1736,12 +1975,71 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             model.name, model.name, model.name
         ));
         out.push(format!(
+            "      createMany: <S extends {}Select | undefined = undefined>(args: {{",
+            model.name
+        ));
+        out.push(format!("        data: {}CreateInput[];", model.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
+            model.name
+        ));
+        out.push(format!(
+            "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown> }}, (data) => create{}(db, data as {}CreateInput)) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
+            model.name, model.name, model.name
+        ));
+        out.push(format!(
             "      update: (id: RecordId<\"{table}\"> | string, data: {}UpdateInput): Promise<{} | undefined> => update{}(db, id, data),",
             model.name, model.name, model.name
         ));
         out.push(format!(
+            "      updateMany: <S extends {}Select | undefined = undefined>(args: {{",
+            model.name
+        ));
+        out.push(format!("        where: {}WhereInput;", model.name));
+        out.push(format!("        data: {}UpdateInput;", model.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
+            model.name
+        ));
+        out.push(format!(
+            "        updateManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; data: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
+            model.name
+        ));
+        out.push(format!(
             "      delete: (id: RecordId<\"{table}\"> | string): Promise<void> => delete{}(db, id),",
             model.name
+        ));
+        out.push(format!(
+            "      deleteMany: <S extends {}Select | undefined = undefined>(args: {{",
+            model.name
+        ));
+        out.push(format!("        where: {}WhereInput;", model.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
+            model.name
+        ));
+        out.push(format!(
+            "        deleteManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
+            model.name
+        ));
+        out.push(format!(
+            "      upsert: <S extends {}Select | undefined = undefined>(args: {{",
+            model.name
+        ));
+        out.push(format!("        where: {}WhereUniqueInput;", model.name));
+        out.push(format!("        create: {}CreateInput;", model.name));
+        out.push(format!("        update: {}UpdateInput;", model.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<{}GetPayload<S>> =>",
+            model.name
+        ));
+        out.push(format!(
+            "        upsertRecord(db, \"{table}\", args as {{ where: Record<string, unknown>; create: Record<string, unknown>; update: Record<string, unknown>; select?: Record<string, unknown> }}, (data) => create{}(db, data as {}CreateInput)) as Promise<{}GetPayload<S>>,",
+            model.name, model.name, model.name
         ));
         out.push("    },".to_owned());
     }
@@ -1770,12 +2068,71 @@ fn emit_fluent_client(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &N
             edge.name, edge.name, edge.name
         ));
         out.push(format!(
+            "      createMany: <S extends {}Select | undefined = undefined>(args: {{",
+            edge.name
+        ));
+        out.push(format!("        data: {}CreateInput[];", edge.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
+            edge.name
+        ));
+        out.push(format!(
+            "        createManyVia(db, \"{table}\", args as {{ data: Record<string, unknown>[]; select?: Record<string, unknown> }}, (data) => create{}(db, data as {}CreateInput)) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
+            edge.name, edge.name, edge.name
+        ));
+        out.push(format!(
             "      update: (id: RecordId<\"{table}\"> | string, data: {}UpdateInput): Promise<{} | undefined> => update{}(db, id, data),",
             edge.name, edge.name, edge.name
         ));
         out.push(format!(
+            "      updateMany: <S extends {}Select | undefined = undefined>(args: {{",
+            edge.name
+        ));
+        out.push(format!("        where: {}WhereInput;", edge.name));
+        out.push(format!("        data: {}UpdateInput;", edge.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
+            edge.name
+        ));
+        out.push(format!(
+            "        updateManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; data: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
+            edge.name
+        ));
+        out.push(format!(
             "      delete: (id: RecordId<\"{table}\"> | string): Promise<void> => delete{}(db, id),",
             edge.name
+        ));
+        out.push(format!(
+            "      deleteMany: <S extends {}Select | undefined = undefined>(args: {{",
+            edge.name
+        ));
+        out.push(format!("        where: {}WhereInput;", edge.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]> =>",
+            edge.name
+        ));
+        out.push(format!(
+            "        deleteManyRecords(db, \"{table}\", args as {{ where: Record<string, unknown>; select?: Record<string, unknown> }}) as Promise<S extends undefined ? {{ count: number }} : {}GetPayload<S>[]>,",
+            edge.name
+        ));
+        out.push(format!(
+            "      upsert: <S extends {}Select | undefined = undefined>(args: {{",
+            edge.name
+        ));
+        out.push(format!("        where: {}WhereUniqueInput;", edge.name));
+        out.push(format!("        create: {}CreateInput;", edge.name));
+        out.push(format!("        update: {}UpdateInput;", edge.name));
+        out.push("        select?: S;".to_owned());
+        out.push(format!(
+            "      }}): Promise<{}GetPayload<S>> =>",
+            edge.name
+        ));
+        out.push(format!(
+            "        upsertRecord(db, \"{table}\", args as {{ where: Record<string, unknown>; create: Record<string, unknown>; update: Record<string, unknown>; select?: Record<string, unknown> }}, (data) => create{}(db, data as {}CreateInput)) as Promise<{}GetPayload<S>>,",
+            edge.name, edge.name, edge.name
         ));
         out.push("    },".to_owned());
     }
