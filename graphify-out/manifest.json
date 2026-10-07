@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791414109.999348,
-    "seen": 1791414379.427545,
-    "ast_hash": "37be684b05312f6fa3bcb064cf91f32f",
+    "mtime": 1791414928.6763842,
+    "seen": 1791415045.251064,
+    "ast_hash": "e924f13672a6964c446074228931c850",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791414110.0022678,
-    "seen": 1791414379.427545,
-    "ast_hash": "817a50952ee878d9f7e6621244b9744e",
+    "mtime": 1791414936.2635913,
+    "seen": 1791415045.251065,
+    "ast_hash": "1c8492ceacb978e57a73f6bb7d78a4fa",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -900,9 +900,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/tests/bulk.test.ts": {
-    "mtime": 1791404733.3435838,
-    "seen": 1791404874.206712,
-    "ast_hash": "52d13c9e1379df87fc3ef1faff7054e7",
+    "mtime": 1791414920.8616686,
+    "seen": 1791415045.251095,
+    "ast_hash": "83609cced80f0bb15472accc53312821",
     "semantic_hash": ""
   },
   "e2e/typescript/tests/transaction.test.ts": {

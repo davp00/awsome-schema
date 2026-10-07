@@ -409,7 +409,7 @@
       "file_type": "code",
       "norm_label": "asarray()",
       "source_file": "e2e/typescript/tests/bulk.test.ts",
-      "source_location": "L302"
+      "source_location": "L315"
     },
     {
       "id": "e2e_typescript_tests_nested_order_test_asarray",
@@ -8561,7 +8561,7 @@
       "file_type": "code",
       "norm_label": "emit_build_order_by()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2786"
+      "source_location": "L2825"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_build_where",
@@ -8572,7 +8572,7 @@
       "file_type": "code",
       "norm_label": "emit_build_where()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2935"
+      "source_location": "L2974"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_crud_helpers",
@@ -8583,7 +8583,7 @@
       "file_type": "code",
       "norm_label": "emit_crud_helpers()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3187"
+      "source_location": "L3226"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_edge_aggregate_types",
@@ -8693,7 +8693,7 @@
       "file_type": "code",
       "norm_label": "emit_fluent_client()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3305"
+      "source_location": "L3344"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_fluent_edge_delegate",
@@ -8704,7 +8704,7 @@
       "file_type": "code",
       "norm_label": "emit_fluent_edge_delegate()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3570"
+      "source_location": "L3609"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_fluent_model_delegate",
@@ -8715,7 +8715,7 @@
       "file_type": "code",
       "norm_label": "emit_fluent_model_delegate()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3406"
+      "source_location": "L3445"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_model_aggregate_types",
@@ -8858,7 +8858,7 @@
       "file_type": "code",
       "norm_label": "emit_query_helpers()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3263"
+      "source_location": "L3302"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_record_id_helpers",
@@ -8880,7 +8880,7 @@
       "file_type": "code",
       "norm_label": "emit_select_helpers()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3129"
+      "source_location": "L3168"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_select_meta_registry",
@@ -8913,7 +8913,7 @@
       "file_type": "code",
       "norm_label": "emit_session_live()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3396"
+      "source_location": "L3435"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_shared_runtime",
@@ -8924,7 +8924,7 @@
       "file_type": "code",
       "norm_label": "emit_shared_runtime()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L1884"
+      "source_location": "L1870"
     },
     {
       "id": "crates_codegen_typescript_src_lib_emit_surreal_like",
@@ -8990,7 +8990,7 @@
       "file_type": "code",
       "norm_label": "fetch_field_names()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3726"
+      "source_location": "L3765"
     },
     {
       "id": "crates_codegen_typescript_src_lib_find_stored_opposite_field_name",
@@ -9023,7 +9023,7 @@
       "file_type": "code",
       "norm_label": "js_string_array()",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3715"
+      "source_location": "L3754"
     },
     {
       "id": "crates_codegen_typescript_src_lib_map_link_as_record_id",
@@ -9859,7 +9859,7 @@
       "file_type": "code",
       "norm_label": "maps_custom_field_type_passthrough()",
       "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L549"
+      "source_location": "L554"
     },
     {
       "id": "crates_codegen_typescript_tests_generator_maps_scalar_field_types",
@@ -9870,7 +9870,7 @@
       "file_type": "code",
       "norm_label": "maps_scalar_field_types()",
       "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L520"
+      "source_location": "L525"
     },
     {
       "id": "crates_codegen_typescript_tests_generator_record_shape_uses_record_id_for_id_and_stored_links",
@@ -9892,7 +9892,7 @@
       "file_type": "code",
       "norm_label": "respects_optional_marker()",
       "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L598"
+      "source_location": "L603"
     },
     {
       "id": "crates_codegen_typescript_tests_generator_selected_shapes_populate_links_and_edge_endpoints",
@@ -20712,7 +20712,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2806",
+      "source_location": "L2845",
       "weight": 1.0
     },
     {
@@ -20724,7 +20724,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2937",
+      "source_location": "L2976",
       "weight": 1.0
     },
     {
@@ -20736,7 +20736,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3199",
+      "source_location": "L3238",
       "weight": 1.0
     },
     {
@@ -20748,7 +20748,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3223",
+      "source_location": "L3262",
       "weight": 1.0
     },
     {
@@ -21012,7 +21012,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3325",
+      "source_location": "L3364",
       "weight": 1.0
     },
     {
@@ -21024,7 +21024,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3346",
+      "source_location": "L3385",
       "weight": 1.0
     },
     {
@@ -21036,7 +21036,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3349",
+      "source_location": "L3388",
       "weight": 1.0
     },
     {
@@ -21048,7 +21048,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3375",
+      "source_location": "L3414",
       "weight": 1.0
     },
     {
@@ -21060,7 +21060,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3571",
+      "source_location": "L3610",
       "weight": 1.0
     },
     {
@@ -21072,7 +21072,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3407",
+      "source_location": "L3446",
       "weight": 1.0
     },
     {
@@ -21504,7 +21504,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3265",
+      "source_location": "L3304",
       "weight": 1.0
     },
     {
@@ -21516,7 +21516,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3266",
+      "source_location": "L3305",
       "weight": 1.0
     },
     {
@@ -21528,7 +21528,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3273",
+      "source_location": "L3312",
       "weight": 1.0
     },
     {
@@ -21552,7 +21552,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3132",
+      "source_location": "L3171",
       "weight": 1.0
     },
     {
@@ -21564,7 +21564,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3133",
+      "source_location": "L3172",
       "weight": 1.0
     },
     {
@@ -21576,7 +21576,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3144",
+      "source_location": "L3183",
       "weight": 1.0
     },
     {
@@ -21660,7 +21660,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3397",
+      "source_location": "L3436",
       "weight": 1.0
     },
     {
@@ -21672,7 +21672,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L1893",
+      "source_location": "L1879",
       "weight": 1.0
     },
     {
@@ -21684,7 +21684,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L1922",
+      "source_location": "L1908",
       "weight": 1.0
     },
     {
@@ -21696,7 +21696,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2140",
+      "source_location": "L2126",
       "weight": 1.0
     },
     {
@@ -21708,7 +21708,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2202",
+      "source_location": "L2188",
       "weight": 1.0
     },
     {
@@ -31224,7 +31224,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "e2e/typescript/tests/bulk.test.ts",
-      "source_location": "L302",
+      "source_location": "L315",
       "weight": 1.0
     },
     {
@@ -41893,7 +41893,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3187",
+      "source_location": "L3226",
       "weight": 1.0
     },
     {
@@ -41905,7 +41905,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3187",
+      "source_location": "L3226",
       "weight": 1.0
     },
     {
@@ -42169,7 +42169,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3305",
+      "source_location": "L3344",
       "weight": 1.0
     },
     {
@@ -42181,7 +42181,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3305",
+      "source_location": "L3344",
       "weight": 1.0
     },
     {
@@ -42193,7 +42193,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3570",
+      "source_location": "L3609",
       "weight": 1.0
     },
     {
@@ -42205,7 +42205,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3570",
+      "source_location": "L3609",
       "weight": 1.0
     },
     {
@@ -42217,7 +42217,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3406",
+      "source_location": "L3445",
       "weight": 1.0
     },
     {
@@ -42229,7 +42229,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3406",
+      "source_location": "L3445",
       "weight": 1.0
     },
     {
@@ -42553,7 +42553,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3263",
+      "source_location": "L3302",
       "weight": 1.0
     },
     {
@@ -42565,7 +42565,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3263",
+      "source_location": "L3302",
       "weight": 1.0
     },
     {
@@ -42577,7 +42577,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3129",
+      "source_location": "L3168",
       "weight": 1.0
     },
     {
@@ -42589,7 +42589,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3129",
+      "source_location": "L3168",
       "weight": 1.0
     },
     {
@@ -42685,7 +42685,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3726",
+      "source_location": "L3765",
       "weight": 1.0
     },
     {
@@ -42697,7 +42697,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3726",
+      "source_location": "L3765",
       "weight": 1.0
     },
     {
@@ -47978,7 +47978,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L1884",
+      "source_location": "L1870",
       "weight": 1.0
     },
     {
@@ -48000,7 +48000,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2786",
+      "source_location": "L2825",
       "weight": 1.0
     },
     {
@@ -48011,7 +48011,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L2935",
+      "source_location": "L2974",
       "weight": 1.0
     },
     {
@@ -48022,7 +48022,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3129",
+      "source_location": "L3168",
       "weight": 1.0
     },
     {
@@ -48033,7 +48033,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3187",
+      "source_location": "L3226",
       "weight": 1.0
     },
     {
@@ -48044,7 +48044,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3263",
+      "source_location": "L3302",
       "weight": 1.0
     },
     {
@@ -48055,29 +48055,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3305",
-      "weight": 1.0
-    },
-    {
-      "source": "crates_codegen_typescript_src_lib",
-      "target": "crates_codegen_typescript_src_lib_emit_session_live",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3396",
-      "weight": 1.0
-    },
-    {
-      "source": "crates_codegen_typescript_src_lib",
-      "target": "crates_codegen_typescript_src_lib_emit_fluent_model_delegate",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3406",
+      "source_location": "L3344",
       "weight": 1.0
     },
     {
@@ -48093,24 +48071,35 @@
     },
     {
       "source": "crates_codegen_typescript_src_lib",
+      "target": "crates_codegen_typescript_src_lib_emit_session_live",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L3435",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_codegen_typescript_src_lib",
+      "target": "crates_codegen_typescript_src_lib_emit_fluent_model_delegate",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L3445",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_codegen_typescript_src_lib",
       "target": "crates_codegen_typescript_src_lib_emit_fluent_edge_delegate",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3570",
-      "weight": 1.0
-    },
-    {
-      "source": "crates_codegen_typescript_src_lib",
-      "target": "crates_codegen_typescript_src_lib_js_string_array",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3715",
+      "source_location": "L3609",
       "weight": 1.0
     },
     {
@@ -48126,13 +48115,24 @@
     },
     {
       "source": "crates_codegen_typescript_src_lib",
+      "target": "crates_codegen_typescript_src_lib_js_string_array",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/codegen-typescript/src/lib.rs",
+      "source_location": "L3754",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_codegen_typescript_src_lib",
       "target": "crates_codegen_typescript_src_lib_fetch_field_names",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/src/lib.rs",
-      "source_location": "L3726",
+      "source_location": "L3765",
       "weight": 1.0
     },
     {
@@ -48693,7 +48693,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L520",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -48715,7 +48715,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L549",
+      "source_location": "L554",
       "weight": 1.0
     },
     {
@@ -48731,17 +48731,6 @@
     },
     {
       "source": "crates_codegen_typescript_tests_generator",
-      "target": "crates_codegen_typescript_tests_generator_respects_optional_marker",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "crates/codegen-typescript/tests/generator.rs",
-      "source_location": "L598",
-      "weight": 1.0
-    },
-    {
-      "source": "crates_codegen_typescript_tests_generator",
       "target": "crates_codegen_typescript_tests_generator_fixture",
       "relation": "contains",
       "_origin": "ast",
@@ -48749,6 +48738,17 @@
       "confidence_score": 1.0,
       "source_file": "crates/codegen-typescript/tests/generator.rs",
       "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "crates_codegen_typescript_tests_generator",
+      "target": "crates_codegen_typescript_tests_generator_respects_optional_marker",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "crates/codegen-typescript/tests/generator.rs",
+      "source_location": "L603",
       "weight": 1.0
     },
     {
@@ -62696,5 +62696,5 @@
       "source_file": ".agents/skills/rust-best-practices/references/chapter_06.md"
     }
   ],
-  "built_at_commit": "4e09c4a0c31792d392a3be1a4df72a16a822a076"
+  "built_at_commit": "52991b2638fbf6580cfc8509d13037ed3a78d39d"
 }

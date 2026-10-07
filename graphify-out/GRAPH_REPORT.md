@@ -1,7 +1,7 @@
 # Graph Report - awsome-schema  (2026-10-08)
 
 ## Corpus Check
-- 158 files · ~88,828 words
+- 158 files · ~89,007 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 4, .xml 3, .schema 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4e09c4a0`
+- Built from commit: `52991b26`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -377,7 +377,7 @@ Nodes (5): Client Generators, Codegen Stub Gap, codegen crate, codegen-rust, cod
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DomainError` connect `DomainError` to `surrealdb_migration_ledger.rs`, `DatabaseConfig`, `MigrationStore`, `DatabaseSchema`, `DatabaseExecutor`, `common/mod.rs`, `migrate_status.rs`, `migrate_dev.rs`, `SchemaSource`, `surrealdb_executor.rs`, `generate_code.rs`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `map_database_info()` (e.g. with `introspect_async()` and `maps_minimal_user_fixture()`) actually correct?**
   _`map_database_info()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `FIXTURE`, `LiveAction`, `LiveHandle` to the rest of the system?**
@@ -385,7 +385,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `FieldType` be split into smaller, more focused modules?**
   _Cohesion score 0.11747516072472239 - nodes in this community are weakly interconnected._
 - **Why does `DatabaseConfig` connect `DatabaseConfig` to `surrealdb_migration_ledger.rs`, `src/print.rs`, `DatabaseSchema`, `DatabaseExecutor`, `common/mod.rs`, `database_config.rs`, `surrealdb_executor.rs`, `StubIntrospector`?**
-  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **Should `codegen-typescript/tests/generator.rs` be split into smaller, more focused modules?**
   _Cohesion score 0.11612903225806452 - nodes in this community are weakly interconnected._
 - **Should `Printer` be split into smaller, more focused modules?**
