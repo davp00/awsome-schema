@@ -226,7 +226,7 @@ fn emits_select_meta_and_projection_builder() {
     assert!(output.contains("`${key}.{ ${nested} }`"));
     assert!(output.contains("`${arrow}.{ ${nested} } AS ${key}`"));
     assert!(output.contains("`${arrow}.* AS ${key}`"));
-    assert!(output.contains("SELECT ${projection} FROM type::thing($thing)"));
+    assert!(output.contains("SELECT ${projection} FROM type::record($thing)"));
 }
 
 #[test]

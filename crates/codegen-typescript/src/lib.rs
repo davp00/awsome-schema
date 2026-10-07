@@ -860,7 +860,7 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  const thing = normalizeThing(table, id);".to_owned());
     out.push("  if (fetch.length === 0) return firstRow<T>(await db.select(thing));".to_owned());
     out.push(
-        "  const row = await db.query(`SELECT * FROM type::thing($thing) FETCH ${fetch.join(\", \")}`, { thing });"
+        "  const row = await db.query(`SELECT * FROM type::record($thing) FETCH ${fetch.join(\", \")}`, { thing });"
             .to_owned(),
     );
     out.push("  return firstRow<T>(row);".to_owned());
@@ -983,7 +983,7 @@ fn emit_shared_runtime(out: &mut Vec<String>) {
     out.push("  const thing = normalizeThing(table, id);".to_owned());
     out.push("  const projection = buildProjection(select, table);".to_owned());
     out.push(
-        "  const row = await db.query(`SELECT ${projection} FROM type::thing($thing)`, { thing });"
+        "  const row = await db.query(`SELECT ${projection} FROM type::record($thing)`, { thing });"
             .to_owned(),
     );
     out.push("  return firstRow<T>(row);".to_owned());

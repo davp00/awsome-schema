@@ -35,9 +35,9 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 
 ## 6. Client generators — TypeScript client done (nested select + CRUD e2e)
 
-TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested scalar/relation `Select` + recursive `GetPayload`, shared `buildProjection` (link `field.{…}`, edge `->`/`<-`), thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers sequential create/update/delete (hybrid `SURREALDB_URL` or testcontainers). Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, nested scalar/relation `Select` + recursive `GetPayload`, shared `buildProjection` (link `field.{…}`, edge `->`/`<-`), thin CRUD/`query*` wrappers, and `createClient`. Live Vitest e2e under `e2e/typescript/` covers sequential create/update/delete and nested field `select` (stored/computed links + edge `->`/`<-`; hybrid `SURREALDB_URL` or testcontainers). Still deferred:
 
-- Nested select / projection live e2e; multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
+- Multi-hop paths beyond the select tree; zod / runtime validators; transaction / live / batch wrappers
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
@@ -48,4 +48,4 @@ TypeScript `generate --target typescript` writes to `generator.output` by defaul
 
 ## Last live check
 
-2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — sequential create/update/delete against SurrealDB v3.3.0 (external URL and owned testcontainers).
+2026-10-07: `cargo test -p e2e --locked` against SurrealDB v3.3.0 via Docker; `cd e2e/typescript && npm test` — CRUD + nested select against SurrealDB v3.3.0 (external URL and owned testcontainers).

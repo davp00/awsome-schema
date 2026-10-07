@@ -109,7 +109,7 @@ cargo test -p e2e --test graph_edges   # TYPE RELATION roundtrip
 cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
 ```
 
-TypeScript generated-client e2e (Vitest; sequential create/update/delete). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips when neither URL nor Docker is available.
+TypeScript generated-client e2e (Vitest; sequential create/update/delete and nested field `select`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips when neither URL nor Docker is available.
 
 ```bash
 cd e2e/typescript && npm i && npm test
