@@ -124,10 +124,36 @@ fn dispatch_format_write_command() {
 
 #[test]
 fn dispatch_generate_targets() {
-    for target in ["schema", "rust", "typescript"] {
+    for target in ["schema", "rust"] {
         let (_temp, cli) = temp_cli(&["generate", "--target", target]);
         commands::dispatch(&cli, &Printer::new()).expect("generate");
     }
+    // TypeScript without generator.output requires --stdout.
+    let (_temp, cli) = temp_cli(&["generate", "--target", "typescript", "--stdout"]);
+    commands::dispatch(&cli, &Printer::new()).expect("generate typescript stdout");
+}
+
+#[test]
+fn dispatch_generate_typescript_writes_output() {
+    let schema = r#"datasource db {
+  provider = "surrealdb"
+  url = "ws://127.0.0.1:8000"
+}
+generator client {
+  provider = "typescript"
+  output = "./generated"
+}
+model User {
+  id @id
+  email string
+}
+"#;
+    let (temp, cli) = temp_cli_with_schema(schema, &["generate", "--target", "typescript"]);
+    commands::dispatch(&cli, &Printer::new()).expect("generate typescript");
+    let written = temp.path().join("generated/index.ts");
+    assert!(written.is_file(), "expected {}", written.display());
+    let content = std::fs::read_to_string(&written).expect("read");
+    assert!(content.contains("export type User"));
 }
 
 #[test]

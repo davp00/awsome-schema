@@ -105,6 +105,8 @@ fn build_context_with_introspector(
             schema_renderer.clone(),
             rust_generator,
             typescript_generator,
+            filesystem.clone(),
+            schema_path.clone(),
         ),
         migrate_dev: MigrateDevUseCase::new(
             schema_source.clone(),

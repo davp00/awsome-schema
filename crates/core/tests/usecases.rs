@@ -321,34 +321,89 @@ fn generate_code_targets_schema_rust_and_typescript() {
     let schema = sample_schema();
     let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
     let renderer = Arc::new(RecordingRenderer { output: "SQL".to_owned() });
+    let fs = Arc::new(MemoryFs::new());
     let use_case = GenerateCodeUseCase::new(
         source,
         renderer,
         Arc::new(StaticGenerator { label: "RUST".to_owned() }),
         Arc::new(StaticGenerator { label: "TS".to_owned() }),
+        fs,
+        "awesome.schema".to_owned(),
     );
 
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput { target: GenerateCodeTarget::Schema })
+            .execute(GenerateCodeInput {
+                target: GenerateCodeTarget::Schema,
+                stdout: false,
+            })
             .expect("schema")
             .content,
         "SQL"
     );
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput { target: GenerateCodeTarget::Rust })
+            .execute(GenerateCodeInput {
+                target: GenerateCodeTarget::Rust,
+                stdout: false,
+            })
             .expect("rust")
             .content,
         "RUST"
     );
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput { target: GenerateCodeTarget::TypeScript })
+            .execute(GenerateCodeInput {
+                target: GenerateCodeTarget::TypeScript,
+                stdout: true,
+            })
             .expect("typescript")
             .content,
         "TS"
     );
+}
+
+#[test]
+fn generate_typescript_writes_generator_output_unless_stdout() {
+    use core::domain::Generator;
+
+    let mut schema = sample_schema();
+    schema.generators.push(Generator {
+        provider: "typescript".to_owned(),
+        output: "./generated".to_owned(),
+        extra: BTreeMap::new(),
+    });
+    let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
+    let renderer = Arc::new(RecordingRenderer { output: "SQL".to_owned() });
+    let fs = Arc::new(MemoryFs::new());
+    let use_case = GenerateCodeUseCase::new(
+        source,
+        renderer,
+        Arc::new(StaticGenerator { label: "RUST".to_owned() }),
+        Arc::new(StaticGenerator { label: "TS".to_owned() }),
+        fs.clone(),
+        "awesome.schema".to_owned(),
+    );
+
+    let written = use_case
+        .execute(GenerateCodeInput {
+            target: GenerateCodeTarget::TypeScript,
+            stdout: false,
+        })
+        .expect("write");
+    assert_eq!(written.written_path.as_deref(), Some("generated/index.ts"));
+    assert_eq!(
+        fs.read_to_string("generated/index.ts").expect("read"),
+        "TS"
+    );
+
+    let stdout_only = use_case
+        .execute(GenerateCodeInput {
+            target: GenerateCodeTarget::TypeScript,
+            stdout: true,
+        })
+        .expect("stdout");
+    assert!(stdout_only.written_path.is_none());
 }
 
 #[test]

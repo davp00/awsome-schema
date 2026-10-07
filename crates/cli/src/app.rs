@@ -32,6 +32,9 @@ pub enum Commands {
     Generate {
         #[arg(long, value_enum, default_value_t = GenerateTarget::Schema)]
         target: GenerateTarget,
+        /// Print generated source to stdout only (skip writing `generator.output` for TypeScript).
+        #[arg(long)]
+        stdout: bool,
     },
     /// Migration commands.
     Migrate {

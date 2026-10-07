@@ -104,7 +104,9 @@ fn computed_link_and_relation_omitted_on_record_present_on_selected() {
     assert!(!user_record.contains("liked"));
 
     let selected_start = user_end;
-    let selected_end = output.find("export type Post = {").expect("Post");
+    let selected_end = output
+        .find("export type UserCreateInput = {")
+        .expect("UserCreateInput");
     let user_selected = &output[selected_start..selected_end];
     assert!(user_selected.contains("posts?: PostSelected[]"));
     assert!(user_selected.contains("liked?: LikesSelected[]"));
@@ -138,6 +140,68 @@ fn emits_thin_select_helpers_with_fetch() {
     assert!(output.contains("FETCH posts, liked"));
     assert!(output.contains("FETCH author"));
     assert!(output.contains("FETCH in, out"));
+}
+
+#[test]
+fn emits_create_update_inputs_without_computed_fields() {
+    let output = generate_fixture();
+    let create_start = output.find("export type UserCreateInput = {").expect("create");
+    let create_end = output.find("export type UserUpdateInput = {").expect("update");
+    let create = &output[create_start..create_end];
+    assert!(create.contains("email: string"));
+    assert!(!create.contains("posts"));
+    assert!(!create.contains("liked"));
+    assert!(!create.contains("id:"));
+
+    let update_start = create_end;
+    let update_end = output.find("export type UserSelectFields").expect("select fields");
+    let update = &output[update_start..update_end];
+    assert!(update.contains("email?: string"));
+    assert!(!update.contains("posts"));
+
+    let post_create_start = output.find("export type PostCreateInput = {").expect("PostCreate");
+    let post_create_end = output.find("export type PostUpdateInput = {").expect("PostUpdate");
+    let post_create = &output[post_create_start..post_create_end];
+    assert!(post_create.contains("author: RecordId<\"user\">"));
+}
+
+#[test]
+fn emits_as_record_id_and_crud_query_helpers() {
+    let output = generate_fixture();
+    assert!(output.contains("export function asRecordId<Table extends string>"));
+    assert!(output.contains("create<T = unknown>(thing: string"));
+    assert!(output.contains("merge<T = unknown>(thing: string"));
+    assert!(output.contains("delete<T = unknown>(thing: string"));
+    assert!(output.contains("export async function createUser("));
+    assert!(output.contains("export async function updateUser("));
+    assert!(output.contains("export async function deleteUser("));
+    assert!(output.contains("export async function queryUsers("));
+    assert!(output.contains("export async function queryUsersRelated("));
+    assert!(output.contains("export async function createLikes("));
+    assert!(output.contains("RELATE $in->likes->$out"));
+}
+
+#[test]
+fn emits_get_payload_and_select_types() {
+    let output = generate_fixture();
+    assert!(output.contains("export type UserSelectFields = {"));
+    assert!(output.contains("posts: PostSelected[]"));
+    assert!(output.contains("liked: LikesSelected[]"));
+    assert!(output.contains("export type UserSelect ="));
+    assert!(output.contains("export type UserGetPayload<S extends UserSelect | undefined = undefined>"));
+    assert!(output.contains("export type LikesGetPayload"));
+}
+
+#[test]
+fn emits_fluent_create_client() {
+    let output = generate_fixture();
+    assert!(output.contains("export function createClient(db: SurrealLike)"));
+    assert!(output.contains("user: {"));
+    assert!(output.contains("async findUnique<S extends UserSelect"));
+    assert!(output.contains("async findMany<S extends UserSelect"));
+    assert!(output.contains("select?: S;"));
+    assert!(output.contains("FETCH ${keys.join(\", \")}"));
+    assert!(output.contains("return createUser(db, data);"));
 }
 
 #[test]

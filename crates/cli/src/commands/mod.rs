@@ -18,7 +18,7 @@ pub fn dispatch(cli: &Cli, printer: &Printer) -> Result<()> {
         Commands::Init => init::run(&context, printer),
         Commands::Validate => validate::run(&context, printer),
         Commands::Format { write } => format::run(&context, *write, printer),
-        Commands::Generate { target } => generate::run(&context, *target, printer),
+        Commands::Generate { target, stdout } => generate::run(&context, *target, *stdout, printer),
         Commands::Migrate { command } => match command {
             MigrateCommands::Dev { name } => migrate::run_dev(&context, name.clone(), printer),
             MigrateCommands::Create { name } => migrate::run_create(&context, name, printer),

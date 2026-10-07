@@ -33,12 +33,12 @@ Introspects via `INFO FOR DB` / `INFO FOR TABLE`, writes DSL (`--force`, optiona
 - Vector indexes render `HNSW DIMENSION … DIST …` (default Euclidean).
 - Differ recreates indexes when params change.
 
-## 6. Client generators — TypeScript types + thin helpers done
+## 6. Client generators — TypeScript client done (shallow select)
 
-TypeScript `generate --target typescript` emits dual record/`*Selected` types (`RecordId`, stored vs computed `@link` / `@relation`) plus thin Surreal helpers (`Tables`, `recordId` / `parseRecordId`, `select*` / `select*Related` with FETCH). Still deferred:
+TypeScript `generate --target typescript` writes to `generator.output` by default (`--stdout` print-only). Emits dual shapes, Create/Update inputs, `GetPayload`/`Select`, CRUD + `query*` helpers, and `createClient` with shallow boolean `.select({ posts: true })` (FETCH). Still deferred:
 
-- Full typed `.select({ posts: true })` query builder / create-update-delete suite
-- Writing files to `generator.output`
+- Nested select (`select: { posts: { select: { author: true } } }`)
+- Zod / runtime validators; transaction / live / batch wrappers
 - Rust generator rewrite (still a stub)
 
 ## 7. Later
