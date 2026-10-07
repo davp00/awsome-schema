@@ -109,7 +109,7 @@ cargo test -p e2e --test graph_edges   # TYPE RELATION roundtrip
 cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
 ```
 
-TypeScript generated-client e2e (Vitest; CRUD, nested `select`, hybrid `where`, `orderBy`/`take`/`skip`, bulk/`upsert`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
+TypeScript generated-client e2e (Vitest; CRUD, nested `select`, hybrid `where`, `orderBy`/`take`/`skip`, bulk/`upsert`, `$transaction`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
 
 ```bash
 cd e2e/typescript && npm i && npm test
@@ -161,6 +161,7 @@ cargo run -p cli -- format --write
 # findMany also supports orderBy (asc/desc) + take/skip (LIMIT/START)
 # Bulk: createMany/updateMany/deleteMany default { count }; optional select → affected GetPayload rows (Surreal RETURN)
 # upsert({ where: WhereUniqueInput, create, update, select? }) — empty where rejected on *Many
+# $transaction(async (tx) => { … }) — interactive Surreal txn (WS/embedded); commit on success, cancel on throw
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript

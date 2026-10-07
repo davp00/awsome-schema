@@ -303,6 +303,21 @@ fn emits_fluent_create_client() {
 }
 
 #[test]
+fn emits_transaction_client() {
+    let output = generate_fixture();
+    assert!(output.contains("export type SurrealOpsLike = {"));
+    assert!(output.contains("export type SurrealTransactionLike = SurrealOpsLike & {"));
+    assert!(output.contains("beginTransaction(): Promise<SurrealTransactionLike>"));
+    assert!(output.contains("async function runTransaction<T>("));
+    assert!(output.contains("function buildClientDelegates(db: SurrealOpsLike)"));
+    assert!(output.contains("export type TransactionClient = ReturnType<typeof buildClientDelegates>"));
+    assert!(output.contains("$transaction: <T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> =>"));
+    assert!(output.contains("runTransaction(db, fn)"));
+    assert!(output.contains("await txn.commit()"));
+    assert!(output.contains("await txn.cancel()"));
+}
+
+#[test]
 fn emits_where_unique_and_bulk_upsert() {
     let output = generate_fixture();
     assert!(output.contains("export type UserWhereUniqueInput = {"));

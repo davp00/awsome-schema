@@ -3,10 +3,11 @@ import {
   StringRecordId,
   Table,
   type Surreal,
+  type SurrealTransaction,
 } from "surrealdb";
 
 /** Minimal shape expected by generated TypeScript client helpers. */
-export type SurrealLike = {
+export type SurrealOpsLike = {
   query<T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<T>;
   select<T = unknown>(thing: string): Promise<T>;
   create<T = unknown>(thing: string, data?: Record<string, unknown>): Promise<T>;
@@ -14,13 +15,42 @@ export type SurrealLike = {
   delete<T = unknown>(thing: string): Promise<T>;
 };
 
+export type SurrealTransactionLike = SurrealOpsLike & {
+  commit(): Promise<void>;
+  cancel(): Promise<void>;
+};
+
+export type SurrealLike = SurrealOpsLike & {
+  beginTransaction(): Promise<SurrealTransactionLike>;
+};
+
 const RECORD_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*:[^\s]+$/;
+
+type SurrealQueryable = Pick<Surreal, "query" | "select" | "create" | "update" | "delete">;
 
 /**
  * Adapt SurrealDB JS v2 to the generated `SurrealLike` surface.
  * v2 uses fluent `.content()` / `.merge()` builders and typed `RecordId` values.
  */
 export function asSurrealLike(db: Surreal): SurrealLike {
+  return {
+    ...bindOps(db),
+    async beginTransaction(): Promise<SurrealTransactionLike> {
+      const txn = await db.beginTransaction();
+      return asSurrealTransaction(txn);
+    },
+  };
+}
+
+function asSurrealTransaction(txn: SurrealTransaction): SurrealTransactionLike {
+  return {
+    ...bindOps(txn),
+    commit: () => txn.commit(),
+    cancel: () => txn.cancel(),
+  };
+}
+
+function bindOps(db: SurrealQueryable): SurrealOpsLike {
   return {
     async query<T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<T> {
       return (await db.query(sql, encodeDeep(vars) as Record<string, unknown> | undefined)) as T;
