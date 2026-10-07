@@ -441,6 +441,15 @@ fn emits_nested_writes() {
     assert!(output.contains("async function createWithNested<"));
     assert!(output.contains("async function updateWithNested<"));
     assert!(output.contains("async function applyNestedWrites("));
+    assert!(output.contains("async function queryScript("));
+    assert!(output.contains("async function insertStoredCreates("));
+    assert!(output.contains("INSERT INTO ${group.table} $sc${index} RETURN AFTER"));
+    assert!(output.contains("INSERT INTO ${op.table} ${bindNested(vars, op.rows)} RETURN NONE"));
+    assert!(output.contains("INSERT RELATION INTO ${op.table}"));
+    assert!(output.contains("UPDATE ${bindNested(vars, op.ids)} MERGE"));
+    assert!(output.contains("UNSET ${op.field}"));
+    assert!(output.contains("FOR $pair IN"));
+    assert!(output.contains("LET $far = CREATE ONLY ${op.farTable}"));
     assert!(output.contains("async function relateEdge("));
     assert!(output.contains("createWithNested<User>(db, \"user\""));
     assert!(output.contains("updateWithNested(db, \"user\""));

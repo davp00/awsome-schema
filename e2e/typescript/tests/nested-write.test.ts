@@ -224,6 +224,117 @@ describe("generated TypeScript client nested writes", () => {
     expect(posts).toHaveLength(0);
   });
 
+  it.skipIf(skip)("create post with nested author create", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    const email = `nw-author-${suffix}@example.com`;
+    const post = await client.post.create({
+      title: `nw-author-post-${suffix}`,
+      author: {
+        create: {
+          email,
+          age: 5,
+          metadata: { source: "nested-write-e2e" },
+          tags: ["nw"],
+        },
+      },
+    });
+    const postId = recordIdString(post.id);
+    const user = await client.user.findUnique({ where: { email } });
+    expect(user).toBeDefined();
+    expect(recordIdString(post.author)).toBe(recordIdString(user!.id));
+
+    await client.post.delete(postId);
+    await client.user.delete(recordIdString(user!.id));
+  });
+
+  it.skipIf(skip)("create user with posts and a liked connect together", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    const author = await client.user.create({
+      email: `nw-mix-author-${suffix}@example.com`,
+      age: 9,
+      metadata: { source: "nested-write-e2e" },
+      tags: ["nw"],
+    });
+    const authorId = recordIdString(author.id);
+    const existing = await client.post.create({
+      title: `nw-mix-existing-${suffix}`,
+      author: authorId,
+    });
+    const existingId = recordIdString(existing.id);
+
+    const user = await client.user.create({
+      email: `nw-mix-${suffix}@example.com`,
+      age: 11,
+      metadata: { source: "nested-write-e2e" },
+      tags: ["nw"],
+      posts: {
+        create: [{ title: `nw-mix-a-${suffix}` }, { title: `nw-mix-b-${suffix}` }],
+      },
+      liked: { connect: [{ out: existingId, score: 4 }] },
+    });
+    const userId = recordIdString(user.id);
+
+    const posts = await client.post.findMany({
+      where: { author: { id: userId } },
+      orderBy: { title: "asc" },
+    });
+    expect(posts.map((p) => p.title)).toEqual([
+      `nw-mix-a-${suffix}`,
+      `nw-mix-b-${suffix}`,
+    ]);
+
+    const selected = await client.user.findUnique({
+      where: { id: userId },
+      select: { liked: { select: { id: true, score: true } } },
+    });
+    const liked = asArray(selected?.liked as { id: unknown; score: number }[]);
+    expect(liked).toHaveLength(1);
+    expect(liked[0]!.score).toBe(4);
+
+    await client.likes.delete(recordIdString(liked[0]!.id));
+    for (const post of posts) await client.post.delete(recordIdString(post.id));
+    await client.post.delete(existingId);
+    await client.user.delete(userId);
+    await client.user.delete(authorId);
+  });
+
+  it.skipIf(skip)("disconnect liked by edge id", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    const user = await client.user.create({
+      email: `nw-edge-id-${suffix}@example.com`,
+      age: 12,
+      metadata: { source: "nested-write-e2e" },
+      tags: ["nw"],
+    });
+    const userId = recordIdString(user.id);
+    const post = await client.post.create({
+      title: `nw-edge-id-post-${suffix}`,
+      author: userId,
+    });
+    const postId = recordIdString(post.id);
+    await client.user.update(userId, {
+      liked: { connect: [{ out: postId, score: 1 }] },
+    });
+    const selected = await client.user.findUnique({
+      where: { id: userId },
+      select: { liked: { select: { id: true } } },
+    });
+    const liked = asArray(selected?.liked as { id: unknown }[]);
+    expect(liked).toHaveLength(1);
+
+    await client.user.update(userId, {
+      liked: { disconnect: [{ id: recordIdString(liked[0]!.id) }] },
+    });
+    const after = await client.user.findUnique({
+      where: { id: userId },
+      select: { liked: { select: { id: true } } },
+    });
+    expect(asArray(after?.liked as { id: unknown }[])).toHaveLength(0);
+
+    await client.post.delete(postId);
+    await client.user.delete(userId);
+  });
+
   it.skipIf(skip)("rejects nested-on-nested second hop", async () => {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
     await expect(

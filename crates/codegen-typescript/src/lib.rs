@@ -1601,39 +1601,88 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("  return created;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
-    out.push("async function resolveStoredLinkValue(".to_owned());
+    out.push("async function queryScript(".to_owned());
     out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("  sql: string,".to_owned());
+    out.push("  vars?: Record<string, unknown>,".to_owned());
+    out.push("): Promise<unknown[]> {".to_owned());
+    out.push("  const result = await db.query(sql, vars);".to_owned());
+    out.push("  return Array.isArray(result) ? result : [result];".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function statementRows<T>(statement: unknown): T[] {".to_owned());
+    out.push("  if (Array.isArray(statement)) return statement as T[];".to_owned());
+    out.push("  if (statement == null) return [];".to_owned());
+    out.push("  return [statement as T];".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function readStoredLink(".to_owned());
     out.push("  table: string,".to_owned());
     out.push("  field: string,".to_owned());
     out.push("  value: unknown,".to_owned());
     out.push("  meta: Extract<FieldWriteMeta, { kind: \"stored\" }>,".to_owned());
-    out.push("): Promise<unknown> {".to_owned());
+    out.push("): { value?: unknown; create?: Record<string, unknown> } {".to_owned());
     out.push(
-        "  if (value == null || typeof value !== \"object\" || Array.isArray(value)) return value;"
+        "  if (value == null || typeof value !== \"object\" || Array.isArray(value)) return { value };"
             .to_owned(),
     );
     out.push("  const bag = value as Record<string, unknown>;".to_owned());
     out.push("  if (\"disconnect\" in bag) {".to_owned());
     out.push("    if (!meta.optional) throw new Error(`update ${table}: cannot disconnect required link ${field}`);".to_owned());
-    out.push("    return null;".to_owned());
+    out.push("    return { value: null };".to_owned());
     out.push("  }".to_owned());
     out.push("  if (\"connect\" in bag) {".to_owned());
     out.push("    const id = (bag.connect as { id?: unknown } | undefined)?.id;".to_owned());
     out.push("    if (typeof id !== \"string\") throw new Error(`update ${table}: ${field}.connect.id required`);".to_owned());
-    out.push("    return normalizeThing(meta.targetTable, id);".to_owned());
+    out.push("    return { value: normalizeThing(meta.targetTable, id) };".to_owned());
     out.push("  }".to_owned());
     out.push("  if (\"create\" in bag) {".to_owned());
-    out.push("    const data = (bag.create ?? {}) as Record<string, unknown>;".to_owned());
+    out.push("    return { create: (bag.create ?? {}) as Record<string, unknown> };".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return { value };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("async function insertStoredCreates(".to_owned());
+    out.push("  db: SurrealOpsLike,".to_owned());
     out.push(
-        "    assertNoNestedWrites(data, meta.targetTable, `create ${table}.${field}`);".to_owned(),
+        "  creates: { key: string; table: string; data: Record<string, unknown> }[],".to_owned(),
     );
+    out.push("): Promise<Record<string, string>> {".to_owned());
     out.push(
-        "    const created = await createRecord<{ id?: unknown }>(db, meta.targetTable, data);"
+        "  const groups: { table: string; keys: string[]; rows: Record<string, unknown>[] }[] = [];"
             .to_owned(),
     );
-    out.push("    return String(created.id);".to_owned());
+    out.push("  for (const create of creates) {".to_owned());
+    out.push("    const last = groups[groups.length - 1];".to_owned());
+    out.push("    if (last && last.table === create.table) {".to_owned());
+    out.push("      last.keys.push(create.key);".to_owned());
+    out.push("      last.rows.push(create.data);".to_owned());
+    out.push("    } else {".to_owned());
+    out.push(
+        "      groups.push({ table: create.table, keys: [create.key], rows: [create.data] });"
+            .to_owned(),
+    );
+    out.push("    }".to_owned());
     out.push("  }".to_owned());
-    out.push("  return value;".to_owned());
+    out.push("  const vars: Record<string, unknown> = {};".to_owned());
+    out.push("  const sql = groups.map((group, index) => {".to_owned());
+    out.push("    vars[`sc${index}`] = group.rows;".to_owned());
+    out.push("    return `INSERT INTO ${group.table} $sc${index} RETURN AFTER`;".to_owned());
+    out.push("  }).join(\";\\n\");".to_owned());
+    out.push("  const statements = await queryScript(db, sql, vars);".to_owned());
+    out.push("  const ids: Record<string, string> = {};".to_owned());
+    out.push("  groups.forEach((group, index) => {".to_owned());
+    out.push("    const rows = statementRows<{ id?: unknown }>(statements[index]);".to_owned());
+    out.push("    group.keys.forEach((key, rowIndex) => {".to_owned());
+    out.push("      const id = rows[rowIndex]?.id;".to_owned());
+    out.push(
+        "      if (id == null) throw new Error(`create ${group.table} returned no row`);"
+            .to_owned(),
+    );
+    out.push("      ids[key] = String(id);".to_owned());
+    out.push("    });".to_owned());
+    out.push("  });".to_owned());
+    out.push("  return ids;".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
     out.push("async function splitAndResolveWriteData(".to_owned());
@@ -1647,6 +1696,10 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
     out.push("  const scalars: Record<string, unknown> = {};".to_owned());
     out.push("  const nested: Record<string, unknown> = {};".to_owned());
+    out.push(
+        "  const storedCreates: { key: string; table: string; data: Record<string, unknown> }[] = [];"
+            .to_owned(),
+    );
     out.push("  for (const [key, value] of Object.entries(data)) {".to_owned());
     out.push("    if (value === undefined) continue;".to_owned());
     out.push("    const fieldMeta = meta[key];".to_owned());
@@ -1655,10 +1708,19 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("      continue;".to_owned());
     out.push("    }".to_owned());
     out.push("    if (fieldMeta.kind === \"stored\") {".to_owned());
+    out.push("      const resolved = readStoredLink(table, key, value, fieldMeta);".to_owned());
+    out.push("      if (resolved.create) {".to_owned());
     out.push(
-        "      scalars[key] = await resolveStoredLinkValue(db, table, key, value, fieldMeta);"
+        "        assertNoNestedWrites(resolved.create, fieldMeta.targetTable, `create ${table}.${key}`);"
             .to_owned(),
     );
+    out.push(
+        "        storedCreates.push({ key, table: fieldMeta.targetTable, data: resolved.create });"
+            .to_owned(),
+    );
+    out.push("      } else {".to_owned());
+    out.push("        scalars[key] = resolved.value;".to_owned());
+    out.push("      }".to_owned());
     out.push("      continue;".to_owned());
     out.push("    }".to_owned());
     out.push(
@@ -1673,19 +1735,131 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("      nested[key] = value;".to_owned());
     out.push("    }".to_owned());
     out.push("  }".to_owned());
+    out.push("  if (storedCreates.length > 0) {".to_owned());
+    out.push("    const ids = await insertStoredCreates(db, storedCreates);".to_owned());
+    out.push(
+        "    for (const create of storedCreates) scalars[create.key] = ids[create.key];".to_owned(),
+    );
+    out.push("  }".to_owned());
     out.push("  return { scalars, nested };".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
-    out.push("async function applyComputedNested(".to_owned());
-    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("type NestedScriptOp =".to_owned());
+    out.push("  | { kind: \"insert\"; table: string; rows: Record<string, unknown>[] }".to_owned());
+    out.push("  | { kind: \"merge\"; ids: string[]; patch: Record<string, unknown> }".to_owned());
+    out.push("  | { kind: \"unset\"; ids: string[]; field: string }".to_owned());
+    out.push("  | { kind: \"relate\"; table: string; rows: Record<string, unknown>[] }".to_owned());
+    out.push("  | { kind: \"deleteIds\"; ids: string[] }".to_owned());
+    out.push(
+        "  | { kind: \"deletePairs\"; table: string; pairs: { from: string; to: string }[] }"
+            .to_owned(),
+    );
+    out.push("  | {".to_owned());
+    out.push("      kind: \"relateNewFar\";".to_owned());
+    out.push("      edgeTable: string;".to_owned());
+    out.push("      farTable: string;".to_owned());
+    out.push("      farIsOut: boolean;".to_owned());
+    out.push("      items: { far: Record<string, unknown>; content: Record<string, unknown>; parent: string }[];".to_owned());
+    out.push("    };".to_owned());
+    out.push(String::new());
+    out.push(
+        "function bindNested(vars: Record<string, unknown>, value: unknown): string {".to_owned(),
+    );
+    out.push("  const name = `nw${Object.keys(vars).length}`;".to_owned());
+    out.push("  vars[name] = value;".to_owned());
+    out.push("  return `$${name}`;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function renderNestedOps(ops: NestedScriptOp[]): { sql: string; vars: Record<string, unknown> } {".to_owned());
+    out.push("  const vars: Record<string, unknown> = {};".to_owned());
+    out.push("  const parts: string[] = [];".to_owned());
+    out.push("  for (const op of ops) {".to_owned());
+    out.push("    if (op.kind === \"insert\") {".to_owned());
+    out.push(
+        "      parts.push(`INSERT INTO ${op.table} ${bindNested(vars, op.rows)} RETURN NONE`);"
+            .to_owned(),
+    );
+    out.push("    } else if (op.kind === \"merge\") {".to_owned());
+    out.push("      parts.push(`UPDATE ${bindNested(vars, op.ids)} MERGE ${bindNested(vars, op.patch)}`);".to_owned());
+    out.push("    } else if (op.kind === \"unset\") {".to_owned());
+    out.push(
+        "      parts.push(`UPDATE ${bindNested(vars, op.ids)} UNSET ${op.field}`);".to_owned(),
+    );
+    out.push("    } else if (op.kind === \"relate\") {".to_owned());
+    out.push("      parts.push(`INSERT RELATION INTO ${op.table} ${bindNested(vars, op.rows)} RETURN NONE`);".to_owned());
+    out.push("    } else if (op.kind === \"deleteIds\") {".to_owned());
+    out.push("      parts.push(`DELETE ${bindNested(vars, op.ids)}`);".to_owned());
+    out.push("    } else if (op.kind === \"deletePairs\") {".to_owned());
+    out.push("      parts.push(`FOR $pair IN ${bindNested(vars, op.pairs)} { DELETE ${op.table} WHERE in = $pair.from AND out = $pair.to }`);".to_owned());
+    out.push("    } else {".to_owned());
+    out.push("      const relate = op.farIsOut".to_owned());
+    out.push("        ? `$parent->${op.edgeTable}->$far`".to_owned());
+    out.push("        : `$far->${op.edgeTable}->$parent`;".to_owned());
+    out.push("      parts.push(`FOR $item IN ${bindNested(vars, op.items)} { LET $far = CREATE ONLY ${op.farTable} CONTENT $item.far; LET $parent = $item.parent; RELATE ${relate} CONTENT $item.content }`);".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return { sql: parts.join(\";\\n\"), vars };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push(
+        "async function runNestedOps(db: SurrealOpsLike, ops: NestedScriptOp[]): Promise<void> {"
+            .to_owned(),
+    );
+    out.push("  if (ops.length === 0) return;".to_owned());
+    out.push("  const script = renderNestedOps(ops);".to_owned());
+    out.push("  await queryScript(db, script.sql, script.vars);".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function edgeContent(row: Record<string, unknown>, payloadFields: string[]): Record<string, unknown> {".to_owned());
+    out.push("  const content: Record<string, unknown> = {};".to_owned());
+    out.push("  for (const key of payloadFields) {".to_owned());
+    out.push("    if (row[key] !== undefined) content[key] = row[key];".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return content;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function relationRow(".to_owned());
+    out.push("  meta: Extract<FieldWriteMeta, { kind: \"edge\" }>,".to_owned());
+    out.push("  parentId: string,".to_owned());
+    out.push("  farId: string,".to_owned());
+    out.push("  content: Record<string, unknown>,".to_owned());
+    out.push("): Record<string, unknown> {".to_owned());
+    out.push("  const inId = meta.dir === \"out\" ? parentId : farId;".to_owned());
+    out.push("  const outId = meta.dir === \"out\" ? farId : parentId;".to_owned());
+    out.push("  return {".to_owned());
+    out.push("    ...content,".to_owned());
+    out.push("    in: normalizeThing(meta.inTable, inId),".to_owned());
+    out.push("    out: normalizeThing(meta.outTable, outId),".to_owned());
+    out.push("  };".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function edgeFarData(".to_owned());
+    out.push("  parentTable: string,".to_owned());
+    out.push("  parentId: string,".to_owned());
+    out.push("  farTable: string,".to_owned());
+    out.push("  createData: Record<string, unknown>,".to_owned());
+    out.push("): Record<string, unknown> {".to_owned());
+    out.push("  const data = { ...createData };".to_owned());
+    out.push("  const parentMeta = WriteMetaByTable[farTable] ?? {};".to_owned());
+    out.push("  for (const [pkey, pmeta] of Object.entries(parentMeta)) {".to_owned());
+    out.push("    if (pmeta.kind === \"stored\" && pmeta.targetTable === parentTable && data[pkey] == null) {".to_owned());
+    out.push("      data[pkey] = normalizeThing(parentTable, parentId);".to_owned());
+    out.push("    }".to_owned());
+    out.push("  }".to_owned());
+    out.push("  return data;".to_owned());
+    out.push("}".to_owned());
+    out.push(String::new());
+    out.push("function collectComputed(".to_owned());
+    out.push("  ops: NestedScriptOp[],".to_owned());
     out.push("  parentTable: string,".to_owned());
     out.push("  parentId: string,".to_owned());
     out.push("  field: string,".to_owned());
     out.push("  bag: Record<string, unknown>,".to_owned());
     out.push("  meta: Extract<FieldWriteMeta, { kind: \"computed\" }>,".to_owned());
-    out.push("): Promise<void> {".to_owned());
+    out.push("): void {".to_owned());
     out.push("  const parentThing = normalizeThing(parentTable, parentId);".to_owned());
     out.push("  const creates = Array.isArray(bag.create) ? bag.create : [];".to_owned());
+    out.push("  const rows: Record<string, unknown>[] = [];".to_owned());
     out.push("  for (const item of creates) {".to_owned());
     out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
     out.push("    const data = { ...(item as Record<string, unknown>), [meta.backLinkField]: parentThing };".to_owned());
@@ -1693,81 +1867,91 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
         "    assertNoNestedWrites(data, meta.targetTable, `create ${parentTable}.${field}`);"
             .to_owned(),
     );
-    out.push("    await createRecord(db, meta.targetTable, data);".to_owned());
+    out.push("    rows.push(data);".to_owned());
     out.push("  }".to_owned());
+    out.push(
+        "  if (rows.length > 0) ops.push({ kind: \"insert\", table: meta.targetTable, rows });"
+            .to_owned(),
+    );
     out.push("  const connects = Array.isArray(bag.connect) ? bag.connect : [];".to_owned());
+    out.push("  const connectIds: string[] = [];".to_owned());
     out.push("  for (const item of connects) {".to_owned());
     out.push("    const id = item && typeof item === \"object\" ? (item as { id?: unknown }).id : undefined;".to_owned());
     out.push("    if (typeof id !== \"string\") throw new Error(`${parentTable}.${field}.connect.id required`);".to_owned());
-    out.push("    const thing = normalizeThing(meta.targetTable, id);".to_owned());
-    out.push("    await db.merge(thing, { [meta.backLinkField]: parentThing });".to_owned());
+    out.push("    connectIds.push(normalizeThing(meta.targetTable, id));".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (connectIds.length > 0) {".to_owned());
+    out.push("    ops.push({ kind: \"merge\", ids: connectIds, patch: { [meta.backLinkField]: parentThing } });".to_owned());
     out.push("  }".to_owned());
     out.push(
         "  const disconnects = Array.isArray(bag.disconnect) ? bag.disconnect : [];".to_owned(),
     );
+    out.push("  const disconnectIds: string[] = [];".to_owned());
     out.push("  for (const item of disconnects) {".to_owned());
     out.push("    const id = item && typeof item === \"object\" ? (item as { id?: unknown }).id : undefined;".to_owned());
     out.push("    if (typeof id !== \"string\") throw new Error(`${parentTable}.${field}.disconnect.id required`);".to_owned());
     out.push("    if (!meta.backLinkOptional) {".to_owned());
-    out.push(
-        "      throw new Error(`${parentTable}.${field}: cannot disconnect required back-link ${meta.backLinkField}`);"
-            .to_owned(),
-    );
+    out.push("      throw new Error(`${parentTable}.${field}: cannot disconnect required back-link ${meta.backLinkField}`);".to_owned());
     out.push("    }".to_owned());
-    out.push("    const thing = normalizeThing(meta.targetTable, id);".to_owned());
+    out.push("    disconnectIds.push(normalizeThing(meta.targetTable, id));".to_owned());
+    out.push("  }".to_owned());
+    out.push("  if (disconnectIds.length > 0) {".to_owned());
     out.push(
-        "    await queryRows(db, `UPDATE type::record($thing) UNSET ${meta.backLinkField}`, { thing });"
+        "    ops.push({ kind: \"unset\", ids: disconnectIds, field: meta.backLinkField });"
             .to_owned(),
     );
     out.push("  }".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
-    out.push("async function applyEdgeNested(".to_owned());
-    out.push("  db: SurrealOpsLike,".to_owned());
+    out.push("function collectEdge(".to_owned());
+    out.push("  ops: NestedScriptOp[],".to_owned());
     out.push("  parentTable: string,".to_owned());
     out.push("  parentId: string,".to_owned());
     out.push("  field: string,".to_owned());
     out.push("  bag: Record<string, unknown>,".to_owned());
     out.push("  meta: Extract<FieldWriteMeta, { kind: \"edge\" }>,".to_owned());
-    out.push("): Promise<void> {".to_owned());
+    out.push("): void {".to_owned());
     out.push("  const farKey = meta.dir;".to_owned());
     out.push("  const farTable = meta.dir === \"out\" ? meta.outTable : meta.inTable;".to_owned());
+    out.push("  const parentThing = normalizeThing(parentTable, parentId);".to_owned());
     out.push("  const creates = Array.isArray(bag.create) ? bag.create : [];".to_owned());
+    out.push("  let relateRows: Record<string, unknown>[] = [];".to_owned());
+    out.push("  let farItems: { far: Record<string, unknown>; content: Record<string, unknown>; parent: string }[] = [];".to_owned());
+    out.push("  const flushRelate = () => {".to_owned());
+    out.push("    if (relateRows.length === 0) return;".to_owned());
+    out.push(
+        "    ops.push({ kind: \"relate\", table: meta.edgeTable, rows: relateRows });".to_owned(),
+    );
+    out.push("    relateRows = [];".to_owned());
+    out.push("  };".to_owned());
+    out.push("  const flushFar = () => {".to_owned());
+    out.push("    if (farItems.length === 0) return;".to_owned());
+    out.push("    ops.push({ kind: \"relateNewFar\", edgeTable: meta.edgeTable, farTable, farIsOut: meta.dir === \"out\", items: farItems });".to_owned());
+    out.push("    farItems = [];".to_owned());
+    out.push("  };".to_owned());
     out.push("  for (const item of creates) {".to_owned());
     out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
     out.push("    const row = item as Record<string, unknown>;".to_owned());
-    out.push("    let farId: string;".to_owned());
     out.push("    const farVal = row[farKey];".to_owned());
+    out.push("    const content = edgeContent(row, meta.payloadFields);".to_owned());
     out.push("    if (typeof farVal === \"string\") {".to_owned());
-    out.push("      farId = farVal;".to_owned());
+    out.push("      flushFar();".to_owned());
+    out.push("      relateRows.push(relationRow(meta, parentId, farVal, content));".to_owned());
     out.push("    } else if (farVal && typeof farVal === \"object\" && \"create\" in (farVal as object)) {".to_owned());
     out.push("      const createData = { ...((farVal as { create?: Record<string, unknown> }).create ?? {}) };".to_owned());
     out.push("      assertNoNestedWrites(createData, farTable, `create ${parentTable}.${field}.${farKey}`);".to_owned());
-    out.push("      const parentMeta = WriteMetaByTable[farTable] ?? {};".to_owned());
-    out.push("      for (const [pkey, pmeta] of Object.entries(parentMeta)) {".to_owned());
-    out.push("        if (pmeta.kind === \"stored\" && pmeta.targetTable === parentTable && createData[pkey] == null) {".to_owned());
-    out.push("          createData[pkey] = normalizeThing(parentTable, parentId);".to_owned());
-    out.push("        }".to_owned());
-    out.push("      }".to_owned());
-    out.push(
-        "      const created = await createRecord<{ id?: unknown }>(db, farTable, createData);"
-            .to_owned(),
-    );
-    out.push("      farId = String(created.id);".to_owned());
+    out.push("      flushRelate();".to_owned());
+    out.push("      farItems.push({ far: edgeFarData(parentTable, parentId, farTable, createData), content, parent: parentThing });".to_owned());
     out.push("    } else {".to_owned());
     out.push(
         "      throw new Error(`${parentTable}.${field}.create.${farKey} required`);".to_owned(),
     );
     out.push("    }".to_owned());
-    out.push("    const content: Record<string, unknown> = {};".to_owned());
-    out.push("    for (const key of meta.payloadFields) {".to_owned());
-    out.push("      if (row[key] !== undefined) content[key] = row[key];".to_owned());
-    out.push("    }".to_owned());
-    out.push("    const inId = meta.dir === \"out\" ? parentId : farId;".to_owned());
-    out.push("    const outId = meta.dir === \"out\" ? farId : parentId;".to_owned());
-    out.push("    await relateEdge(db, meta.edgeTable, meta.inTable, meta.outTable, inId, outId, content);".to_owned());
     out.push("  }".to_owned());
+    out.push("  flushRelate();".to_owned());
+    out.push("  flushFar();".to_owned());
     out.push("  const connects = Array.isArray(bag.connect) ? bag.connect : [];".to_owned());
+    out.push("  const connectRows: Record<string, unknown>[] = [];".to_owned());
     out.push("  for (const item of connects) {".to_owned());
     out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
     out.push("    const row = item as Record<string, unknown>;".to_owned());
@@ -1776,33 +1960,43 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("    }".to_owned());
     out.push("    const farId = row[farKey];".to_owned());
     out.push("    if (typeof farId !== \"string\") throw new Error(`${parentTable}.${field}.connect.${farKey} required`);".to_owned());
-    out.push("    const content: Record<string, unknown> = {};".to_owned());
-    out.push("    for (const key of meta.payloadFields) {".to_owned());
-    out.push("      if (row[key] !== undefined) content[key] = row[key];".to_owned());
-    out.push("    }".to_owned());
-    out.push("    const inId = meta.dir === \"out\" ? parentId : farId;".to_owned());
-    out.push("    const outId = meta.dir === \"out\" ? farId : parentId;".to_owned());
-    out.push("    await relateEdge(db, meta.edgeTable, meta.inTable, meta.outTable, inId, outId, content);".to_owned());
+    out.push("    connectRows.push(relationRow(meta, parentId, farId, edgeContent(row, meta.payloadFields)));".to_owned());
     out.push("  }".to_owned());
+    out.push("  if (connectRows.length > 0) ops.push({ kind: \"relate\", table: meta.edgeTable, rows: connectRows });".to_owned());
     out.push(
         "  const disconnects = Array.isArray(bag.disconnect) ? bag.disconnect : [];".to_owned(),
     );
+    out.push("  let deleteIds: string[] = [];".to_owned());
+    out.push("  let deletePairs: { from: string; to: string }[] = [];".to_owned());
+    out.push("  const flushIds = () => {".to_owned());
+    out.push("    if (deleteIds.length === 0) return;".to_owned());
+    out.push("    ops.push({ kind: \"deleteIds\", ids: deleteIds });".to_owned());
+    out.push("    deleteIds = [];".to_owned());
+    out.push("  };".to_owned());
+    out.push("  const flushPairs = () => {".to_owned());
+    out.push("    if (deletePairs.length === 0) return;".to_owned());
+    out.push(
+        "    ops.push({ kind: \"deletePairs\", table: meta.edgeTable, pairs: deletePairs });"
+            .to_owned(),
+    );
+    out.push("    deletePairs = [];".to_owned());
+    out.push("  };".to_owned());
     out.push("  for (const item of disconnects) {".to_owned());
     out.push("    if (!item || typeof item !== \"object\") continue;".to_owned());
     out.push("    const row = item as Record<string, unknown>;".to_owned());
     out.push("    if (typeof row.id === \"string\") {".to_owned());
-    out.push("      await deleteRecord(db, meta.edgeTable, row.id);".to_owned());
+    out.push("      flushPairs();".to_owned());
+    out.push("      deleteIds.push(normalizeThing(meta.edgeTable, row.id));".to_owned());
     out.push("      continue;".to_owned());
     out.push("    }".to_owned());
     out.push("    const farId = row[farKey];".to_owned());
     out.push("    if (typeof farId !== \"string\") throw new Error(`${parentTable}.${field}.disconnect.${farKey} required`);".to_owned());
-    out.push("    const inThing = normalizeThing(meta.inTable, meta.dir === \"out\" ? parentId : farId);".to_owned());
-    out.push("    const outThing = normalizeThing(meta.outTable, meta.dir === \"out\" ? farId : parentId);".to_owned());
-    out.push(
-        "    await queryRows(db, `DELETE ${meta.edgeTable} WHERE in = type::record($in) AND out = type::record($out)`, { in: inThing, out: outThing });"
-            .to_owned(),
-    );
+    out.push("    flushIds();".to_owned());
+    out.push("    const ends = relationRow(meta, parentId, farId, {});".to_owned());
+    out.push("    deletePairs.push({ from: String(ends.in), to: String(ends.out) });".to_owned());
     out.push("  }".to_owned());
+    out.push("  flushIds();".to_owned());
+    out.push("  flushPairs();".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
     out.push("async function applyNestedWrites(".to_owned());
@@ -1812,19 +2006,17 @@ fn emit_nested_write_runtime(out: &mut Vec<String>) {
     out.push("  nested: Record<string, unknown>,".to_owned());
     out.push("): Promise<void> {".to_owned());
     out.push("  const meta = WriteMetaByTable[table] ?? {};".to_owned());
+    out.push("  const ops: NestedScriptOp[] = [];".to_owned());
     out.push("  for (const [field, value] of Object.entries(nested)) {".to_owned());
     out.push("    const fieldMeta = meta[field];".to_owned());
     out.push("    if (!fieldMeta || !isNestedWriteBag(value)) continue;".to_owned());
     out.push("    if (fieldMeta.kind === \"computed\") {".to_owned());
-    out.push(
-        "      await applyComputedNested(db, table, parentId, field, value, fieldMeta);".to_owned(),
-    );
+    out.push("      collectComputed(ops, table, parentId, field, value, fieldMeta);".to_owned());
     out.push("    } else if (fieldMeta.kind === \"edge\") {".to_owned());
-    out.push(
-        "      await applyEdgeNested(db, table, parentId, field, value, fieldMeta);".to_owned(),
-    );
+    out.push("      collectEdge(ops, table, parentId, field, value, fieldMeta);".to_owned());
     out.push("    }".to_owned());
     out.push("  }".to_owned());
+    out.push("  await runNestedOps(db, ops);".to_owned());
     out.push("}".to_owned());
     out.push(String::new());
     out.push("async function createWithNested<T extends { id?: unknown }>(".to_owned());
