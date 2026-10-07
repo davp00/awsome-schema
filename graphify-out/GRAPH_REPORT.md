@@ -1,7 +1,7 @@
 # Graph Report - awsome-schema  (2026-10-08)
 
 ## Corpus Check
-- 158 files · ~89,007 words
+- 158 files · ~90,312 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 4, .xml 3, .schema 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `52991b26`
+- Built from commit: `b641cd1b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
