@@ -11,4 +11,9 @@ describe("asSurrealLike", () => {
     expect(session.beginTransaction).toEqual(expect.any(Function));
     expect(session.live).toEqual(expect.any(Function));
   });
+
+  it("returns the same session when the client is already adapted", () => {
+    const session = asSurrealLike(new Surreal());
+    expect(asSurrealLike(session as unknown as Surreal)).toBe(session);
+  });
 });

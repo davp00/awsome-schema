@@ -19,15 +19,18 @@ import type {
 export type { Surreal } from "surrealdb";
 
 const RECORD_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*:[^\s]+$/;
+const ADAPTED = Symbol.for("awesome-schema.surreal-session");
 
 type SurrealQueryable = Pick<Surreal, "query" | "select" | "create" | "update" | "delete">;
 
 /**
  * Adapt a SurrealDB JS v2 connection to the operations the generated client calls.
- * `createClient` does this itself, so callers pass `Surreal` directly.
+ * `createClient` does this itself. A second call returns the same session so a
+ * caller that also wraps does not invoke `create().content` on the adapter.
  */
 export function asSurrealLike(db: Surreal): SurrealLike {
-  return {
+  if (isAdapted(db)) return db;
+  const session: SurrealLike = {
     ...bindOps(db),
     async beginTransaction(): Promise<SurrealTransactionLike> {
       const txn = await db.beginTransaction();
@@ -43,6 +46,12 @@ export function asSurrealLike(db: Surreal): SurrealLike {
       return wrapLive(subscription);
     },
   };
+  Object.defineProperty(session, ADAPTED, { value: true });
+  return session;
+}
+
+function isAdapted(value: object): value is SurrealLike {
+  return (value as { [ADAPTED]?: boolean })[ADAPTED] === true;
 }
 
 function asSurrealTransaction(txn: SurrealTransaction): SurrealTransactionLike {

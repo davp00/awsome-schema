@@ -1,53 +1,91 @@
 name: canary
 
 on:
-  push:
+  workflow_run:
+    workflows: [coverage, typescript-e2e]
+    types: [completed]
     branches: [main]
 
 permissions:
   contents: write
+  actions: read
   id-token: write
 
+concurrency:
+  group: canary-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
 jobs:
-  version:
+  ready:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     outputs:
+      go: ${{ steps.set.outputs.go }}
       version: ${{ steps.set.outputs.version }}
+      sha: ${{ steps.set.outputs.sha }}
     steps:
-      - id: set
-        run: echo "version=1.0.0-test.${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: Require coverage and e2e on this commit
+        id: set
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          go=true
+          for workflow in coverage.yml typescript-e2e.yml; do
+            status="$(gh api --jq '.workflow_runs[0].status // ""' \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=1")"
+            conclusion="$(gh api --jq '.workflow_runs[0].conclusion // ""' \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=1")"
+            echo "${workflow}: status=${status:-missing} conclusion=${conclusion:-missing}"
+            if [ "$status" != "completed" ] || [ "$conclusion" != "success" ]; then
+              go=false
+            fi
+          done
+          echo "go=${go}" >> "$GITHUB_OUTPUT"
+          echo "sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          echo "version=1.0.0-test.${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
 
   release:
-    needs: version
+    needs: ready
+    if: needs.ready.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ready.outputs.sha }}
 
       - name: Open the test release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.ready.outputs.version }}
+          HEAD_SHA: ${{ needs.ready.outputs.sha }}
         run: |
           tag="v${VERSION}"
-          notes="Test build ${VERSION} from main at ${GITHUB_SHA}."
-          gh release create "$tag" \
-            --prerelease \
-            --target "${GITHUB_SHA}" \
-            --title "$tag" \
-            --notes "$notes"
+          notes="Test build ${VERSION} from main at ${HEAD_SHA}."
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release ${tag} already exists"
+          else
+            gh release create "$tag" \
+              --prerelease \
+              --target "${HEAD_SHA}" \
+              --title "$tag" \
+              --notes "$notes"
+          fi
           if gh release view canary >/dev/null 2>&1; then
-            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/canary" -f sha="${GITHUB_SHA}"
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/canary" -f sha="${HEAD_SHA}"
             gh release edit canary --prerelease --title "canary" --notes "$notes"
           else
             gh release create canary \
               --prerelease \
-              --target "${GITHUB_SHA}" \
+              --target "${HEAD_SHA}" \
               --title "canary" \
               --notes "$notes"
           fi
 
   binary:
-    needs: [version, release]
+    needs: [ready, release]
+    if: needs.ready.outputs.go == 'true'
     name: ${{ matrix.asset }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -65,6 +103,8 @@ jobs:
             bin: awesome-schema.exe
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ready.outputs.sha }}
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -81,7 +121,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.ready.outputs.version }}
         run: |
           mkdir -p dist-bin
           cp "target/release/${{ matrix.bin }}" "dist-bin/${{ matrix.asset }}"
@@ -89,10 +129,13 @@ jobs:
           gh release upload canary "dist-bin/${{ matrix.asset }}" --clobber
 
   publish:
-    needs: [version, binary]
+    needs: [ready, binary]
+    if: needs.ready.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ready.outputs.sha }}
 
       - uses: pnpm/action-setup@v4
 
@@ -109,7 +152,7 @@ jobs:
 
       - name: Publish the test version
         env:
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.ready.outputs.version }}
         working-directory: clients/javascript
         run: |
           published="$(npm view "awesome-schema@${VERSION}" version 2>/dev/null || true)"
