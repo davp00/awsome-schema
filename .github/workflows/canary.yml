@@ -1,0 +1,118 @@
+name: canary
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set.outputs.version }}
+    steps:
+      - id: set
+        run: echo "version=1.0.0-test.${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open the test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          tag="v${VERSION}"
+          notes="Test build ${VERSION} from main at ${GITHUB_SHA}."
+          gh release create "$tag" \
+            --prerelease \
+            --target "${GITHUB_SHA}" \
+            --title "$tag" \
+            --notes "$notes"
+          if gh release view canary >/dev/null 2>&1; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/canary" -f sha="${GITHUB_SHA}"
+            gh release edit canary --prerelease --title "canary" --notes "$notes"
+          else
+            gh release create canary \
+              --prerelease \
+              --target "${GITHUB_SHA}" \
+              --title "canary" \
+              --notes "$notes"
+          fi
+
+  binary:
+    needs: [version, release]
+    name: ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: awesome-schema-x86_64-unknown-linux-gnu
+            bin: awesome-schema
+          - os: macos-latest
+            asset: awesome-schema-aarch64-apple-darwin
+            bin: awesome-schema
+          - os: macos-13
+            asset: awesome-schema-x86_64-apple-darwin
+            bin: awesome-schema
+          - os: windows-latest
+            asset: awesome-schema-x86_64-pc-windows-msvc.exe
+            bin: awesome-schema.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release CLI
+        run: cargo build --release -p cli --locked
+
+      - name: Upload the test and canary binaries
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p dist-bin
+          cp "target/release/${{ matrix.bin }}" "dist-bin/${{ matrix.asset }}"
+          gh release upload "v${VERSION}" "dist-bin/${{ matrix.asset }}" --clobber
+          gh release upload canary "dist-bin/${{ matrix.asset }}" --clobber
+
+  publish:
+    needs: [version, binary]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install npm 11
+        run: npm install -g npm@11
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish the test version
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        working-directory: clients/javascript
+        run: |
+          published="$(npm view "awesome-schema@${VERSION}" version 2>/dev/null || true)"
+          if [ "$published" = "$VERSION" ]; then
+            echo "awesome-schema@${VERSION} is already published"
+            exit 0
+          fi
+          npm pkg set "version=${VERSION}"
+          npm publish --access public --tag test

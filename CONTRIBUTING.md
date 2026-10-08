@@ -115,7 +115,7 @@ Index-kind smoke test:
 ./scripts/manual-test-indexes.sh --live   # compose up + push + INFO + pull
 ```
 
-The alpha client package is `clients/javascript` (`awesome-schema`). `pnpm --filter awesome-schema test` runs its unit tests. From the repo root, `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema` runs a binary you just built. Other projects download one platform binary from the GitHub Release for the package version.
+The alpha client package is `clients/javascript` (`awesome-schema`). `pnpm --filter awesome-schema test` runs its unit tests. From the repo root, `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema` runs a binary you just built. Other projects download one platform binary from the GitHub Release for the package version. Pushes to `main` publish `awesome-schema@test` as `1.0.0-test.<commit>` and upload the matching binaries.
 
 ## Adding a database provider
 
