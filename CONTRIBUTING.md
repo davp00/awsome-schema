@@ -98,14 +98,14 @@ cargo test -p e2e --test surreal record_refs   # @link REFERENCE + COMPUTED
 TypeScript generated-client e2e uses Vitest. It starts SurrealDB **v3.3.0** via testcontainers unless `SURREALDB_URL` is set. It soft-skips locally when neither a URL nor Docker is available. GitHub Actions (`typescript-e2e`) sets `CI=true` and fails instead of skipping.
 
 ```bash
-cd e2e/typescript && npm i && npm test
+cd e2e/typescript && pnpm install && pnpm test
 
 # Fast local loop against Compose:
 docker compose up -d
-cd e2e/typescript && npm run test:external   # SURREALDB_URL=ws://127.0.0.1:8000
+cd e2e/typescript && pnpm test:external   # SURREALDB_URL=ws://127.0.0.1:8000
 
 # Optional hard-fail locally (same as CI):
-REQUIRE_SURREAL=1 npm test
+REQUIRE_SURREAL=1 pnpm test
 ```
 
 Index-kind smoke test:
@@ -114,6 +114,8 @@ Index-kind smoke test:
 ./scripts/manual-test-indexes.sh          # offline generate checks
 ./scripts/manual-test-indexes.sh --live   # compose up + push + INFO + pull
 ```
+
+The alpha client package is `clients/javascript` (`awesome-schema`). `pnpm --filter awesome-schema test` runs its unit tests. From the repo root, `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema` runs a binary you just built. Other projects download one platform binary from the GitHub Release for the package version.
 
 ## Adding a database provider
 

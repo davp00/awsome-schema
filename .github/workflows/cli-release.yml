@@ -1,0 +1,101 @@
+name: cli-release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  binary:
+    name: ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: awesome-schema-x86_64-unknown-linux-gnu
+            bin: awesome-schema
+          - os: macos-latest
+            asset: awesome-schema-aarch64-apple-darwin
+            bin: awesome-schema
+          - os: macos-13
+            asset: awesome-schema-x86_64-apple-darwin
+            bin: awesome-schema
+          - os: windows-latest
+            asset: awesome-schema-x86_64-pc-windows-msvc.exe
+            bin: awesome-schema.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release CLI
+        run: cargo build --release -p cli --locked
+
+      - name: Stage the asset
+        shell: bash
+        run: |
+          mkdir -p dist-bin
+          cp "target/release/${{ matrix.bin }}" "dist-bin/${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist-bin/${{ matrix.asset }}
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install and pack
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter awesome-schema pack --pack-destination .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: clients/javascript/awesome-schema-*.tgz
+
+  release:
+    needs: [binary, package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Upload GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="v$(node -p "require('./clients/javascript/package.json').version")"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          files=()
+          while IFS= read -r path; do
+            files+=("$path")
+          done < <(find release-assets -type f)
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" --title "$tag" --notes "Alpha CLI binaries and the awesome-schema package tarball. Each install downloads only the binary for its platform."
+          fi

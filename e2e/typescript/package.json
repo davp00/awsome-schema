@@ -6,6 +6,9 @@
     "test": "vitest run",
     "test:external": "SURREALDB_URL=ws://127.0.0.1:8000 vitest run"
   },
+  "dependencies": {
+    "awesome-schema": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^22.13.10",
     "surrealdb": "^2.0.10",

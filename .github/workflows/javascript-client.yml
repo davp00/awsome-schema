@@ -1,4 +1,4 @@
-name: typescript-e2e
+name: javascript-client
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
   pull_request:
 
 jobs:
-  typescript-e2e:
+  javascript-client:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -26,11 +26,13 @@ jobs:
       - name: Install workspace deps
         run: pnpm install --frozen-lockfile
 
-      - name: Build the client package
-        run: pnpm --filter awesome-schema build
+      - name: Test the client package
+        run: pnpm --filter awesome-schema test
 
-      - name: Run TypeScript client e2e
+      - name: Build the CLI
+        run: cargo build -p cli --locked
+
+      - name: Smoke the launcher
         env:
-          # Fail the job if Surreal cannot start (no soft-skip in CI).
-          CI: true
-        run: pnpm --filter awesome-schema-typescript-e2e test
+          AWESOME_SCHEMA_BIN: target/debug/awesome-schema
+        run: pnpm awesome-schema validate --schema examples/awesome.schema

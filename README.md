@@ -75,7 +75,8 @@ cargo run -p cli -- format
 cargo run -p cli -- format --write
 
 # Generate SurrealQL, Rust stubs, or TypeScript client
-# TypeScript writes to generator.output by default; use --stdout to print only
+# TypeScript writes to generator.output and imports the alpha `awesome-schema` package
+# Another project installs that package and runs `pnpm awesome-schema`; it does not clone this repo
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript

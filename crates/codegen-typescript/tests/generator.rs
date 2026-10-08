@@ -69,9 +69,10 @@ fn default_generator_is_constructible() {
 #[test]
 fn emits_record_id_helper_and_tables() {
     let output = generate_fixture();
-    assert!(output.contains("export type RecordId<Table extends string = string>"));
-    assert!(output.contains("export function recordId<Table extends string>"));
-    assert!(output.contains("export function parseRecordId"));
+    assert!(output.contains("from \"awesome-schema\""));
+    assert!(output.contains("type RecordId,"));
+    assert!(output.contains("recordId,"));
+    assert!(output.contains("parseRecordId,"));
     assert!(output.contains("export const Tables = {"));
     assert!(output.contains("User: \"user\""));
     assert!(output.contains("Post: \"post\""));
@@ -139,7 +140,7 @@ fn emits_object_type_and_skips_dotted_nested_fields() {
 #[test]
 fn emits_thin_select_helpers_with_fetch() {
     let output = generate_fixture();
-    assert!(output.contains("export type SurrealLike"));
+    assert!(output.contains("type SurrealLike,"));
     assert!(output.contains("export async function selectUser("));
     assert!(output.contains("export async function selectUserRelated("));
     assert!(output.contains("export async function selectPostRelated("));
@@ -189,17 +190,13 @@ fn emits_create_update_inputs_without_computed_fields() {
 #[test]
 fn emits_as_record_id_and_crud_query_helpers() {
     let output = generate_fixture();
-    assert!(output.contains("export function asRecordId<Table extends string>"));
-    assert!(output.contains("async function selectRecord<T>("));
-    assert!(output.contains("async function createRecord<T>("));
-    assert!(output.contains("async function updateRecord<T>("));
-    assert!(output.contains("async function deleteRecord("));
-    assert!(output.contains("async function queryRows<T>("));
-    assert!(output.contains("async function findUniqueRecord<T>("));
-    assert!(output.contains("async function findManyRecords<T>("));
-    assert!(output.contains("create<T = unknown>(thing: string"));
-    assert!(output.contains("merge<T = unknown>(thing: string"));
-    assert!(output.contains("delete<T = unknown>(thing: string"));
+    assert!(output.contains("asRecordId,"));
+    assert!(output.contains("selectRecord,"));
+    assert!(output.contains("updateRecord,"));
+    assert!(output.contains("deleteRecord,"));
+    assert!(output.contains("queryRows,"));
+    assert!(output.contains("findUniqueRecord,"));
+    assert!(output.contains("findManyRecords,"));
     assert!(output.contains("export async function createUser("));
     assert!(output.contains("export async function updateUser("));
     assert!(output.contains("export async function deleteUser("));
@@ -209,8 +206,7 @@ fn emits_as_record_id_and_crud_query_helpers() {
     assert!(output.contains("export async function queryUsersRelated("));
     assert!(output.contains("return queryRows<UserSelected>(db, sql, vars)"));
     assert!(output.contains("export async function createLikes("));
-    assert!(output.contains("async function relateEdge("));
-    assert!(output.contains("RELATE $in->${edgeTable}->$out"));
+    assert!(output.contains("relateEdge,"));
     assert!(output.contains("relateEdge(db, \"likes\""));
 }
 
@@ -246,12 +242,7 @@ fn emits_select_meta_and_projection_builder() {
     assert!(output.contains("kind: \"edge\""));
     assert!(output.contains("edgeTable: \"likes\""));
     assert!(output.contains("dir: \"out\""));
-    assert!(output.contains("function buildProjection("));
-    assert!(output.contains("function projectField("));
-    assert!(output.contains("`${key}.{ ${nested} }`"));
-    assert!(output.contains("`${arrow}.{ ${nested} } AS ${key}`"));
-    assert!(output.contains("`${arrow}.* AS ${key}`"));
-    assert!(output.contains("SELECT ${projection} FROM type::record($thing)"));
+    assert!(output.contains("bindSchemaMeta(SelectMetaByTable, WriteMetaByTable)"));
 }
 
 #[test]
@@ -260,18 +251,8 @@ fn emits_nested_relation_order_by() {
     assert!(output.contains("orderBy?: [O] extends [never] ? never : O | O[]"));
     assert!(output.contains("posts?: SelectArg<PostSelect, PostOrderByInput>"));
     assert!(output.contains("liked?: SelectArg<LikesSelect, LikesOrderByInput>"));
-    assert!(output.contains("buildOrderBy(bag.orderBy, nestedTable, allMeta)"));
-    assert!(output.contains("(SELECT ${nested} FROM $parent.${key}${tail}) AS ${key}"));
-    assert!(
-        output.contains("${arrow}(SELECT ${nested} FROM ${fieldMeta.edgeTable}${tail}) AS ${key}")
-    );
     assert!(output.contains("take?: number"));
     assert!(output.contains("skip?: number"));
-    assert!(output.contains("function nestedLimitClause("));
-    assert!(output.contains("LIMIT ${Math.floor(take)}"));
-    assert!(output.contains("START ${Math.floor(skip)}"));
-    assert!(output.contains("const pageClause = nestedLimitClause(bag.take, bag.skip)"));
-    assert!(output.contains("`${key}.{ ${nested} }`"));
 }
 
 #[test]
@@ -291,15 +272,8 @@ fn emits_where_inputs_and_build_where() {
     assert!(output.contains("author?: UserWhereInput | RelationFilter<UserWhereInput>"));
     assert!(output.contains("export type LikesWhereInput = {"));
     assert!(output.contains("score?: number | NumberFilter"));
-    assert!(output.contains("function buildWhere("));
-    assert!(output.contains("function scalarPredicate("));
-    assert!(output.contains("array::len(${collectionExpr}[WHERE ${nestedClause}]) > 0"));
-    assert!(output.contains("string::contains(${path}, ${nextWhereVar(ctx, value.contains)})"));
     assert!(output.contains("filter: \"string\""));
     assert!(output.contains("where?: Record<string, unknown>"));
-    assert!(output.contains("WHERE ${whereClause}"));
-    assert!(output.contains("function uniqueWhereId("));
-    assert!(output.contains("LIMIT 1"));
 }
 
 #[test]
@@ -325,18 +299,6 @@ fn emits_order_by_take_skip() {
     assert!(!output.contains("author?: OrderByRelationCount"));
     assert!(output.contains("export type LikesOrderByInput = {"));
     assert!(output.contains("score?: SortOrder"));
-    assert!(output.contains("function relationCountExpr("));
-    assert!(output.contains("function collectOrderByCountProjections("));
-    assert!(output.contains("function stripOrderByCountFields"));
-    assert!(output.contains("function buildOrderBy("));
-    assert!(output.contains("array::len(${key})"));
-    assert!(output.contains("array::len(${arrow})"));
-    assert!(output.contains("AS ${orderByCountAlias(key)}"));
-    assert!(output.contains("${orderByCountAlias(key)} ${String(dir).toUpperCase()}"));
-    assert!(output.contains("function appendLimitStart("));
-    assert!(output.contains("ORDER BY ${parts.join(\", \")}"));
-    assert!(output.contains("LIMIT $__take"));
-    assert!(output.contains("START $__skip"));
     assert!(output.contains("orderBy?: UserOrderByInput | UserOrderByInput[]"));
     assert!(output.contains("take?: number"));
     assert!(output.contains("skip?: number"));
@@ -361,9 +323,8 @@ fn emits_fluent_create_client() {
 #[test]
 fn emits_transaction_client() {
     let output = generate_fixture();
-    assert!(output.contains("export type SurrealOpsLike = {"));
-    assert!(output.contains("export type SurrealTransactionLike = SurrealOpsLike & {"));
-    assert!(output.contains("beginTransaction(): Promise<SurrealTransactionLike>"));
+    assert!(output.contains("type SurrealOpsLike,"));
+    assert!(output.contains("type SurrealTransactionLike,"));
     assert!(output.contains("async function runTransaction<T>("));
     assert!(output.contains("function buildClientDelegates(db: SurrealOpsLike)"));
     assert!(
@@ -395,10 +356,8 @@ fn emits_raw_query_on_client() {
 #[test]
 fn emits_live_select_on_session_client() {
     let output = generate_fixture();
-    assert!(output.contains("export type LiveAction = \"CREATE\" | \"UPDATE\" | \"DELETE\";"));
-    assert!(output.contains("export type LiveHandle<T> = {"));
-    assert!(output.contains("live<T>(table: string): Promise<LiveHandle<T>>;"));
-    assert!(output.contains("liveOf<T>(id: unknown): Promise<LiveHandle<T>>;"));
+    assert!(output.contains("type LiveAction,"));
+    assert!(output.contains("type LiveHandle,"));
     assert!(output.contains("async function openLiveSelect<T>("));
     assert!(output.contains("throw new Error(\"$live: sql must be a LIVE SELECT statement\")"));
     assert!(output.contains("live: (): Promise<LiveHandle<User>> => db.live<User>(\"user\")"));
@@ -421,14 +380,10 @@ fn emits_where_unique_and_bulk_upsert() {
     assert!(output.contains("email?: string | StringFilter"));
     assert!(output.contains("export type LikesWhereUniqueInput = {"));
     assert!(output.contains("id?: string | IdFilter"));
-    assert!(output.contains("function assertNonEmptyWhere("));
-    assert!(output.contains("function projectRow("));
-    assert!(output.contains("async function createManyVia<T extends { id?: unknown }>("));
-    assert!(output.contains("async function updateManyRecords<T>("));
-    assert!(output.contains("async function deleteManyRecords<T>("));
-    assert!(output.contains("async function upsertRecord<T extends { id?: unknown }>("));
-    assert!(output.contains("UPDATE ${table} MERGE $__data WHERE ${whereClause} RETURN AFTER"));
-    assert!(output.contains("DELETE ${table} WHERE ${whereClause} RETURN BEFORE"));
+    assert!(output.contains("createManyVia,"));
+    assert!(output.contains("updateManyRecords,"));
+    assert!(output.contains("deleteManyRecords,"));
+    assert!(output.contains("upsertRecord,"));
     assert!(output.contains("createMany: <S extends UserSelect"));
     assert!(output.contains("updateMany: <S extends UserSelect"));
     assert!(output.contains("deleteMany: <S extends UserSelect"));
@@ -450,23 +405,11 @@ fn emits_nested_writes() {
     assert!(output.contains("export const WriteMetaByTable"));
     assert!(output.contains("backLinkField: \"author\""));
     assert!(output.contains("kind: \"edge\""));
-    assert!(output.contains("async function createWithNested<"));
-    assert!(output.contains("async function updateWithNested<"));
-    assert!(output.contains("async function applyNestedWrites("));
-    assert!(output.contains("async function queryScript("));
-    assert!(output.contains("async function insertStoredCreates("));
-    assert!(output.contains("INSERT INTO ${group.table} $sc${index} RETURN AFTER"));
-    assert!(output.contains("INSERT INTO ${op.table} ${bindNested(vars, op.rows)} RETURN NONE"));
-    assert!(output.contains("INSERT RELATION INTO ${op.table}"));
-    assert!(output.contains("UPDATE ${bindNested(vars, op.ids)} MERGE"));
-    assert!(output.contains("UNSET ${op.field}"));
-    assert!(output.contains("FOR $pair IN"));
-    assert!(output.contains("LET $far = CREATE ONLY ${op.farTable}"));
-    assert!(output.contains("async function relateEdge("));
+    assert!(output.contains("createWithNested,"));
+    assert!(output.contains("updateWithNested,"));
+    assert!(output.contains("relateEdge,"));
     assert!(output.contains("createWithNested<User>(db, \"user\""));
     assert!(output.contains("updateWithNested(db, \"user\""));
-    assert!(output.contains("nested writes are one hop only"));
-    assert!(output.contains("cannot disconnect required link"));
 }
 
 #[test]
@@ -477,19 +420,10 @@ fn emits_count_and_groupby() {
     assert!(output.contains("export type UserGroupByOrderByInput = {"));
     assert!(output.contains("export type LikesScalarFieldEnum ="));
     assert!(output.contains("export type LikesNumericFieldEnum = \"score\""));
-    assert!(output.contains("async function countRecords("));
-    assert!(output.contains("async function groupByRecords("));
-    assert!(output.contains("GROUP ALL"));
-    assert!(output.contains("GROUP BY ${args.by.join(\", \")}"));
-    assert!(output.contains("math::sum"));
-    assert!(output.contains("math::mean"));
-    assert!(output.contains("count() AS __count_all"));
+    assert!(output.contains("countRecords,"));
+    assert!(output.contains("groupByRecords,"));
     assert!(output.contains("having?: UserHavingInput"));
     assert!(output.contains("having?: LikesHavingInput"));
-    assert!(output.contains("SELECT * FROM ("));
-    assert!(output.contains("having ${key}.${field} was not selected"));
-    assert!(output.contains("groupBy ${table}: by must not be empty"));
-    assert!(output.contains("at least one aggregate"));
     assert!(output.contains("countRecords(db, \"user\""));
     assert!(output.contains("groupByRecords(db, \"user\""));
     assert!(output.contains("countRecords(db, \"likes\""));
@@ -501,14 +435,11 @@ fn emits_count_and_groupby() {
 #[test]
 fn emits_single_update_delete_opts() {
     let output = generate_fixture();
-    assert!(output.contains("export type SingleUpdateResult<"));
-    assert!(output.contains("export type SingleDeleteResult<"));
-    assert!(output.contains("export type SingleUpsertResult<"));
-    assert!(output.contains("async function updateOneRecord<T>("));
-    assert!(output.contains("async function deleteOneRecord<T>("));
-    assert!(output.contains("UPDATE type::record($thing) MERGE $__data RETURN ${projection}"));
-    assert!(output.contains("DELETE type::record($thing) RETURN BEFORE"));
-    assert!(output.contains("delete ${table}: return AFTER is not supported"));
+    assert!(output.contains("type SingleUpdateResult,"));
+    assert!(output.contains("type SingleDeleteResult,"));
+    assert!(output.contains("type SingleUpsertResult,"));
+    assert!(output.contains("updateOneRecord,"));
+    assert!(output.contains("deleteOneRecord,"));
     assert!(output.contains("opts?: { select?: S; return?: R }"));
     assert!(output.contains("SingleUpdateResult<S, R, User, UserGetPayload<S>>"));
     assert!(output.contains("SingleDeleteResult<S, R, User, UserGetPayload<S>>"));
@@ -519,28 +450,11 @@ fn emits_single_update_delete_opts() {
 #[test]
 fn emits_mutation_return_modes() {
     let output = generate_fixture();
-    assert!(
-        output
-            .contains("export type MutationReturn = \"NONE\" | \"BEFORE\" | \"AFTER\" | \"DIFF\"")
-    );
-    assert!(output.contains("export type ManyReturnResult<"));
-    assert!(output.contains("function assertReturnSelectExclusive("));
-    assert!(output.contains("async function countMatching("));
-    assert!(
-        output.contains("SELECT count() AS count FROM ${table} WHERE ${whereClause} GROUP ALL")
-    );
+    assert!(output.contains("type MutationReturn,"));
+    assert!(output.contains("type ManyReturnResult,"));
     assert!(output.contains("return?: MutationReturn"));
-    assert!(output.contains("CREATE ${table} CONTENT $__row RETURN DIFF"));
-    assert!(output.contains("INSERT RELATION INTO"));
-    assert!(output.contains("INSERT INTO"));
-    assert!(output.contains("`${keyword} ${table} $rows RETURN ${returning}`"));
     assert!(output.contains("createUser(db, data as UserCreateInput), false)"));
     assert!(output.contains("createLikes(db, data as LikesCreateInput), true)"));
-    assert!(output.contains("RETURN NONE"));
-    assert!(output.contains("RETURN DIFF"));
-    assert!(output.contains("return BEFORE is not supported"));
-    assert!(output.contains("return AFTER is not supported"));
-    assert!(output.contains("select and return are mutually exclusive"));
     assert!(output.contains("Exclude<MutationReturn, \"BEFORE\">"));
     assert!(output.contains("Exclude<MutationReturn, \"AFTER\">"));
     assert!(output.contains("return?: R"));

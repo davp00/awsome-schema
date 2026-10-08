@@ -1,0 +1,41 @@
+{
+  "name": "awesome-schema",
+  "version": "0.0.0-alpha.0",
+  "description": "Awesome Schema client runtime and CLI launcher (alpha).",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davp00/awesome-schema.git"
+  },
+  "bin": {
+    "awesome-schema": "./bin/awesome-schema.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepack": "pnpm run build",
+    "postinstall": "node ./bin/postinstall.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}
