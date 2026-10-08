@@ -207,8 +207,10 @@ fn validate_links(schema: &DatabaseSchema) -> Result<(), DomainError> {
 
     for (name, sides) in named {
         if sides.len() == 2 {
-            let stored_count =
-                sides.iter().filter(|(_, _, storage, _)| *storage == Some(LinkStorage::Stored)).count();
+            let stored_count = sides
+                .iter()
+                .filter(|(_, _, storage, _)| *storage == Some(LinkStorage::Stored))
+                .count();
             if stored_count != 1 {
                 return Err(DomainError::ValidationError(format!(
                     "@link(\"{name}\") must resolve to exactly one stored side"
@@ -603,7 +605,9 @@ mod tests {
         nested_id.is_id = true;
         schema.models[0].fields.push(nested_id);
         let error = validate_schema(&schema).expect_err("nested id");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("cannot use @id")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("cannot use @id"))
+        );
     }
 
     #[test]
@@ -612,7 +616,9 @@ mod tests {
         schema.models[0].fields.push(bare_field("metadata", FieldType::String));
         schema.models[0].fields.push(bare_field("metadata.user_id", FieldType::Int));
         let error = validate_schema(&schema).expect_err("parent not object");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("must be type object")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("must be type object"))
+        );
     }
 
     #[test]
@@ -629,7 +635,9 @@ mod tests {
             vector_dist: None,
         });
         let error = validate_schema(&schema).expect_err("empty index");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("at least one field")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("at least one field"))
+        );
     }
 
     #[test]
@@ -683,7 +691,9 @@ mod tests {
             vector_dist: None,
         });
         let error = validate_schema(&schema).expect_err("unknown index field");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("unknown field")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("unknown field"))
+        );
     }
 
     #[test]
@@ -722,10 +732,8 @@ mod tests {
             permissions: None,
             attributes: BTreeMap::new(),
         });
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.relation_name = Some("likes".to_owned()); // snake_case table name
         schema.models[0].fields.push(posts);
         validate_schema(&schema).expect("relation by table_name");
@@ -753,10 +761,8 @@ mod tests {
         };
         edge.attributes.insert("map".to_owned(), "user_likes_post".to_owned());
         schema.edges.push(edge);
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.relation_name = Some("user_likes_post".to_owned());
         schema.models[0].fields.push(posts);
         validate_schema(&schema).expect("relation by map");
@@ -787,7 +793,9 @@ mod tests {
         field.relation_name = Some("Likes".to_owned());
         schema.models[0].fields.push(field);
         let error = validate_schema(&schema).expect_err("both link and relation");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("both @link and @relation")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("both @link and @relation"))
+        );
     }
 
     #[test]
@@ -797,7 +805,9 @@ mod tests {
         field.on_delete = Some(OnDeleteAction::Cascade);
         schema.models[0].fields.push(field);
         let error = validate_schema(&schema).expect_err("onDelete without link");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("@onDelete requires @link")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("@onDelete requires @link"))
+        );
     }
 
     #[test]
@@ -807,7 +817,9 @@ mod tests {
         field.link_target = Some("Post".to_owned());
         schema.models[0].fields.push(field);
         let error = validate_schema(&schema).expect_err("unknown link target");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("unknown model")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("unknown model"))
+        );
     }
 
     #[test]
@@ -817,7 +829,9 @@ mod tests {
         field.link_target = Some("User".to_owned());
         schema.models[0].fields.push(field);
         let error = validate_schema(&schema).expect_err("non-model link");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("requires a model type")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("requires a model type"))
+        );
     }
 
     #[test]
@@ -831,14 +845,17 @@ mod tests {
             indexes: Vec::new(),
             attributes: BTreeMap::new(),
         });
-        let mut field = bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
+        let mut field =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         field.link_target = Some("Post".to_owned());
         field.link_name = Some("Author".to_owned());
         field.link_storage = Some(LinkStorage::Computed);
         field.on_delete = Some(OnDeleteAction::Cascade);
         schema.models[0].fields.push(field);
         let error = validate_schema(&schema).expect_err("computed onDelete");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("computed @link")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("computed @link"))
+        );
     }
 
     #[test]
@@ -856,10 +873,8 @@ mod tests {
         author.link_target = Some("User".to_owned());
         author.link_name = Some("Author".to_owned());
         author.link_storage = Some(LinkStorage::Computed);
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.link_target = Some("Post".to_owned());
         posts.link_name = Some("Author".to_owned());
         posts.link_storage = Some(LinkStorage::Computed);
@@ -889,7 +904,9 @@ mod tests {
         c.link_storage = Some(LinkStorage::Computed);
         schema.models[0].fields.extend([a, b, c]);
         let error = validate_schema(&schema).expect_err("more than two");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("more than two")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("more than two"))
+        );
     }
 
     #[test]
@@ -903,17 +920,13 @@ mod tests {
             indexes: Vec::new(),
             attributes: BTreeMap::new(),
         });
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.link_target = Some("Post".to_owned());
         posts.link_name = Some("Tagged".to_owned());
         posts.link_storage = Some(LinkStorage::Stored);
-        let mut users = bare_field(
-            "users",
-            FieldType::Array(Box::new(FieldType::Model("User".to_owned()))),
-        );
+        let mut users =
+            bare_field("users", FieldType::Array(Box::new(FieldType::Model("User".to_owned()))));
         users.link_target = Some("User".to_owned());
         users.link_name = Some("Tagged".to_owned());
         users.link_storage = Some(LinkStorage::Computed);

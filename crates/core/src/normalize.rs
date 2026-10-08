@@ -231,11 +231,7 @@ fn resolve_stored_computed<'a>(
 ) -> Result<(&'a LinkRef, &'a LinkRef), DomainError> {
     if left.is_list != right.is_list {
         // singular = stored, list = computed
-        return if left.is_list {
-            Ok((right, left))
-        } else {
-            Ok((left, right))
-        };
+        return if left.is_list { Ok((right, left)) } else { Ok((left, right)) };
     }
 
     // 1-1: both singular
@@ -460,7 +456,9 @@ mod tests {
         let mut schema = sample_schema();
         schema.object_types.push(schema.object_types[0].clone());
         let error = normalize_schema(&mut schema).expect_err("duplicate object type");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("more than once")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("more than once"))
+        );
     }
 
     #[test]
@@ -468,7 +466,9 @@ mod tests {
         let mut schema = sample_schema();
         schema.object_types[0].name = "User".to_owned();
         let error = normalize_schema(&mut schema).expect_err("name conflict");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("conflicts with model")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("conflicts with model"))
+        );
     }
 
     #[test]
@@ -526,10 +526,7 @@ mod tests {
             FieldType::Model("UserMetadata".to_owned())
         );
         assert!(!schema.models[0].fields.iter().any(|field| field.name == "meta.source"));
-        assert_eq!(
-            schema.models[0].fields[1].link_storage,
-            Some(LinkStorage::Stored)
-        );
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Stored));
     }
 
     #[test]
@@ -546,22 +543,20 @@ mod tests {
         c.link_name = Some("Triple".to_owned());
         schema.models.push(model_named("User", vec![id_field("User"), a, b, c]));
         let error = normalize_schema(&mut schema).expect_err("more than two");
-        assert!(matches!(error, DomainError::ValidationError(msg) if msg.contains("more than two")));
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("more than two"))
+        );
     }
 
     #[test]
     fn rejects_many_to_many_link_on_both_sides() {
         let mut schema = empty_base_schema();
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.link_target = Some("Post".to_owned());
         posts.link_name = Some("Tagged".to_owned());
-        let mut users = bare_field(
-            "users",
-            FieldType::Array(Box::new(FieldType::Model("User".to_owned()))),
-        );
+        let mut users =
+            bare_field("users", FieldType::Array(Box::new(FieldType::Model("User".to_owned()))));
         users.link_target = Some("User".to_owned());
         users.link_name = Some("Tagged".to_owned());
         schema.models.push(model_named("User", vec![id_field("User"), posts]));
@@ -576,10 +571,8 @@ mod tests {
         let mut author = bare_field("author", FieldType::Model("User".to_owned()));
         author.link_target = Some("User".to_owned());
         author.on_delete = Some(OnDeleteAction::Cascade);
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.link_target = Some("Post".to_owned());
         schema.models.push(model_named("User", vec![id_field("User"), posts]));
         schema.models.push(model_named("Post", vec![id_field("Post"), author]));
@@ -587,14 +580,8 @@ mod tests {
         let inferred = schema.models[0].fields[1].link_name.as_deref();
         assert_eq!(inferred, Some("PostUser"));
         assert_eq!(schema.models[1].fields[1].link_name.as_deref(), Some("PostUser"));
-        assert_eq!(
-            schema.models[1].fields[1].link_storage,
-            Some(LinkStorage::Stored)
-        );
-        assert_eq!(
-            schema.models[0].fields[1].link_storage,
-            Some(LinkStorage::Computed)
-        );
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Stored));
+        assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Computed));
     }
 
     #[test]
@@ -605,10 +592,8 @@ mod tests {
         author.link_target = Some("User".to_owned());
         author.link_name = Some("PostAuthor".to_owned());
         author.on_delete = Some(OnDeleteAction::Cascade);
-        let mut posts = bare_field(
-            "posts",
-            FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))),
-        );
+        let mut posts =
+            bare_field("posts", FieldType::Array(Box::new(FieldType::Model("Post".to_owned()))));
         posts.link_target = Some("Post".to_owned());
         posts.link_name = Some("PostAuthor".to_owned());
         schema.models.push(model_named("Post", vec![id_field("Post"), author]));
@@ -670,10 +655,7 @@ mod tests {
         normalize_schema(&mut schema).expect("normalize");
         assert_eq!(schema.models[0].fields[1].link_storage, Some(LinkStorage::Stored));
         assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Computed));
-        assert_eq!(
-            schema.models[1].fields[1].link_opposite_field.as_deref(),
-            Some("profile")
-        );
+        assert_eq!(schema.models[1].fields[1].link_opposite_field.as_deref(), Some("profile"));
         assert!(schema.models[1].fields[1].on_delete.is_none());
     }
 
@@ -705,20 +687,11 @@ mod tests {
         authored.on_delete = Some(OnDeleteAction::Cascade);
         let mut reviewed = bare_field("reviewed", FieldType::Model("Post".to_owned()));
         reviewed.link_target = Some("Post".to_owned());
-        schema.models.push(model_named(
-            "User",
-            vec![id_field("User"), authored, reviewed],
-        ));
+        schema.models.push(model_named("User", vec![id_field("User"), authored, reviewed]));
         schema.models.push(model_named("Post", vec![id_field("Post")]));
         normalize_schema(&mut schema).expect("normalize");
-        assert_eq!(
-            schema.models[0].fields[1].link_name.as_deref(),
-            Some("PostUser")
-        );
-        assert_eq!(
-            schema.models[0].fields[2].link_name.as_deref(),
-            Some("PostUser")
-        );
+        assert_eq!(schema.models[0].fields[1].link_name.as_deref(), Some("PostUser"));
+        assert_eq!(schema.models[0].fields[2].link_name.as_deref(), Some("PostUser"));
     }
 
     #[test]
@@ -766,10 +739,7 @@ mod tests {
         schema.models.push(model_named("User", vec![id_field("User")]));
         schema.models.push(model_named("Post", vec![id_field("Post"), author]));
         normalize_schema(&mut schema).expect("normalize");
-        assert_eq!(
-            schema.models[1].fields[1].link_storage,
-            Some(LinkStorage::Stored)
-        );
+        assert_eq!(schema.models[1].fields[1].link_storage, Some(LinkStorage::Stored));
     }
 
     #[test]

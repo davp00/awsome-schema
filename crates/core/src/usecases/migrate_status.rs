@@ -44,10 +44,8 @@ impl MigrateStatusUseCase {
         self.ledger.ensure_schema(&config)?;
 
         let applied_rows = self.ledger.list_applied(&config)?;
-        let applied_by_name = applied_rows
-            .into_iter()
-            .map(|row| (row.name.clone(), row))
-            .collect::<BTreeMap<_, _>>();
+        let applied_by_name =
+            applied_rows.into_iter().map(|row| (row.name.clone(), row)).collect::<BTreeMap<_, _>>();
 
         let migrations = self
             .migration_store

@@ -35,8 +35,7 @@ fn db_pull_use_case_delegates_to_introspector() {
     let mut preserve = core::DatabaseSchema::empty();
     preserve.datasource.provider = "surrealdb".into();
     preserve.datasource.url = Some("127.0.0.1:1".into());
-    let output = DbPullUseCase::new(Arc::new(Stub))
-        .execute(DbPullInput { preserve })
-        .expect("pull");
+    let output =
+        DbPullUseCase::new(Arc::new(Stub)).execute(DbPullInput { preserve }).expect("pull");
     assert!(output.schema.models.is_empty());
 }

@@ -214,10 +214,7 @@ mod tests {
         assert_eq!(FieldType::RecordId("User".into()).base_surreal_type_name(), "record<User>");
         assert_eq!(FieldType::Model("Post".into()).base_surreal_type_name(), "record<Post>");
         assert_eq!(FieldType::Custom("geometry".into()).base_surreal_type_name(), "geometry");
-        assert_eq!(
-            FieldType::String.surreal_type_name(true),
-            "option<string>"
-        );
+        assert_eq!(FieldType::String.surreal_type_name(true), "option<string>");
         assert_eq!(FieldType::Int.surreal_type_name(false), "int");
     }
 
@@ -248,10 +245,7 @@ mod tests {
             Some("Post")
         );
         assert_eq!(FieldType::String.link_model_name(), None);
-        assert_eq!(
-            FieldType::Array(Box::new(FieldType::String)).link_model_name(),
-            None
-        );
+        assert_eq!(FieldType::Array(Box::new(FieldType::String)).link_model_name(), None);
         assert_eq!(FieldType::RecordId("User".into()).link_model_name(), None);
     }
 }

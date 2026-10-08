@@ -33,7 +33,10 @@ impl MigrateRollbackUseCase {
         Self { migration_store, filesystem, database, ledger }
     }
 
-    pub fn execute(&self, port: MigrateRollbackInput) -> Result<MigrateRollbackOutput, DomainError> {
+    pub fn execute(
+        &self,
+        port: MigrateRollbackInput,
+    ) -> Result<MigrateRollbackOutput, DomainError> {
         if port.steps == 0 {
             return Ok(MigrateRollbackOutput { rolled_back: Vec::new() });
         }
@@ -47,11 +50,8 @@ impl MigrateRollbackUseCase {
             _ => right.name.cmp(&left.name),
         });
 
-        let folder_names = self
-            .migration_store
-            .list_migrations()?
-            .into_iter()
-            .collect::<BTreeSet<_>>();
+        let folder_names =
+            self.migration_store.list_migrations()?.into_iter().collect::<BTreeSet<_>>();
 
         let mut rolled_back = Vec::new();
         for record in applied.into_iter().take(port.steps) {
@@ -62,8 +62,7 @@ impl MigrateRollbackUseCase {
                 )));
             }
 
-            let down_path =
-                format!("{}/{}/migration.down.surql", port.migrations_dir, record.name);
+            let down_path = format!("{}/{}/migration.down.surql", port.migrations_dir, record.name);
             if !self.filesystem.exists(&down_path) {
                 return Err(DomainError::MigrationError(format!(
                     "migration `{}` has no migration.down.surql",

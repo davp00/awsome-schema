@@ -63,7 +63,16 @@ fn normalize_whitespace(input: &str) -> String {
         lines.pop();
     }
 
-    if lines.is_empty() { String::new() } else { format!("{}
-", lines.join("
-")) }
+    if lines.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "{}
+",
+            lines.join(
+                "
+"
+            )
+        )
+    }
 }
