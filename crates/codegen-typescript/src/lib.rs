@@ -1,6 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 mod surreal;
+mod types;
 
 use codegen::CodeGenerator;
 use core::usecases::CodeGeneratorPort;
