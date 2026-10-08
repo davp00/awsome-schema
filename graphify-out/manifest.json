@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791415756.740774,
-    "seen": 1791415950.8098261,
-    "ast_hash": "ebe7fc3955071f1f94ae85553d2fd21d",
+    "mtime": 1791461731.1251025,
+    "seen": 1791461961.820132,
+    "ast_hash": "772b3f24b99cab4d9576fbc4a235d02b",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791415709.6076388,
-    "seen": 1791415950.809827,
-    "ast_hash": "f9f94588d2956bf39a07b933ea01c0fa",
+    "mtime": 1791461712.4451625,
+    "seen": 1791461961.8201332,
+    "ast_hash": "a1401a4d3f1d7563ae73340ca3195e0f",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791414085.6604025,
-    "seen": 1791414379.427595,
-    "ast_hash": "2324551d329b038f02902ca6b2ea6c2a",
+    "mtime": 1791461726.3202724,
+    "seen": 1791461961.820182,
+    "ast_hash": "ce7cb714b9aaf5118b40501e46d1d599",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791415781.8542988,
-    "seen": 1791415950.809878,
-    "ast_hash": "2ecfc8453455d292f47d86c82ba00a32",
+    "mtime": 1791461784.1769485,
+    "seen": 1791461961.820183,
+    "ast_hash": "75d6fc11af76ed3630b9af9b0f688212",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -678,9 +678,9 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791415782.0619822,
-    "seen": 1791415950.809879,
-    "ast_hash": "68f9424f1e189c98eb2eb9f120ca2c6d",
+    "mtime": 1791461726.6256006,
+    "seen": 1791461961.820184,
+    "ast_hash": "9e533752925f66d4724cee331fda9902",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-3.3.md": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/tests/aggregate.test.ts": {
-    "mtime": 1791408142.18198,
-    "seen": 1791408174.074836,
-    "ast_hash": "749a29225d21a60dc243853456902496",
+    "mtime": 1791461716.184552,
+    "seen": 1791461961.820162,
+    "ast_hash": "e1812b924e5cdd09e06f35b6815100d2",
     "semantic_hash": ""
   },
   "e2e/typescript/tests/nested-write.test.ts": {
