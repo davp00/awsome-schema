@@ -50,6 +50,18 @@ fn generate_fixture() -> String {
 }
 
 #[test]
+fn rejects_unimplemented_typescript_provider() {
+    let source = FIXTURE.replacen("provider = \"surrealdb\"", "provider = \"postgres\"", 1);
+    let schema = parse(&source).expect("parse");
+    let error = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema)
+        .expect_err("postgres is not implemented");
+    let message = error.to_string();
+    assert!(message.contains("postgres"), "{message}");
+    assert!(message.contains("surrealdb"), "{message}");
+    assert!(!message.contains("RELATE"), "{message}");
+}
+
+#[test]
 fn default_generator_is_constructible() {
     assert_eq!(CodeGenerator::language(&TypeScriptGenerator::new()), "typescript");
 }
