@@ -89,6 +89,16 @@ describe("generated TypeScript client hybrid where", () => {
       });
       expect(byAge.some((row) => recordIdString(row.id) === userId)).toBe(true);
 
+      const bySource = await client.user.findMany({
+        where: { metadata: { source: "where-e2e" } },
+      });
+      expect(bySource.some((row) => recordIdString(row.id) === userId)).toBe(true);
+
+      const byTag = await client.user.findMany({
+        where: { tags: { contains: "filter" } },
+      });
+      expect(byTag.some((row) => recordIdString(row.id) === userId)).toBe(true);
+
       // findUnique: id fast path still works
       const byId = await client.user.findUnique({ where: { id: userId } });
       expect(byId).toBeDefined();

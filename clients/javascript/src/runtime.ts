@@ -3,6 +3,7 @@ export type RecordId<Table extends string = string> = string & { readonly __tabl
 
 export type FieldSelectMeta =
   | { kind: "scalar"; filter: "string" | "number" | "boolean" | "datetime" | "json" | "array" | "id" }
+  | { kind: "object"; fields: Record<string, FieldSelectMeta> }
   | { kind: "stored" | "computed"; targetTable: string; list: boolean }
   | { kind: "edge"; edgeTable: string; dir: "out" | "in"; list: boolean };
 
@@ -740,7 +741,7 @@ export function projectField(
   allMeta: Record<string, Record<string, FieldSelectMeta>>,
 ): string | null {
   if (value === false || value == null) return null;
-  if (fieldMeta.kind === "scalar") return key;
+  if (fieldMeta.kind === "scalar" || fieldMeta.kind === "object") return key;
   if (value === true) {
     if (fieldMeta.kind === "edge") {
       const arrow = fieldMeta.dir === "out" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;
@@ -1331,7 +1332,7 @@ export function relationCountExpr(
   key: string,
   fieldMeta: FieldSelectMeta,
 ): string | null {
-  if (fieldMeta.kind === "scalar" || !fieldMeta.list) return null;
+  if (fieldMeta.kind === "scalar" || fieldMeta.kind === "object" || !fieldMeta.list) return null;
   if (fieldMeta.kind === "edge") {
     const arrow = fieldMeta.dir === "out" ? `->${fieldMeta.edgeTable}` : `<-${fieldMeta.edgeTable}`;
     return `array::len(${arrow})`;
@@ -1562,6 +1563,11 @@ export function buildWhere(
       parts.push(...scalarPredicate(path, value, fieldMeta.filter, ctx));
       continue;
     }
+    if (fieldMeta.kind === "object") {
+      const clause = compileObjectWhere(value, fieldMeta.fields, path, ctx);
+      if (clause) parts.push(clause);
+      continue;
+    }
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     const { mode, nested } = relationMode(value as Record<string, unknown>, fieldMeta.list);
     if (fieldMeta.kind === "edge") {
@@ -1595,6 +1601,57 @@ export function buildWhere(
       path,
     );
     if (nestedClause) parts.push(nestedClause);
+  }
+  return parts.join(" AND ");
+}
+
+/** Compile a typed object filter. `equals` is the whole value; other keys are child paths. */
+export function compileObjectWhere(
+  value: unknown,
+  fields: Record<string, FieldSelectMeta>,
+  path: string,
+  ctx: WhereBuildCtx,
+): string {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return scalarPredicate(path, value, "json", ctx).join(" AND ");
+  }
+  const record = value as Record<string, unknown>;
+  const parts: string[] = [];
+  for (const [key, childValue] of Object.entries(record)) {
+    if (childValue === undefined) continue;
+    if (key === "AND" || key === "OR") {
+      const items = Array.isArray(childValue) ? childValue : [childValue];
+      const joiner = key === "OR" ? " OR " : " AND ";
+      const inner = items
+        .map((item) => compileObjectWhere(item, fields, path, ctx))
+        .filter(Boolean);
+      if (inner.length) parts.push(`(${inner.join(joiner)})`);
+      continue;
+    }
+    if (key === "NOT") {
+      const items = Array.isArray(childValue) ? childValue : [childValue];
+      const inner = items
+        .map((item) => compileObjectWhere(item, fields, path, ctx))
+        .filter(Boolean);
+      if (inner.length === 1) parts.push(`!(${inner[0]})`);
+      else if (inner.length > 1) parts.push(`!((${inner.join(" AND ")}))`);
+      continue;
+    }
+    if (key === "equals") {
+      parts.push(`${path} = ${nextWhereVar(ctx, childValue)}`);
+      continue;
+    }
+    const childMeta = fields[key];
+    if (!childMeta) continue;
+    const childPath = `${path}.${key}`;
+    if (childMeta.kind === "object") {
+      const inner = compileObjectWhere(childValue, childMeta.fields, childPath, ctx);
+      if (inner) parts.push(inner);
+      continue;
+    }
+    if (childMeta.kind === "scalar") {
+      parts.push(...scalarPredicate(childPath, childValue, childMeta.filter, ctx));
+    }
   }
   return parts.join(" AND ");
 }

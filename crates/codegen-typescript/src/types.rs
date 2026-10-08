@@ -34,23 +34,24 @@ pub fn emit_schema_types(
     }
 
     emit_where_shared_types(out);
+    emit_object_where_inputs(out, schema, naming);
     for model in &schema.models {
         emit_model_where_input(out, schema, model, naming);
-        emit_model_where_unique_input(out, model, naming);
+        emit_model_where_unique_input(out, schema, model, naming);
     }
     for edge in &schema.edges {
         emit_edge_where_input(out, schema, edge, naming);
-        emit_edge_where_unique_input(out, edge, naming);
+        emit_edge_where_unique_input(out, schema, edge, naming);
     }
 
     emit_order_by_shared_types(out);
     for model in &schema.models {
         emit_model_order_by_input(out, model, naming);
-        emit_model_aggregate_types(out, model, naming);
+        emit_model_aggregate_types(out, schema, model, naming);
     }
     for edge in &schema.edges {
         emit_edge_order_by_input(out, edge, naming);
-        emit_edge_aggregate_types(out, edge, naming);
+        emit_edge_aggregate_types(out, schema, edge, naming);
     }
 
     emit_tables_const(out, schema, naming);
@@ -361,9 +362,9 @@ fn emit_where_shared_types(out: &mut Vec<String>) {
     out.push(String::new());
     out.push("export type JsonFilter = { equals?: unknown };".to_owned());
     out.push(String::new());
-    out.push("export type ArrayFilter = {".to_owned());
-    out.push("  equals?: unknown[];".to_owned());
-    out.push("  contains?: unknown;".to_owned());
+    out.push("export type ArrayFilter<T> = {".to_owned());
+    out.push("  equals?: T[];".to_owned());
+    out.push("  contains?: T;".to_owned());
     out.push("};".to_owned());
     out.push(String::new());
     out.push("export type IdFilter = { equals?: string; in?: string[] };".to_owned());
@@ -413,7 +414,7 @@ fn emit_model_where_input(
                 ));
             }
         } else if !should_omit_on_record(field) {
-            let filter_ts = where_scalar_union(&field.field_type, field.is_id);
+            let filter_ts = where_type_for_field(schema, &model.name, &model.fields, field, naming);
             out.push(format!("  {name}?: {filter_ts};"));
         }
     }
@@ -423,7 +424,7 @@ fn emit_model_where_input(
 
 fn emit_edge_where_input(
     out: &mut Vec<String>,
-    _schema: &DatabaseSchema,
+    schema: &DatabaseSchema,
     edge: &Edge,
     naming: &NamingContext<'_>,
 ) {
@@ -442,14 +443,19 @@ fn emit_edge_where_input(
     ));
     for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
         let name = naming.field_name(field);
-        let filter_ts = where_scalar_union(&field.field_type, false);
+        let filter_ts = where_type_for_field(schema, &edge.name, &edge.fields, field, naming);
         out.push(format!("  {name}?: {filter_ts};"));
     }
     out.push("};".to_owned());
     out.push(String::new());
 }
 
-fn emit_model_where_unique_input(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
+fn emit_model_where_unique_input(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    model: &Model,
+    naming: &NamingContext<'_>,
+) {
     out.push(format!("export type {}WhereUniqueInput = {{", model.name));
     for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
         if field.is_link() || field.relation_name.is_some() {
@@ -460,7 +466,7 @@ fn emit_model_where_unique_input(out: &mut Vec<String>, model: &Model, naming: &
             out.push(format!("  {name}?: string | IdFilter;"));
         } else if field.unique {
             let name = naming.field_name(field);
-            let filter_ts = where_scalar_union(&field.field_type, false);
+            let filter_ts = where_type_for_field(schema, &model.name, &model.fields, field, naming);
             out.push(format!("  {name}?: {filter_ts};"));
         }
     }
@@ -468,12 +474,17 @@ fn emit_model_where_unique_input(out: &mut Vec<String>, model: &Model, naming: &
     out.push(String::new());
 }
 
-fn emit_edge_where_unique_input(out: &mut Vec<String>, edge: &Edge, naming: &NamingContext<'_>) {
+fn emit_edge_where_unique_input(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    edge: &Edge,
+    naming: &NamingContext<'_>,
+) {
     out.push(format!("export type {}WhereUniqueInput = {{", edge.name));
     out.push("  id?: string | IdFilter;".to_owned());
     for field in edge.fields.iter().filter(|f| !f.name.contains('.') && f.unique) {
         let name = naming.field_name(field);
-        let filter_ts = where_scalar_union(&field.field_type, false);
+        let filter_ts = where_type_for_field(schema, &edge.name, &edge.fields, field, naming);
         out.push(format!("  {name}?: {filter_ts};"));
     }
     out.push("};".to_owned());
@@ -501,10 +512,159 @@ fn where_scalar_union(field_type: &FieldType, is_id: bool) -> String {
         "number" => "number | NumberFilter".to_owned(),
         "boolean" => "boolean | BooleanFilter".to_owned(),
         "datetime" => "Date | string | DateFilter".to_owned(),
-        "array" => "unknown[] | ArrayFilter".to_owned(),
+        "array" => "unknown[] | ArrayFilter<unknown>".to_owned(),
         "id" => "string | IdFilter".to_owned(),
         _ => "unknown | JsonFilter".to_owned(),
     }
+}
+
+fn bare_object_where() -> String {
+    "Record<string, unknown> | { equals?: Record<string, unknown> }".to_owned()
+}
+
+fn array_filter_type(inner: &FieldType, naming: &NamingContext<'_>) -> String {
+    let element = map_object_field_type(inner, naming);
+    format!("{element}[] | ArrayFilter<{element}>")
+}
+
+fn where_type_for_field(
+    schema: &DatabaseSchema,
+    owner: &str,
+    fields: &[Field],
+    field: &Field,
+    naming: &NamingContext<'_>,
+) -> String {
+    if field.is_id {
+        return "string | IdFilter".to_owned();
+    }
+    match &field.field_type {
+        FieldType::Array(inner) => array_filter_type(inner, naming),
+        FieldType::Object => object_where_reference(schema, owner, fields, field),
+        other => where_scalar_union(other, false),
+    }
+}
+
+fn object_where_reference(
+    schema: &DatabaseSchema,
+    owner: &str,
+    fields: &[Field],
+    field: &Field,
+) -> String {
+    if let Some(object_type) = resolve_named_object_type(schema, fields, field) {
+        return format!("{}WhereInput", object_type.name);
+    }
+    if direct_object_children(fields, &field.name).is_empty() {
+        return bare_object_where();
+    }
+    inline_object_where_name(owner, &field.name)
+}
+
+fn where_type_for_declared(
+    schema: &DatabaseSchema,
+    field_type: &FieldType,
+    naming: &NamingContext<'_>,
+) -> String {
+    match field_type {
+        FieldType::Array(inner) => array_filter_type(inner, naming),
+        FieldType::Object => bare_object_where(),
+        FieldType::Model(name)
+            if schema.object_types.iter().any(|object_type| object_type.name == *name) =>
+        {
+            format!("{name}WhereInput")
+        }
+        other => where_scalar_union(other, false),
+    }
+}
+
+fn inline_object_where_name(owner: &str, field_path: &str) -> String {
+    let suffix: String = field_path.split('.').map(pascal_ident).collect();
+    format!("{owner}{suffix}WhereInput")
+}
+
+fn pascal_ident(name: &str) -> String {
+    name.split('_')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            chars.next().map_or_else(String::new, |first| {
+                first.to_uppercase().collect::<String>() + chars.as_str()
+            })
+        })
+        .collect()
+}
+
+fn direct_object_children<'a>(fields: &'a [Field], parent: &str) -> Vec<&'a Field> {
+    let prefix = format!("{parent}.");
+    fields
+        .iter()
+        .filter(|field| {
+            let Some(rest) = field.name.strip_prefix(&prefix) else {
+                return false;
+            };
+            !rest.contains('.')
+        })
+        .collect()
+}
+
+fn emit_object_where_inputs(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    naming: &NamingContext<'_>,
+) {
+    for object_type in &schema.object_types {
+        let type_name = format!("{}WhereInput", object_type.name);
+        out.push(format!("export type {type_name} = {{"));
+        emit_where_combinators(out, &type_name);
+        out.push(format!("  equals?: {};", object_type.name));
+        for field in &object_type.fields {
+            let filter_ts = where_type_for_declared(schema, &field.field_type, naming);
+            out.push(format!("  {}?: {filter_ts};", field.name));
+        }
+        out.push("};".to_owned());
+        out.push(String::new());
+    }
+
+    for model in &schema.models {
+        emit_inline_object_where_inputs(out, schema, &model.name, &model.fields, naming);
+    }
+    for edge in &schema.edges {
+        emit_inline_object_where_inputs(out, schema, &edge.name, &edge.fields, naming);
+    }
+}
+
+fn emit_inline_object_where_inputs(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    owner: &str,
+    fields: &[Field],
+    naming: &NamingContext<'_>,
+) {
+    for field in fields.iter().filter(|field| field.field_type == FieldType::Object) {
+        if resolve_named_object_type(schema, fields, field).is_some() {
+            continue;
+        }
+        let children = direct_object_children(fields, &field.name);
+        if children.is_empty() {
+            continue;
+        }
+        let type_name = inline_object_where_name(owner, &field.name);
+        out.push(format!("export type {type_name} = {{"));
+        emit_where_combinators(out, &type_name);
+        out.push("  equals?: Record<string, unknown>;".to_owned());
+        for child in children {
+            let key = child.name.rsplit('.').next().unwrap_or(&child.name);
+            let filter_ts = where_type_for_field(schema, owner, fields, child, naming);
+            out.push(format!("  {key}?: {filter_ts};"));
+        }
+        out.push("};".to_owned());
+        out.push(String::new());
+    }
+}
+
+fn emit_where_combinators(out: &mut Vec<String>, type_name: &str) {
+    out.push(format!("  AND?: {type_name} | {type_name}[];"));
+    out.push(format!("  OR?: {type_name}[];"));
+    out.push(format!("  NOT?: {type_name} | {type_name}[];"));
 }
 
 fn emit_order_by_shared_types(out: &mut Vec<String>) {
@@ -552,7 +712,12 @@ fn emit_edge_order_by_input(out: &mut Vec<String>, edge: &Edge, naming: &NamingC
     out.push(String::new());
 }
 
-fn emit_model_aggregate_types(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
+fn emit_model_aggregate_types(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    model: &Model,
+    naming: &NamingContext<'_>,
+) {
     let scalars = model_groupby_scalar_fields(model, naming);
     let numerics = model_groupby_numeric_fields(model, naming);
     emit_field_enum(out, &format!("{}ScalarFieldEnum", model.name), &scalars);
@@ -564,7 +729,7 @@ fn emit_model_aggregate_types(out: &mut Vec<String>, model: &Model, naming: &Nam
     out.push("  _count?: { _all?: SortOrder };".to_owned());
     out.push("};".to_owned());
     out.push(String::new());
-    emit_model_having_input(out, model, naming);
+    emit_model_having_input(out, schema, model, naming);
 }
 
 fn emit_having_aggregate_fields(out: &mut Vec<String>, name: &str) {
@@ -576,14 +741,19 @@ fn emit_having_aggregate_fields(out: &mut Vec<String>, name: &str) {
     }
 }
 
-fn emit_model_having_input(out: &mut Vec<String>, model: &Model, naming: &NamingContext<'_>) {
+fn emit_model_having_input(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    model: &Model,
+    naming: &NamingContext<'_>,
+) {
     out.push(format!("export type {}HavingInput = {{", model.name));
     for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
         if field.is_link() || field.relation_name.is_some() || should_omit_on_record(field) {
             continue;
         }
         let name = naming.field_name(field);
-        let filter_ts = where_scalar_union(&field.field_type, field.is_id);
+        let filter_ts = where_type_for_field(schema, &model.name, &model.fields, field, naming);
         out.push(format!("  {name}?: {filter_ts};"));
     }
     emit_having_aggregate_fields(out, &model.name);
@@ -591,7 +761,12 @@ fn emit_model_having_input(out: &mut Vec<String>, model: &Model, naming: &Naming
     out.push(String::new());
 }
 
-fn emit_edge_aggregate_types(out: &mut Vec<String>, edge: &Edge, naming: &NamingContext<'_>) {
+fn emit_edge_aggregate_types(
+    out: &mut Vec<String>,
+    schema: &DatabaseSchema,
+    edge: &Edge,
+    naming: &NamingContext<'_>,
+) {
     let scalars = edge_groupby_scalar_fields(edge, naming);
     let numerics = edge_groupby_numeric_fields(edge, naming);
     emit_field_enum(out, &format!("{}ScalarFieldEnum", edge.name), &scalars);
@@ -607,7 +782,7 @@ fn emit_edge_aggregate_types(out: &mut Vec<String>, edge: &Edge, naming: &Naming
     out.push("  id?: string | IdFilter;".to_owned());
     for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
         let name = naming.field_name(field);
-        let filter_ts = where_scalar_union(&field.field_type, false);
+        let filter_ts = where_type_for_field(schema, &edge.name, &edge.fields, field, naming);
         out.push(format!("  {name}?: {filter_ts};"));
     }
     emit_having_aggregate_fields(out, &edge.name);
@@ -1024,9 +1199,9 @@ fn map_scalar_or_object(
     match field_type {
         FieldType::Object => {
             if let Some((schema, model)) = ctx
-                && let Some(name) = resolve_named_object_type(schema, model, field)
+                && let Some(object_type) = resolve_named_object_type(schema, &model.fields, field)
             {
-                return name;
+                return object_type.name.clone();
             }
             "Record<string, unknown>".to_owned()
         }
@@ -1037,30 +1212,29 @@ fn map_scalar_or_object(
     }
 }
 
-fn resolve_named_object_type(
-    schema: &DatabaseSchema,
-    model: &Model,
+fn resolve_named_object_type<'a>(
+    schema: &'a DatabaseSchema,
+    fields: &[Field],
     parent: &Field,
-) -> Option<String> {
+) -> Option<&'a ObjectTypeDefinition> {
     let prefix = format!("{}.", parent.name);
     let nested: Vec<&Field> =
-        model.fields.iter().filter(|field| field.name.starts_with(&prefix)).collect();
+        fields.iter().filter(|field| field.name.starts_with(&prefix)).collect();
 
-    schema.object_types.iter().find_map(|object_type| {
+    schema.object_types.iter().find(|object_type| {
         if object_type.flexible != parent.flexible {
-            return None;
+            return false;
         }
         if object_type.fields.len() != nested.len() {
-            return None;
+            return false;
         }
-        let matched = object_type.fields.iter().all(|candidate| {
+        object_type.fields.iter().all(|candidate| {
             nested.iter().any(|field| {
                 field.name == format!("{}.{}", parent.name, candidate.name)
                     && field.field_type == candidate.field_type
                     && field.optional == candidate.optional
             })
-        });
-        matched.then(|| object_type.name.clone())
+        })
     })
 }
 
@@ -1104,6 +1278,75 @@ fn resolve_edge_type_name(schema: &DatabaseSchema, relation_name: &str) -> Strin
         .map_or_else(|| relation_name.to_owned(), |edge| edge.name.clone())
 }
 
+fn select_field_meta(schema: &DatabaseSchema, fields: &[Field], field: &Field) -> String {
+    if field.field_type == FieldType::Object {
+        if let Some(object_type) = resolve_named_object_type(schema, fields, field) {
+            return object_type_select_meta(schema, object_type, &mut Vec::new());
+        }
+        let children = direct_object_children(fields, &field.name);
+        if !children.is_empty() {
+            return inline_object_select_meta(schema, fields, &field.name, &children);
+        }
+    }
+    let filter = scalar_filter_kind(&field.field_type, field.is_id);
+    format!("{{ kind: \"scalar\", filter: \"{filter}\" }}")
+}
+
+fn inline_object_select_meta(
+    schema: &DatabaseSchema,
+    fields: &[Field],
+    parent: &str,
+    children: &[&Field],
+) -> String {
+    let parts = children
+        .iter()
+        .map(|child| {
+            let key = child.name.strip_prefix(&format!("{parent}.")).unwrap_or(&child.name);
+            let meta = select_field_meta(schema, fields, child);
+            format!("{key}: {meta}")
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{{ kind: \"object\", fields: {{ {parts} }} }}")
+}
+
+fn object_type_select_meta(
+    schema: &DatabaseSchema,
+    object_type: &ObjectTypeDefinition,
+    stack: &mut Vec<String>,
+) -> String {
+    if stack.iter().any(|name| name == &object_type.name) {
+        return "{ kind: \"scalar\", filter: \"json\" }".to_owned();
+    }
+    stack.push(object_type.name.clone());
+    let parts = object_type
+        .fields
+        .iter()
+        .map(|field| {
+            let meta = declared_field_select_meta(schema, &field.field_type, stack);
+            format!("{}: {meta}", field.name)
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    stack.pop();
+    format!("{{ kind: \"object\", fields: {{ {parts} }} }}")
+}
+
+fn declared_field_select_meta(
+    schema: &DatabaseSchema,
+    field_type: &FieldType,
+    stack: &mut Vec<String>,
+) -> String {
+    if let FieldType::Model(name) = field_type
+        && let Some(object_type) =
+            schema.object_types.iter().find(|candidate| candidate.name == *name)
+    {
+        return object_type_select_meta(schema, object_type, stack);
+    }
+    let filter = scalar_filter_kind(field_type, false);
+    format!("{{ kind: \"scalar\", filter: \"{filter}\" }}")
+}
+
 fn emit_tables_const(out: &mut Vec<String>, schema: &DatabaseSchema, naming: &NamingContext<'_>) {
     out.push("export const Tables = {".to_owned());
     for model in &schema.models {
@@ -1126,6 +1369,7 @@ fn emit_select_meta_registry(
         "  | { kind: \"scalar\"; filter: \"string\" | \"number\" | \"boolean\" | \"datetime\" | \"json\" | \"array\" | \"id\" }"
             .to_owned(),
     );
+    out.push("  | { kind: \"object\"; fields: Record<string, FieldSelectMeta> }".to_owned());
     out.push(
         "  | { kind: \"stored\" | \"computed\"; targetTable: string; list: boolean }".to_owned(),
     );
@@ -1174,8 +1418,8 @@ fn emit_select_meta_registry(
                     "    {name}: {{ kind: \"{kind}\", targetTable: \"{target_table}\", list: {list} }},"
                 ));
             } else if !should_omit_on_record(field) {
-                let filter = scalar_filter_kind(&field.field_type, field.is_id);
-                out.push(format!("    {name}: {{ kind: \"scalar\", filter: \"{filter}\" }},"));
+                let meta = select_field_meta(schema, &model.fields, field);
+                out.push(format!("    {name}: {meta},"));
             }
         }
         out.push("  },".to_owned());
@@ -1195,8 +1439,8 @@ fn emit_select_meta_registry(
         ));
         for field in edge.fields.iter().filter(|f| !f.name.contains('.')) {
             let name = naming.field_name(field);
-            let filter = scalar_filter_kind(&field.field_type, false);
-            out.push(format!("    {name}: {{ kind: \"scalar\", filter: \"{filter}\" }},"));
+            let meta = select_field_meta(schema, &edge.fields, field);
+            out.push(format!("    {name}: {meta},"));
         }
         out.push("  },".to_owned());
     }

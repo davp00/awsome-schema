@@ -24,6 +24,10 @@ model User {
   age int?
   metadata UserMetadata
   tags string[]
+  profile object?
+  prefs object {
+    theme string
+  }
   posts Post[] @link("PostAuthor")
   liked Post[] @relation("Likes")
   @@table(schemafull)
@@ -135,6 +139,37 @@ fn emits_object_type_and_skips_dotted_nested_fields() {
     assert!(output.contains("[key: string]: unknown;"));
     assert!(output.contains("metadata: UserMetadata"));
     assert!(!output.contains("metadata.user_id"));
+}
+
+#[test]
+fn emits_typed_object_and_array_where_inputs() {
+    let output = generate_fixture();
+    let start = output.find("export type UserMetadataWhereInput = {").expect("where type");
+    let end = output[start..].find("\nexport type ").expect("next type");
+    let block = &output[start..start + end];
+    assert!(block.contains("AND?: UserMetadataWhereInput | UserMetadataWhereInput[];"));
+    assert!(block.contains("equals?: UserMetadata;"));
+    assert!(block.contains("user_id?: number | NumberFilter;"));
+    assert!(block.contains("source?: string | StringFilter;"));
+    assert!(!block.contains("[key: string]"));
+
+    assert!(output.contains("metadata?: UserMetadataWhereInput;"));
+    assert!(output.contains("tags?: string[] | ArrayFilter<string>;"));
+    assert!(
+        output
+            .contains("profile?: Record<string, unknown> | { equals?: Record<string, unknown> };")
+    );
+    assert!(output.contains("export type UserPrefsWhereInput = {"));
+    assert!(output.contains("theme?: string | StringFilter;"));
+    assert!(output.contains("prefs?: UserPrefsWhereInput;"));
+    assert!(output.contains(
+        "metadata: { kind: \"object\", fields: { user_id: { kind: \"scalar\", filter: \"number\" }, source: { kind: \"scalar\", filter: \"string\" } } }"
+    ));
+    assert!(output.contains("profile: { kind: \"scalar\", filter: \"json\" }"));
+    assert!(output.contains(
+        "prefs: { kind: \"object\", fields: { theme: { kind: \"scalar\", filter: \"string\" } } }"
+    ));
+    assert!(output.contains("export type ArrayFilter<T> = {"));
 }
 
 #[test]
@@ -362,7 +397,9 @@ fn emits_live_select_on_session_client() {
     assert!(output.contains("async function openLiveSelect<T>("));
     assert!(output.contains("throw new Error(\"$live: sql must be a LIVE SELECT statement\")"));
     assert!(output.contains("live: (): Promise<LiveHandle<User>> => session.live<User>(\"user\")"));
-    assert!(output.contains("live: (): Promise<LiveHandle<Likes>> => session.live<Likes>(\"likes\")"));
+    assert!(
+        output.contains("live: (): Promise<LiveHandle<Likes>> => session.live<Likes>(\"likes\")")
+    );
     assert!(output.contains(
         "$live: <T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<LiveHandle<T>> =>"
     ));
