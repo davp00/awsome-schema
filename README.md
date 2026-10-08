@@ -165,7 +165,7 @@ cargo run -p cli -- format --write
 # Bulk: createMany/updateMany/deleteMany default { count }; optional select → GetPayload rows
 # Optional return: 'NONE'|'BEFORE'|'AFTER'|'DIFF' on *Many (exclusive with select; BEFORE n/a on create, AFTER n/a on delete)
 # Single update(id, data, { select|return }) / delete(id, { select|return }); upsert adds return (exclusive with select)
-# count({ where? }) → number; groupBy({ by, where?, _count/_sum/_avg/_min/_max, orderBy?, take?, skip? }) → Prisma-lite rows
+# count({ where? }) → number; groupBy({ by, where?, having?, _count/_sum/_avg/_min/_max, orderBy?, take?, skip? }) → Prisma-lite rows
 # Nested writes (one hop): create/update with posts/liked { create|connect|disconnect }; stored links accept connect/create(/disconnect)
 # $transaction(async (tx) => { … }) — interactive Surreal txn (WS/embedded); commit on success, cancel on throw
 # $queryRaw<T>(sql, vars?) returns the first statement's rows; $executeRaw(sql, vars?) returns the raw db.query result (also on the transaction client)

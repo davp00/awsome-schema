@@ -95,6 +95,24 @@ describe("generated TypeScript client count and groupBy", () => {
     expect(groups[1]?.age).toBe(10);
     expect((groups[1]?._count as { _all?: number })?._all).toBe(2);
 
+    const counted = await client.user.groupBy({
+      by: ["age"],
+      where: { email: { contains: suffix } },
+      _count: true,
+      having: { _count: { _all: { gt: 1 } } },
+      orderBy: { age: "asc" },
+    });
+    expect(counted.map((group) => group.age)).toEqual([10, 30]);
+
+    const older = await client.user.groupBy({
+      by: ["age"],
+      where: { email: { contains: suffix } },
+      _count: true,
+      having: { age: { gte: 20 } },
+      orderBy: { age: "asc" },
+    });
+    expect(older.map((group) => group.age)).toEqual([20, 30]);
+
     await expect(
       client.user.groupBy({ by: [], _count: true } as never),
     ).rejects.toThrow(/by must not be empty/);
@@ -159,6 +177,15 @@ describe("generated TypeScript client count and groupBy", () => {
     expect((byScore[0]?._sum as { score?: number })?.score).toBe(2);
     expect(byScore[1]?.score).toBe(5);
     expect((byScore[1]?._count as { _all?: number })?._all).toBe(1);
+
+    const frequent = await client.likes.groupBy({
+      by: ["score"],
+      where: { in: { id: userId } },
+      _count: true,
+      having: { _count: { _all: { gt: 1 } } },
+    });
+    expect(frequent).toHaveLength(1);
+    expect(frequent[0]?.score).toBe(1);
 
     for (const like of likes) {
       await client.likes.delete(recordIdString(like.id));

@@ -472,6 +472,10 @@ fn emits_count_and_groupby() {
     assert!(output.contains("math::sum"));
     assert!(output.contains("math::mean"));
     assert!(output.contains("count() AS __count_all"));
+    assert!(output.contains("having?: UserHavingInput"));
+    assert!(output.contains("having?: LikesHavingInput"));
+    assert!(output.contains("SELECT * FROM ("));
+    assert!(output.contains("having ${key}.${field} was not selected"));
     assert!(output.contains("groupBy ${table}: by must not be empty"));
     assert!(output.contains("at least one aggregate"));
     assert!(output.contains("countRecords(db, \"user\""));
