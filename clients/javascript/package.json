@@ -6,10 +6,10 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davp00/awesome-schema.git"
+    "url": "git+https://github.com/davp00/awsome-schema.git"
   },
   "bin": {
-    "awesome-schema": "./bin/awesome-schema.js"
+    "awesome-schema": "bin/awesome-schema.js"
   },
   "files": [
     "dist",
@@ -23,7 +23,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "test": "vitest run",
     "prepack": "pnpm run build",
     "postinstall": "node ./bin/postinstall.js"

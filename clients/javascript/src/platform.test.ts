@@ -15,7 +15,7 @@ describe("platform binary", () => {
     expect(assetName("aarch64-apple-darwin")).toBe("awesome-schema-aarch64-apple-darwin");
     expect(assetName("x86_64-pc-windows-msvc")).toBe("awesome-schema-x86_64-pc-windows-msvc.exe");
     expect(releaseUrl("0.0.0-alpha.0", "x86_64-unknown-linux-gnu")).toBe(
-      "https://github.com/davp00/awesome-schema/releases/download/v0.0.0-alpha.0/awesome-schema-x86_64-unknown-linux-gnu",
+      "https://github.com/davp00/awsome-schema/releases/download/v0.0.0-alpha.0/awesome-schema-x86_64-unknown-linux-gnu",
     );
   });
 });

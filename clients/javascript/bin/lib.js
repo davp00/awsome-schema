@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 
-const RELEASE_REPO = "davp00/awesome-schema";
+const RELEASE_REPO = "davp00/awsome-schema";
 
 /** Rust target triple for this machine, or null when no binary is published. */
 export function rustTarget(platform = process.platform, arch = process.arch) {
