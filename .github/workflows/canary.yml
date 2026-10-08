@@ -69,6 +69,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: canary-${{ matrix.os }}
+          cache-on-failure: true
+          cache-workspace-crates: true
 
       - name: Build release CLI
         run: cargo build --release -p cli --locked
