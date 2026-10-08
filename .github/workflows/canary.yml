@@ -60,9 +60,6 @@ jobs:
           - os: macos-latest
             asset: awesome-schema-aarch64-apple-darwin
             bin: awesome-schema
-          - os: macos-13
-            asset: awesome-schema-x86_64-apple-darwin
-            bin: awesome-schema
           - os: windows-latest
             asset: awesome-schema-x86_64-pc-windows-msvc.exe
             bin: awesome-schema.exe
