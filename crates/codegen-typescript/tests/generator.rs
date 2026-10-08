@@ -307,7 +307,8 @@ fn emits_order_by_take_skip() {
 #[test]
 fn emits_fluent_create_client() {
     let output = generate_fixture();
-    assert!(output.contains("export function createClient(db: SurrealLike)"));
+    assert!(output.contains("export function createClient(db: Surreal)"));
+    assert!(output.contains("const session = asSurrealLike(db);"));
     assert!(output.contains("user: {"));
     assert!(output.contains("findUnique: <S extends UserSelect"));
     assert!(output.contains("findMany: <S extends UserSelect"));
@@ -335,7 +336,7 @@ fn emits_transaction_client() {
             "$transaction: <T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> =>"
         )
     );
-    assert!(output.contains("runTransaction(db, fn)"));
+    assert!(output.contains("runTransaction(session, fn)"));
     assert!(output.contains("await txn.commit()"));
     assert!(output.contains("await txn.cancel()"));
 }
@@ -360,12 +361,12 @@ fn emits_live_select_on_session_client() {
     assert!(output.contains("type LiveHandle,"));
     assert!(output.contains("async function openLiveSelect<T>("));
     assert!(output.contains("throw new Error(\"$live: sql must be a LIVE SELECT statement\")"));
-    assert!(output.contains("live: (): Promise<LiveHandle<User>> => db.live<User>(\"user\")"));
-    assert!(output.contains("live: (): Promise<LiveHandle<Likes>> => db.live<Likes>(\"likes\")"));
+    assert!(output.contains("live: (): Promise<LiveHandle<User>> => session.live<User>(\"user\")"));
+    assert!(output.contains("live: (): Promise<LiveHandle<Likes>> => session.live<Likes>(\"likes\")"));
     assert!(output.contains(
         "$live: <T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<LiveHandle<T>> =>"
     ));
-    assert!(output.contains("openLiveSelect<T>(db, sql, vars)"));
+    assert!(output.contains("openLiveSelect<T>(session, sql, vars)"));
 
     let delegates_start = output.find("function buildClientDelegates").expect("delegates");
     let create_start = output.find("export function createClient").expect("createClient");

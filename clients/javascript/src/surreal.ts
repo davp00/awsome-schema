@@ -9,40 +9,22 @@ import {
   type SurrealTransaction,
 } from "surrealdb";
 
-/** Minimal shape expected by generated TypeScript client helpers. */
-export type SurrealOpsLike = {
-  query<T = unknown>(sql: string, vars?: Record<string, unknown>): Promise<T>;
-  select<T = unknown>(thing: string): Promise<T>;
-  create<T = unknown>(thing: string, data?: Record<string, unknown>): Promise<T>;
-  merge<T = unknown>(thing: string, data?: Record<string, unknown>): Promise<T>;
-  delete<T = unknown>(thing: string): Promise<T>;
-};
+import type {
+  LiveHandle,
+  SurrealLike,
+  SurrealOpsLike,
+  SurrealTransactionLike,
+} from "./runtime.js";
 
-export type SurrealTransactionLike = SurrealOpsLike & {
-  commit(): Promise<void>;
-  cancel(): Promise<void>;
-};
-
-export type LiveAction = "CREATE" | "UPDATE" | "DELETE";
-
-export type LiveHandle<T> = {
-  subscribe(listener: (action: LiveAction, result: T) => void): void;
-  kill(): Promise<void>;
-};
-
-export type SurrealLike = SurrealOpsLike & {
-  beginTransaction(): Promise<SurrealTransactionLike>;
-  live<T>(table: string): Promise<LiveHandle<T>>;
-  liveOf<T>(id: unknown): Promise<LiveHandle<T>>;
-};
+export type { Surreal } from "surrealdb";
 
 const RECORD_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*:[^\s]+$/;
 
 type SurrealQueryable = Pick<Surreal, "query" | "select" | "create" | "update" | "delete">;
 
 /**
- * Adapt SurrealDB JS v2 to the generated `SurrealLike` surface.
- * v2 uses fluent `.content()` / `.merge()` builders and typed `RecordId` values.
+ * Adapt a SurrealDB JS v2 connection to the operations the generated client calls.
+ * `createClient` does this itself, so callers pass `Surreal` directly.
  */
 export function asSurrealLike(db: Surreal): SurrealLike {
   return {

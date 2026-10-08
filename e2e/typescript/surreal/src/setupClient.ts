@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Surreal } from "surrealdb";
 
-import { asSurrealLike } from "./surrealAdapter.js";
+import { asSurrealLike } from "awesome-schema/runtime";
 import { envPath, type E2eEnv } from "./paths.js";
 
 export function readE2eEnv(): E2eEnv {

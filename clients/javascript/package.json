@@ -45,7 +45,11 @@
   "engines": {
     "node": ">=22"
   },
+  "peerDependencies": {
+    "surrealdb": "^2.0.0"
+  },
   "devDependencies": {
+    "surrealdb": "^2.0.10",
     "typescript": "^5.8.2",
     "vitest": "^3.0.9"
   }
