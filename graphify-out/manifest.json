@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
-    "mtime": 1791475255.3493476,
-    "seen": 1791475574.7016041,
-    "ast_hash": "d0369816f1c29e80c5e9386d650d54ef",
+    "mtime": 1791477538.1299953,
+    "seen": 1791477752.674814,
+    "ast_hash": "00894d8a35fc94cfb332bdd3aa6e99f5",
     "semantic_hash": ""
   },
   "SECURITY.md": {
@@ -1086,9 +1086,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cli-release.yml": {
-    "mtime": 1791475253.010148,
-    "seen": 1791475574.701602,
-    "ast_hash": "c09cc9bfd493e682c5bf6f63a05cca04",
+    "mtime": 1791476383.5046523,
+    "seen": 1791477752.6748118,
+    "ast_hash": "44e52e35a903d80919cc9521dd6f4394",
     "semantic_hash": ""
   },
   ".github/workflows/javascript-client.yml": {
@@ -1098,15 +1098,21 @@
     "semantic_hash": ""
   },
   "clients/javascript/README.md": {
-    "mtime": 1791475254.467043,
-    "seen": 1791475574.701605,
-    "ast_hash": "bbf35112171d7215932d0f19daa155df",
+    "mtime": 1791477537.1128213,
+    "seen": 1791477752.674815,
+    "ast_hash": "bbbfaeed7cd34d648c747de5eab0db2f",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
     "mtime": 1791470528.4218895,
     "seen": 1791472357.3354108,
     "ast_hash": "030d3209beeccbdaceaadeaeb9876bfa",
+    "semantic_hash": ""
+  },
+  ".github/workflows/canary.yml": {
+    "mtime": 1791477536.63658,
+    "seen": 1791477752.674811,
+    "ast_hash": "b4d644e21a21e2d483c7311967d63e1c",
     "semantic_hash": ""
   }
 }
