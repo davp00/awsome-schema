@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791465907.86683,
-    "seen": 1791467417.744718,
-    "ast_hash": "e4c68e3043145fe5609247b177bb342e",
+    "mtime": 1791467779.337692,
+    "seen": 1791468019.506711,
+    "ast_hash": "ffee9e32a2ff512cdfb3050e56dcd455",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -987,6 +987,36 @@
     "mtime": 1791400710.5326521,
     "seen": 1791467417.7447,
     "ast_hash": "3e3bf7d015e37925c61c4013460ae802",
+    "semantic_hash": ""
+  },
+  ".github/ISSUE_TEMPLATE/bug_report.md": {
+    "mtime": 1791467784.265837,
+    "seen": 1791468019.506708,
+    "ast_hash": "d765d5417ce8451646e58bb976a66b19",
+    "semantic_hash": ""
+  },
+  ".github/ISSUE_TEMPLATE/feature_request.md": {
+    "mtime": 1791467785.754436,
+    "seen": 1791468019.506708,
+    "ast_hash": "926abb2f5591a6d196e328b3b48ad769",
+    "semantic_hash": ""
+  },
+  ".github/PULL_REQUEST_TEMPLATE.md": {
+    "mtime": 1791467782.800666,
+    "seen": 1791468019.506709,
+    "ast_hash": "6c92caefcdd0dbf9b1f49480e1fb665e",
+    "semantic_hash": ""
+  },
+  "CONTRIBUTING.md": {
+    "mtime": 1791467965.291445,
+    "seen": 1791468019.50671,
+    "ast_hash": "587af361a10727a430fa6d98d9a4aabc",
+    "semantic_hash": ""
+  },
+  "SECURITY.md": {
+    "mtime": 1791467782.0315487,
+    "seen": 1791468019.506711,
+    "ast_hash": "0374d0ecdec5ca0e2693ac999c0908d0",
     "semantic_hash": ""
   }
 }
