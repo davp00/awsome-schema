@@ -53,7 +53,7 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
         "  type SingleUpdateResult,".to_owned(),
         "  type SingleDeleteResult,".to_owned(),
         "  type SingleUpsertResult,".to_owned(),
-        "} from \"awesome-schema\";".to_owned(),
+        "} from \"awesome-schema/runtime\";".to_owned(),
         "export {".to_owned(),
         "  recordId,".to_owned(),
         "  parseRecordId,".to_owned(),
@@ -69,7 +69,7 @@ fn emit_typescript(schema: &DatabaseSchema) -> String {
         "  type SingleUpdateResult,".to_owned(),
         "  type SingleDeleteResult,".to_owned(),
         "  type SingleUpsertResult,".to_owned(),
-        "} from \"awesome-schema\";".to_owned(),
+        "} from \"awesome-schema/runtime\";".to_owned(),
         String::new(),
     ];
 

@@ -69,7 +69,7 @@ fn default_generator_is_constructible() {
 #[test]
 fn emits_record_id_helper_and_tables() {
     let output = generate_fixture();
-    assert!(output.contains("from \"awesome-schema\""));
+    assert!(output.contains("from \"awesome-schema/runtime\""));
     assert!(output.contains("type RecordId,"));
     assert!(output.contains("recordId,"));
     assert!(output.contains("parseRecordId,"));

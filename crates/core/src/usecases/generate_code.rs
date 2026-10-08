@@ -79,6 +79,9 @@ impl GenerateCodeUseCase {
                 }
             }
             self.filesystem.write_string(&path, &content)?;
+            if let Some(marker) = client_package_json_path(&path) {
+                self.filesystem.write_string(&marker, CLIENT_PACKAGE_JSON)?;
+            }
             Some(path)
         } else {
             None
@@ -107,9 +110,9 @@ pub fn resolve_typescript_output_path(
 
     let output = generator.output.trim();
     if output.is_empty() {
-        return Err(DomainError::CodegenError(
-            "typescript generator has empty output; set output or pass --stdout".to_owned(),
-        ));
+        let node_modules = nearest_node_modules(schema_path, filesystem)?;
+        let client = node_modules.join(".awesome-schema").join("client").join("index.ts");
+        return Ok(normalize_relative_path(client));
     }
 
     let base = if filesystem.is_directory(schema_path) {
@@ -134,6 +137,58 @@ pub fn resolve_typescript_output_path(
     };
 
     Ok(normalize_relative_path(file_path))
+}
+
+const CLIENT_PACKAGE_JSON: &str = "\
+{
+  \"name\": \".awesome-schema\",
+  \"type\": \"module\",
+  \"exports\": {
+    \"./client\": {
+      \"types\": \"./client/index.ts\",
+      \"require\": \"./client/index.cjs\",
+      \"default\": \"./client/index.ts\"
+    }
+  }
+}
+";
+
+/// `node_modules/.awesome-schema/package.json` when `client_index` is the default client file.
+fn client_package_json_path(client_index: &str) -> Option<String> {
+    let path = Path::new(client_index);
+    let client_dir = path.parent()?;
+    if client_dir.file_name()?.to_str()? != "client" {
+        return None;
+    }
+    let root = client_dir.parent()?;
+    if root.file_name()?.to_str()? != ".awesome-schema" {
+        return None;
+    }
+    Some(root.join("package.json").to_string_lossy().into_owned())
+}
+
+fn nearest_node_modules(
+    schema_path: &str,
+    filesystem: &dyn FileSystemPort,
+) -> Result<PathBuf, DomainError> {
+    let mut dir = if filesystem.is_directory(schema_path) {
+        PathBuf::from(schema_path)
+    } else {
+        Path::new(schema_path).parent().map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+    };
+    loop {
+        let candidate = dir.join("node_modules");
+        if filesystem.is_directory(&candidate.to_string_lossy()) {
+            return Ok(candidate);
+        }
+        if !dir.pop() {
+            break;
+        }
+    }
+    Err(DomainError::CodegenError(
+        "typescript generator has no output and no node_modules directory was found; set output or install dependencies"
+            .to_owned(),
+    ))
 }
 
 fn normalize_relative_path(path: PathBuf) -> String {
@@ -231,6 +286,32 @@ mod tests {
         let path =
             resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs).expect("resolve");
         assert!(path.ends_with("gen/client.ts") || path.ends_with("gen\\client.ts"));
+    }
+
+    #[test]
+    fn resolves_empty_output_into_node_modules() {
+        let schema = schema_with_ts_output("");
+        let fs = DirAwareFs { dirs: vec!["/proj/node_modules".to_owned()] };
+        let path =
+            resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs).expect("resolve");
+        assert!(
+            path.ends_with("node_modules/.awesome-schema/client/index.ts")
+                || path.ends_with("node_modules\\.awesome-schema\\client\\index.ts")
+        );
+        let marker = client_package_json_path(&path).expect("marker");
+        assert!(
+            marker.ends_with("node_modules/.awesome-schema/package.json")
+                || marker.ends_with("node_modules\\.awesome-schema\\package.json")
+        );
+    }
+
+    #[test]
+    fn rejects_empty_output_without_node_modules() {
+        let schema = schema_with_ts_output("  ");
+        let fs = DirAwareFs { dirs: Vec::new() };
+        let err =
+            resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs).expect_err("err");
+        assert!(matches!(err, DomainError::CodegenError(_)));
     }
 
     #[test]

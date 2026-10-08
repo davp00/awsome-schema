@@ -14,12 +14,23 @@
   "files": [
     "dist",
     "bin",
+    "client.cjs",
+    "client.d.ts",
+    "bin/compile-client.cjs",
     "README.md"
   ],
   "exports": {
     ".": {
+      "types": "./client.d.ts",
+      "import": "./client.cjs",
+      "require": "./client.cjs",
+      "default": "./client.cjs"
+    },
+    "./runtime": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
