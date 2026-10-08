@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/lib.rs": {
-    "mtime": 1791461731.1251025,
-    "seen": 1791461961.820132,
-    "ast_hash": "772b3f24b99cab4d9576fbc4a235d02b",
+    "mtime": 1791463481.9284797,
+    "seen": 1791464397.247675,
+    "ast_hash": "7166d848014544f48c8ce42d01f41464",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791461712.4451625,
-    "seen": 1791461961.8201332,
-    "ast_hash": "a1401a4d3f1d7563ae73340ca3195e0f",
+    "mtime": 1791463470.1381485,
+    "seen": 1791464397.247676,
+    "ast_hash": "ea28380195eeda4318b743be4ca71295",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -666,9 +666,9 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791461784.1769485,
-    "seen": 1791461961.820183,
-    "ast_hash": "75d6fc11af76ed3630b9af9b0f688212",
+    "mtime": 1791463470.8478131,
+    "seen": 1791464397.247728,
+    "ast_hash": "036dbe39b3f7f04ef8c6f288ce8c28d4",
     "semantic_hash": ""
   },
   "docs/roadmap/original-plan.md": {
@@ -963,6 +963,12 @@
     "mtime": 1791414101.913089,
     "seen": 1791414379.4275782,
     "ast_hash": "8195211a11253524229d3c64130c3b42",
+    "semantic_hash": ""
+  },
+  "crates/codegen-typescript/src/surreal.rs": {
+    "mtime": 1791463489.389198,
+    "seen": 1791464397.247676,
+    "ast_hash": "19a3c64989c7795cb401e3997171c254",
     "semantic_hash": ""
   }
 }
