@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** Package root: e2e/typescript */
+/** Surreal suite root: e2e/typescript/surreal */
 export const packageRoot = resolve(here, "..");
 
 export const envPath = join(packageRoot, ".e2e-env.json");

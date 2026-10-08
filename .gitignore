@@ -13,6 +13,6 @@ graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 
 # TypeScript client e2e
 e2e/typescript/node_modules/
-e2e/typescript/generated/
-e2e/typescript/.e2e-env.json
-e2e/typescript/.tmp/
+e2e/typescript/surreal/generated/
+e2e/typescript/surreal/.e2e-env.json
+e2e/typescript/surreal/.tmp/

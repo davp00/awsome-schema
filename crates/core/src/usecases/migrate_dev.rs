@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::Utc;
 
-use crate::domain::DatabaseSchema;
+use crate::domain::{DatabaseSchema, require_surreal_provider};
 use crate::errors::DomainError;
 use crate::ports::{FileSystemPort, MigrationRenderer, MigrationStore, SchemaSource};
 
@@ -47,6 +47,7 @@ impl MigrateDevUseCase {
 
     pub fn execute(&self, port: MigrateDevInput) -> Result<MigrateDevOutput, DomainError> {
         let current = self.schema_source.load_schema()?;
+        require_surreal_provider(&current.datasource.provider)?;
         let previous = self.migration_store.load_last_snapshot()?;
 
         let name = port

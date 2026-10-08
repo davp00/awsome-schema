@@ -1,12 +1,10 @@
 //! Graph edge (`TYPE RELATION`) e2e against live SurrealDB (soft-skips without Docker).
 
-mod common;
-
 use std::fs;
 
 use predicates::prelude::*;
 
-use common::{TestProject, edge_schema, require_surrealdb, table_exists};
+use super::common::{TestProject, edge_schema, require_surrealdb, table_exists};
 
 #[tokio::test]
 async fn cli_db_push_and_pull_preserves_relation_edge() {

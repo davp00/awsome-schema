@@ -7,6 +7,6 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 120_000,
     hookTimeout: 120_000,
-    globalSetup: ["./globalSetup.ts"],
+    globalSetup: ["./surreal/globalSetup.ts"],
   },
 });

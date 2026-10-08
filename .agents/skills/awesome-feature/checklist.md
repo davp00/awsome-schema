@@ -24,7 +24,7 @@ Copy into the plan or PR notes; check what applies.
 ## Rust e2e
 
 - [ ] N/A — no live Surreal/CLI behavior change
-- [ ] `cargo test -p e2e` (or topic binary) when needed
+- [ ] `cargo test -p e2e --test surreal` when needed
 
 ## Generated-client e2e
 

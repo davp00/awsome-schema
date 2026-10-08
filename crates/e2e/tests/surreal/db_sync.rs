@@ -1,17 +1,16 @@
 //! `db push` / `db pull` e2e against live SurrealDB (soft-skips without Docker).
 
-mod common;
-
 use std::fs;
 use std::path::Path;
 
 use predicates::prelude::*;
 
-use common::{TestProject, require_surrealdb, schema_with_endpoint, table_exists};
+use super::common::{TestProject, require_surrealdb, schema_with_endpoint, table_exists};
 
 #[tokio::test]
 async fn cli_db_push_applies_schema_to_surrealdb() {
-    let Some((_container, endpoint)) = require_surrealdb("cli_db_push_applies_schema_to_surrealdb").await
+    let Some((_container, endpoint)) =
+        require_surrealdb("cli_db_push_applies_schema_to_surrealdb").await
     else {
         return;
     };
@@ -32,7 +31,8 @@ async fn cli_db_push_applies_schema_to_surrealdb() {
 
 #[tokio::test]
 async fn cli_db_pull_overwrites_schema_after_push() {
-    let Some((_container, endpoint)) = require_surrealdb("cli_db_pull_overwrites_schema_after_push").await
+    let Some((_container, endpoint)) =
+        require_surrealdb("cli_db_pull_overwrites_schema_after_push").await
     else {
         return;
     };

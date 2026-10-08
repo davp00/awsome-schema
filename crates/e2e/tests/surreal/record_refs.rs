@@ -1,12 +1,10 @@
 //! Record reference (`@link` / REFERENCE / COMPUTED) e2e (soft-skips live tests without Docker).
 
-mod common;
-
 use std::fs;
 
 use predicates::prelude::*;
 
-use common::{
+use super::common::{
     TestProject, field_define, record_ref_schema, require_surrealdb, table_exists,
 };
 

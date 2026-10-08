@@ -1,12 +1,10 @@
 //! Offline CLI e2e (no Docker / SurrealDB required).
 
-mod common;
-
 use std::path::Path;
 
 use predicates::prelude::*;
 
-use common::{TestProject, minimal_schema, record_ref_schema};
+use super::common::{TestProject, minimal_schema, record_ref_schema};
 
 #[tokio::test]
 async fn cli_init_creates_project_files() {

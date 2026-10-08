@@ -1,7 +1,7 @@
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
-use crate::domain::DatabaseSchema;
+use crate::domain::{DatabaseSchema, require_surreal_provider};
 use crate::errors::DomainError;
 use crate::ports::{FileSystemPort, SchemaRenderer, SchemaSource};
 
@@ -61,13 +61,17 @@ impl GenerateCodeUseCase {
         let schema = self.schema_source.load_schema()?;
 
         let content = match port.target {
-            GenerateCodeTarget::Schema => self.schema_renderer.render_schema(&schema)?,
+            GenerateCodeTarget::Schema => {
+                require_surreal_provider(&schema.datasource.provider)?;
+                self.schema_renderer.render_schema(&schema)?
+            }
             GenerateCodeTarget::Rust => self.rust_generator.generate(&schema)?,
             GenerateCodeTarget::TypeScript => self.typescript_generator.generate(&schema)?,
         };
 
         let written_path = if port.target == GenerateCodeTarget::TypeScript && !port.stdout {
-            let path = resolve_typescript_output_path(&schema, &self.schema_path, &*self.filesystem)?;
+            let path =
+                resolve_typescript_output_path(&schema, &self.schema_path, &*self.filesystem)?;
             if let Some(parent) = Path::new(&path).parent() {
                 let parent_str = parent.to_string_lossy();
                 if !parent_str.is_empty() && parent_str != "." {
@@ -111,18 +115,12 @@ pub fn resolve_typescript_output_path(
     let base = if filesystem.is_directory(schema_path) {
         PathBuf::from(schema_path)
     } else {
-        Path::new(schema_path)
-            .parent()
-            .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+        Path::new(schema_path).parent().map_or_else(|| PathBuf::from("."), Path::to_path_buf)
     };
 
     let resolved = {
         let output_path = Path::new(output);
-        if output_path.is_absolute() {
-            output_path.to_path_buf()
-        } else {
-            base.join(output_path)
-        }
+        if output_path.is_absolute() { output_path.to_path_buf() } else { base.join(output_path) }
     };
 
     let file_path = if resolved
@@ -152,11 +150,7 @@ fn normalize_relative_path(path: PathBuf) -> String {
             other => parts.push(other.as_os_str().to_string_lossy().into_owned()),
         }
     }
-    if parts.is_empty() {
-        "index.ts".to_owned()
-    } else {
-        parts.join("/")
-    }
+    if parts.is_empty() { "index.ts".to_owned() } else { parts.join("/") }
 }
 
 #[cfg(test)]
@@ -225,8 +219,8 @@ mod tests {
     fn resolves_directory_output_to_index_ts() {
         let schema = schema_with_ts_output("./generated");
         let fs = DirAwareFs { dirs: Vec::new() };
-        let path = resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs)
-            .expect("resolve");
+        let path =
+            resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs).expect("resolve");
         assert!(path.ends_with("generated/index.ts") || path.ends_with("generated\\index.ts"));
     }
 
@@ -234,8 +228,8 @@ mod tests {
     fn resolves_ts_file_output() {
         let schema = schema_with_ts_output("./gen/client.ts");
         let fs = DirAwareFs { dirs: Vec::new() };
-        let path = resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs)
-            .expect("resolve");
+        let path =
+            resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs).expect("resolve");
         assert!(path.ends_with("gen/client.ts") || path.ends_with("gen\\client.ts"));
     }
 

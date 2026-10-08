@@ -99,14 +99,14 @@ cargo test -p e2e                      # full e2e (live SurrealDB soft-skips wit
 
 Coverage uses `cargo llvm-cov` (install once: `rustup component add llvm-tools-preview` and `cargo install cargo-llvm-cov`). Optional gate: `COVERAGE_FAIL_UNDER_LINES=90 ./scripts/coverage.sh`.
 
-Topic-based e2e binaries (under `crates/e2e/tests/`):
+`cargo test -p e2e --test surreal` runs the Surreal CLI suite (live SurrealDB soft-skips without Docker). A single case is `cargo test -p e2e --test surreal <name>`:
 
 ```bash
-cargo test -p e2e --test offline_cli   # init + generate (always runs)
-cargo test -p e2e --test migrate       # apply / status / rollback ledger
-cargo test -p e2e --test db_sync       # db push / pull / split-by-table
-cargo test -p e2e --test graph_edges   # TYPE RELATION roundtrip
-cargo test -p e2e --test record_refs   # @link REFERENCE + COMPUTED
+cargo test -p e2e --test surreal offline_cli   # init + generate (always runs)
+cargo test -p e2e --test surreal migrate       # apply / status / rollback ledger
+cargo test -p e2e --test surreal db_sync       # db push / pull / split-by-table
+cargo test -p e2e --test surreal graph_edges   # TYPE RELATION roundtrip
+cargo test -p e2e --test surreal record_refs   # @link REFERENCE + COMPUTED
 ```
 
 TypeScript generated-client e2e (Vitest; CRUD, nested `select` + nested relation `orderBy`, hybrid `where`, `orderBy`/`take`/`skip` + relation `_count`, bulk/`upsert`/`return`, single update/delete opts, `count`/`groupBy`, nested writes, `$transaction`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).

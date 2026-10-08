@@ -75,8 +75,8 @@ Run what the feature warrants. Skip a gate only when clearly out of scope (state
 Run when the feature changes live Surreal/CLI behavior (migrate, `db push`/`pull`, edges, record refs, schema roundtrip):
 
 ```bash
-cargo test -p e2e --locked
-# or a topic binary: cargo test -p e2e --test <topic>
+cargo test -p e2e --locked --test surreal
+# or one case: cargo test -p e2e --test surreal <test_name>
 ```
 
 Soft-skip without Docker is OK locally; do not treat a soft-skip as proof on CI.

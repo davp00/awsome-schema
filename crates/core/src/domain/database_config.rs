@@ -10,11 +10,17 @@ pub struct DatabaseConfig {
     pub password: String,
 }
 
+pub fn require_surreal_provider(provider: &str) -> Result<(), DomainError> {
+    if provider == "surrealdb" {
+        Ok(())
+    } else {
+        Err(DomainError::UnsupportedProvider(provider.to_owned()))
+    }
+}
+
 impl DatabaseConfig {
     pub fn from_datasource(datasource: &Datasource) -> Result<Self, DomainError> {
-        if datasource.provider != "surrealdb" {
-            return Err(DomainError::UnsupportedProvider(datasource.provider.clone()));
-        }
+        require_surreal_provider(&datasource.provider)?;
 
         let endpoint = resolve_datasource_value(datasource.url.as_deref(), "datasource url")?;
 

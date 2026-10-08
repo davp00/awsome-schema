@@ -89,3 +89,15 @@ fn maps_all_field_types_to_rust() {
         .expect("model");
     assert!(model_output.contains("String"));
 }
+
+#[test]
+fn rejects_unimplemented_rust_provider() {
+    let mut schema = schema_with_field(FieldType::String, false);
+    schema.datasource.provider = "postgres".to_owned();
+    let error = CodeGeneratorPort::generate(&RustGenerator::new(), &schema)
+        .expect_err("postgres is not implemented");
+    let message = error.to_string();
+    assert!(message.contains("postgres"), "{message}");
+    assert!(message.contains("surrealdb"), "{message}");
+    assert!(!message.contains("pub struct"), "{message}");
+}

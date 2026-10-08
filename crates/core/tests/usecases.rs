@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use core::domain::{
@@ -310,7 +311,12 @@ fn format_schema_trims_trailing_blank_lines() {
         Arc::new(StaticSchemaSource { schema, raw: "model User {\n  id @id\n}\n\n".to_owned() });
     let fs = Arc::new(MemoryFs::new());
     let use_case = FormatSchemaUseCase::new(source, fs, "awesome.schema".to_owned());
-    let output = use_case.execute(FormatSchemaInput { write_back: true, schema_files: vec!["awesome.schema".into()] }).expect("format");
+    let output = use_case
+        .execute(FormatSchemaInput {
+            write_back: true,
+            schema_files: vec!["awesome.schema".into()],
+        })
+        .expect("format");
 
     assert!(output.written);
     assert_eq!(output.formatted, "model User {\n  id @id\n}\n");
@@ -333,30 +339,21 @@ fn generate_code_targets_schema_rust_and_typescript() {
 
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput {
-                target: GenerateCodeTarget::Schema,
-                stdout: false,
-            })
+            .execute(GenerateCodeInput { target: GenerateCodeTarget::Schema, stdout: false })
             .expect("schema")
             .content,
         "SQL"
     );
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput {
-                target: GenerateCodeTarget::Rust,
-                stdout: false,
-            })
+            .execute(GenerateCodeInput { target: GenerateCodeTarget::Rust, stdout: false })
             .expect("rust")
             .content,
         "RUST"
     );
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput {
-                target: GenerateCodeTarget::TypeScript,
-                stdout: true,
-            })
+            .execute(GenerateCodeInput { target: GenerateCodeTarget::TypeScript, stdout: true })
             .expect("typescript")
             .content,
         "TS"
@@ -386,22 +383,13 @@ fn generate_typescript_writes_generator_output_unless_stdout() {
     );
 
     let written = use_case
-        .execute(GenerateCodeInput {
-            target: GenerateCodeTarget::TypeScript,
-            stdout: false,
-        })
+        .execute(GenerateCodeInput { target: GenerateCodeTarget::TypeScript, stdout: false })
         .expect("write");
     assert_eq!(written.written_path.as_deref(), Some("generated/index.ts"));
-    assert_eq!(
-        fs.read_to_string("generated/index.ts").expect("read"),
-        "TS"
-    );
+    assert_eq!(fs.read_to_string("generated/index.ts").expect("read"), "TS");
 
     let stdout_only = use_case
-        .execute(GenerateCodeInput {
-            target: GenerateCodeTarget::TypeScript,
-            stdout: true,
-        })
+        .execute(GenerateCodeInput { target: GenerateCodeTarget::TypeScript, stdout: true })
         .expect("stdout");
     assert!(stdout_only.written_path.is_none());
 }
@@ -430,7 +418,13 @@ fn migrate_apply_executes_pending_migration_scripts() {
     assert_eq!(output.applied, 1);
     assert_eq!(output.skipped, 0);
     assert_eq!(database.scripts.lock().expect("lock").len(), 1);
-    assert_eq!(ledger.list_applied(&DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()).unwrap().len(), 1);
+    assert_eq!(
+        ledger
+            .list_applied(&DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap())
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 #[test]
@@ -461,9 +455,7 @@ fn migrate_apply_skips_already_recorded_migrations() {
     assert_eq!(database.scripts.lock().expect("lock").len(), 1);
     assert_eq!(
         ledger
-            .list_applied(
-                &DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()
-            )
+            .list_applied(&DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap())
             .unwrap()
             .len(),
         2
@@ -496,9 +488,7 @@ fn migrate_rollback_runs_down_then_removes_ledger() {
     assert_eq!(database.scripts.lock().expect("lock").as_slice(), ["REMOVE TABLE user;"]);
     assert!(
         ledger
-            .list_applied(
-                &DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()
-            )
+            .list_applied(&DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap())
             .unwrap()
             .is_empty()
     );
@@ -526,9 +516,7 @@ fn migrate_rollback_errors_when_down_missing() {
     assert!(matches!(error, DomainError::MigrationError(_)));
     assert_eq!(
         ledger
-            .list_applied(
-                &DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap()
-            )
+            .list_applied(&DatabaseConfig::from_datasource(&sample_schema().datasource).unwrap())
             .unwrap()
             .len(),
         1
@@ -577,7 +565,9 @@ fn migrate_rollback_errors_when_local_directory_missing() {
         })
         .expect_err("missing local dir");
 
-    assert!(matches!(error, DomainError::MigrationError(msg) if msg.contains("no local directory")));
+    assert!(
+        matches!(error, DomainError::MigrationError(msg) if msg.contains("no local directory"))
+    );
 }
 
 #[test]
@@ -623,10 +613,7 @@ fn format_schema_multiple_files_without_write_back() {
     assert!(!output.written);
     assert!(output.formatted.is_empty());
     // Unchanged on disk when write_back is false.
-    assert_eq!(
-        fs.read_to_string("a.schema").expect("read"),
-        "model A {\n  id @id\n}\n\n"
-    );
+    assert_eq!(fs.read_to_string("a.schema").expect("read"), "model A {\n  id @id\n}\n\n");
 }
 
 #[test]
@@ -667,10 +654,7 @@ fn migrate_rollback_sorts_by_applied_at_descending() {
         .expect("rollback");
 
     assert_eq!(output.rolled_back, vec!["002_second".to_owned()]);
-    assert_eq!(
-        database.scripts.lock().expect("lock").as_slice(),
-        ["REMOVE TABLE second;"]
-    );
+    assert_eq!(database.scripts.lock().expect("lock").as_slice(), ["REMOVE TABLE second;"]);
 }
 
 #[test]
@@ -731,14 +715,8 @@ fn format_schema_writes_back_multiple_files() {
 
     assert!(output.written);
     assert!(output.formatted.is_empty());
-    assert_eq!(
-        fs.read_to_string("a.schema").expect("read"),
-        "model A {\n  id @id\n}\n"
-    );
-    assert_eq!(
-        fs.read_to_string("b.schema").expect("read"),
-        "model B {\n  id @id\n}\n"
-    );
+    assert_eq!(fs.read_to_string("a.schema").expect("read"), "model A {\n  id @id\n}\n");
+    assert_eq!(fs.read_to_string("b.schema").expect("read"), "model B {\n  id @id\n}\n");
 }
 
 #[test]
@@ -854,7 +832,8 @@ fn migrate_apply_skips_missing_and_empty_scripts() {
     });
     let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
 
-    let use_case = MigrateApplyUseCase::new(store, fs, database.clone(), Arc::new(MemoryLedger::new()));
+    let use_case =
+        MigrateApplyUseCase::new(store, fs, database.clone(), Arc::new(MemoryLedger::new()));
     let output = use_case
         .execute(MigrateApplyInput {
             migrations_dir: "migrations".to_owned(),
@@ -874,7 +853,12 @@ fn format_schema_without_write_back() {
         Arc::new(StaticSchemaSource { schema, raw: "model User {\n  id @id\n}\n\n".to_owned() });
     let fs = Arc::new(MemoryFs::new());
     let use_case = FormatSchemaUseCase::new(source, fs, "awesome.schema".to_owned());
-    let output = use_case.execute(FormatSchemaInput { write_back: false, schema_files: vec!["awesome.schema".into()] }).expect("format");
+    let output = use_case
+        .execute(FormatSchemaInput {
+            write_back: false,
+            schema_files: vec!["awesome.schema".into()],
+        })
+        .expect("format");
 
     assert!(!output.written);
     assert_eq!(output.formatted, "model User {\n  id @id\n}\n");
@@ -943,4 +927,100 @@ fn migrate_dev_reports_no_changes_when_diff_is_empty() {
 
     assert!(!output.created);
     assert_eq!(output.operation_count, 0);
+}
+
+struct CountingRenderer {
+    calls: AtomicUsize,
+}
+
+impl SchemaRenderer for CountingRenderer {
+    fn render_schema(&self, _schema: &DatabaseSchema) -> Result<String, DomainError> {
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        Ok("DEFINE TABLE user;".to_owned())
+    }
+}
+
+impl MigrationRenderer for CountingRenderer {
+    fn render_migration(&self, _plan: &MigrationPlan) -> Result<String, DomainError> {
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        Ok("DEFINE TABLE user;".to_owned())
+    }
+}
+
+fn postgres_schema() -> DatabaseSchema {
+    let mut schema = sample_schema();
+    schema.datasource.provider = "postgres".to_owned();
+    schema
+}
+
+#[test]
+fn generate_schema_refuses_unknown_provider_before_render() {
+    let source = Arc::new(StaticSchemaSource { schema: postgres_schema(), raw: String::new() });
+    let renderer = Arc::new(CountingRenderer { calls: AtomicUsize::new(0) });
+    let use_case = GenerateCodeUseCase::new(
+        source,
+        renderer.clone(),
+        Arc::new(StaticGenerator { label: "RUST".to_owned() }),
+        Arc::new(StaticGenerator { label: "TS".to_owned() }),
+        Arc::new(MemoryFs::new()),
+        "awesome.schema".to_owned(),
+    );
+
+    let error = match use_case
+        .execute(GenerateCodeInput { target: GenerateCodeTarget::Schema, stdout: true })
+    {
+        Err(error) => error,
+        Ok(output) => panic!("postgres schema sql rendered: {}", output.content),
+    };
+    assert!(
+        matches!(error, DomainError::UnsupportedProvider(ref provider) if provider == "postgres")
+    );
+    assert!(!error.to_string().contains("DEFINE"));
+    assert_eq!(renderer.calls.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn db_push_refuses_unknown_provider_before_render() {
+    let source = Arc::new(StaticSchemaSource { schema: postgres_schema(), raw: String::new() });
+    let renderer = Arc::new(CountingRenderer { calls: AtomicUsize::new(0) });
+    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let use_case = DbPushUseCase::new(source, renderer.clone(), database.clone());
+
+    let error = match use_case.execute(DbPushInput { datasource: postgres_schema().datasource }) {
+        Err(error) => error,
+        Ok(output) => panic!("postgres push rendered: {}", output.statements),
+    };
+    assert!(
+        matches!(error, DomainError::UnsupportedProvider(ref provider) if provider == "postgres")
+    );
+    assert!(!error.to_string().contains("DEFINE"));
+    assert_eq!(renderer.calls.load(Ordering::SeqCst), 0);
+    assert!(database.scripts.lock().expect("lock").is_empty());
+}
+
+#[test]
+fn migrate_dev_refuses_unknown_provider_before_render() {
+    let fs = Arc::new(MemoryFs::new());
+    let source = Arc::new(StaticSchemaSource { schema: postgres_schema(), raw: String::new() });
+    let store = Arc::new(MemoryMigrationStore {
+        migrations: Mutex::new(Vec::new()),
+        snapshot: Mutex::new(None),
+    });
+    let renderer = Arc::new(CountingRenderer { calls: AtomicUsize::new(0) });
+    let use_case =
+        MigrateDevUseCase::new(source, store, renderer.clone(), fs.clone(), Arc::new(StaticDiff));
+
+    let error = match use_case.execute(MigrateDevInput {
+        migrations_dir: "migrations".to_owned(),
+        migration_name: Some("create_user".to_owned()),
+    }) {
+        Err(error) => error,
+        Ok(_) => panic!("postgres migrate rendered sql"),
+    };
+    assert!(
+        matches!(error, DomainError::UnsupportedProvider(ref provider) if provider == "postgres")
+    );
+    assert!(!error.to_string().contains("DEFINE"));
+    assert_eq!(renderer.calls.load(Ordering::SeqCst), 0);
+    assert!(fs.files.lock().expect("lock").is_empty());
 }

@@ -1,14 +1,13 @@
 //! Migration lifecycle e2e against live SurrealDB (soft-skips without Docker).
 
-mod common;
-
 use predicates::prelude::*;
 
-use common::{TestProject, require_surrealdb, schema_with_endpoint, table_exists};
+use super::common::{TestProject, require_surrealdb, schema_with_endpoint, table_exists};
 
 #[tokio::test]
 async fn cli_migrate_apply_status_and_rollback() {
-    let Some((_container, endpoint)) = require_surrealdb("cli_migrate_apply_status_and_rollback").await
+    let Some((_container, endpoint)) =
+        require_surrealdb("cli_migrate_apply_status_and_rollback").await
     else {
         return;
     };
