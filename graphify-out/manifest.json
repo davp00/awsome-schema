@@ -198,8 +198,8 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791470465.9449735,
-    "seen": 1791472357.3353531,
+    "mtime": 1791475252.236718,
+    "seen": 1791475574.7015529,
     "ast_hash": "6bf93b4c093272d749f109c58ff1ee59",
     "semantic_hash": ""
   },
@@ -654,8 +654,8 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1791470567.8337543,
-    "seen": 1791472357.335407,
+    "mtime": 1791475254.4863596,
+    "seen": 1791475574.7016041,
     "ast_hash": "890c6b984fe3fc5a85c2cd0ba670699d",
     "semantic_hash": ""
   },
@@ -666,8 +666,8 @@
     "semantic_hash": "96508d5d853dc5918cf724d1d7a481ea"
   },
   "docs/roadmap/next.md": {
-    "mtime": 1791470622.869591,
-    "seen": 1791472357.335409,
+    "mtime": 1791475255.7938826,
+    "seen": 1791475574.7016058,
     "ast_hash": "f17a6a353f742cae29e1ab048a0d3fa0",
     "semantic_hash": ""
   },
@@ -678,8 +678,8 @@
     "semantic_hash": "c9bfaccca3920feb545ddda02062e0e9"
   },
   "docs/roadmap/status.md": {
-    "mtime": 1791470574.5426538,
-    "seen": 1791472357.3354099,
+    "mtime": 1791475255.4903314,
+    "seen": 1791475574.701607,
     "ast_hash": "a70c37dd14cba6484c9056b9923526a2",
     "semantic_hash": ""
   },
@@ -780,8 +780,8 @@
     "semantic_hash": ""
   },
   "e2e/typescript/package.json": {
-    "mtime": 1791470341.7564287,
-    "seen": 1791472357.335382,
+    "mtime": 1791475251.634296,
+    "seen": 1791475574.701581,
     "ast_hash": "052a88806e60a93358681d16c97a0318",
     "semantic_hash": ""
   },
@@ -798,8 +798,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/typescript-e2e.yml": {
-    "mtime": 1791472319.211266,
-    "seen": 1791472357.335406,
+    "mtime": 1791475254.4640577,
+    "seen": 1791475574.7016032,
     "ast_hash": "2b06837528e36a5a9489ebabbf6e7ae1",
     "semantic_hash": ""
   },
@@ -816,8 +816,8 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/surreal.rs": {
-    "mtime": 1791470465.9360778,
-    "seen": 1791472357.3353522,
+    "mtime": 1791475251.8511722,
+    "seen": 1791475574.7015522,
     "ast_hash": "0b388994f01ce74f96f8ce5e95e5ca00",
     "semantic_hash": ""
   },
@@ -1008,8 +1008,8 @@
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
-    "mtime": 1791470577.9362555,
-    "seen": 1791472357.335407,
+    "mtime": 1791475255.3493476,
+    "seen": 1791475574.7016041,
     "ast_hash": "d0369816f1c29e80c5e9386d650d54ef",
     "semantic_hash": ""
   },
@@ -1026,9 +1026,9 @@
     "semantic_hash": ""
   },
   "clients/javascript/bin/lib.js": {
-    "mtime": 1791470313.5367415,
-    "seen": 1791472357.335333,
-    "ast_hash": "72eeec7c9705a049fc559950912e58ad",
+    "mtime": 1791474834.7186363,
+    "seen": 1791475574.701532,
+    "ast_hash": "7407ddc5d3d37730f33fa7ba3bca7ff9",
     "semantic_hash": ""
   },
   "clients/javascript/bin/postinstall.js": {
@@ -1038,9 +1038,9 @@
     "semantic_hash": ""
   },
   "clients/javascript/package.json": {
-    "mtime": 1791470341.803388,
-    "seen": 1791472357.3353338,
-    "ast_hash": "877ef70ac4300ecc457b1063a4450ba4",
+    "mtime": 1791475251.6343884,
+    "seen": 1791475574.701534,
+    "ast_hash": "d769ea17ad31ec7a4a43b6dcdfa1045d",
     "semantic_hash": ""
   },
   "clients/javascript/src/index.ts": {
@@ -1050,9 +1050,9 @@
     "semantic_hash": ""
   },
   "clients/javascript/src/platform.test.ts": {
-    "mtime": 1791470324.5955918,
-    "seen": 1791472357.335335,
-    "ast_hash": "268d4637af9ef04e88b7e00edbe07d02",
+    "mtime": 1791474835.1482797,
+    "seen": 1791475574.701535,
+    "ast_hash": "750a8c08fe47d63ed3b0087a68deb7f3",
     "semantic_hash": ""
   },
   "clients/javascript/src/runtime.test.ts": {
@@ -1080,27 +1080,27 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1791470504.4239304,
-    "seen": 1791472357.335392,
+    "mtime": 1791475251.634291,
+    "seen": 1791475574.70159,
     "ast_hash": "63b56928a38014f310f881965a65306d",
     "semantic_hash": ""
   },
   ".github/workflows/cli-release.yml": {
-    "mtime": 1791470349.181603,
-    "seen": 1791472357.335405,
-    "ast_hash": "949641cb7e290290212c1081ad3d0886",
+    "mtime": 1791475253.010148,
+    "seen": 1791475574.701602,
+    "ast_hash": "c09cc9bfd493e682c5bf6f63a05cca04",
     "semantic_hash": ""
   },
   ".github/workflows/javascript-client.yml": {
-    "mtime": 1791470343.6778898,
-    "seen": 1791472357.335406,
+    "mtime": 1791475253.3778627,
+    "seen": 1791475574.7016032,
     "ast_hash": "d3e92f4647e69731ffe7960206563bfc",
     "semantic_hash": ""
   },
   "clients/javascript/README.md": {
-    "mtime": 1791470317.9158096,
-    "seen": 1791472357.3354082,
-    "ast_hash": "4f0cbf6e69f78c4df651338db6d14d07",
+    "mtime": 1791475254.467043,
+    "seen": 1791475574.701605,
+    "ast_hash": "bbf35112171d7215932d0f19daa155df",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
