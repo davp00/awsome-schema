@@ -198,9 +198,9 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791480989.114705,
-    "seen": 1791483544.114816,
-    "ast_hash": "2ef1ccc63218c3ca1ec06d269e6ff096",
+    "mtime": 1791489667.0970724,
+    "seen": 1791490503.8774989,
+    "ast_hash": "7983ea349b4ecaaa621f781e7c1614af",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -816,15 +816,15 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/surreal.rs": {
-    "mtime": 1791480988.8764908,
-    "seen": 1791483544.114816,
-    "ast_hash": "8769e368b80662cede0f3e98308c7c76",
+    "mtime": 1791486362.909685,
+    "seen": 1791487296.5439801,
+    "ast_hash": "0076db0b71513ae24b400d5968e68e1c",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/types.rs": {
-    "mtime": 1791465037.4188282,
-    "seen": 1791465138.283165,
-    "ast_hash": "b840f5f27a57ed27cf93c6621d800a5e",
+    "mtime": 1791489696.6127033,
+    "seen": 1791490503.8774989,
+    "ast_hash": "df257d81f807b8799b2f17ba13e72ce2",
     "semantic_hash": ""
   },
   "crates/e2e/tests/surreal.rs": {
@@ -888,15 +888,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/surreal/src/setupClient.ts": {
-    "mtime": 1791394063.1890166,
-    "seen": 1791467417.744692,
-    "ast_hash": "347e6c04d7d489cbee371508e51c9720",
-    "semantic_hash": ""
-  },
-  "e2e/typescript/surreal/src/surrealAdapter.ts": {
-    "mtime": 1791412703.1808105,
-    "seen": 1791467417.744693,
-    "ast_hash": "b40a1c5ca48b95ce5c754e42ac279bee",
+    "mtime": 1791487659.9350278,
+    "seen": 1791488110.209397,
+    "ast_hash": "43d4d19faf3dc495271b8d69da8c740e",
     "semantic_hash": ""
   },
   "e2e/typescript/surreal/tests/aggregate.test.ts": {
@@ -984,9 +978,9 @@
     "semantic_hash": ""
   },
   "e2e/typescript/surreal/tests/where.test.ts": {
-    "mtime": 1791400710.5326521,
-    "seen": 1791467417.7447,
-    "ast_hash": "3e3bf7d015e37925c61c4013460ae802",
+    "mtime": 1791489644.7998114,
+    "seen": 1791490503.8775349,
+    "ast_hash": "01f3710d4731be0886ccc542c5b95a07",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/bug_report.md": {
@@ -1038,15 +1032,15 @@
     "semantic_hash": ""
   },
   "clients/javascript/package.json": {
-    "mtime": 1791481812.0330558,
-    "seen": 1791483544.114797,
-    "ast_hash": "414ca8bc643b5a9f81ad85d919b40800",
+    "mtime": 1791486357.3064973,
+    "seen": 1791487296.5439591,
+    "ast_hash": "97ee0a50d84b8aabbc6f7bcdd87c3e9c",
     "semantic_hash": ""
   },
   "clients/javascript/src/index.ts": {
-    "mtime": 1791470307.071629,
-    "seen": 1791472357.335335,
-    "ast_hash": "133eaf18f72662adc03619ca9c72593b",
+    "mtime": 1791486356.6604927,
+    "seen": 1791487296.54396,
+    "ast_hash": "62c782e9fa51dda9ae5e29671e8f2bdd",
     "semantic_hash": ""
   },
   "clients/javascript/src/platform.test.ts": {
@@ -1056,15 +1050,15 @@
     "semantic_hash": ""
   },
   "clients/javascript/src/runtime.test.ts": {
-    "mtime": 1791470321.8630865,
-    "seen": 1791472357.335336,
-    "ast_hash": "e52e53fce4020ada49ae251801a259dc",
+    "mtime": 1791489643.4629729,
+    "seen": 1791490503.877481,
+    "ast_hash": "dd92ad63d627eb5abf734f4bc769571e",
     "semantic_hash": ""
   },
   "clients/javascript/src/runtime.ts": {
-    "mtime": 1791470551.197602,
-    "seen": 1791472357.335336,
-    "ast_hash": "e7edaf54b3fc99595094e8801d010dab",
+    "mtime": 1791489736.1733067,
+    "seen": 1791490503.877482,
+    "ast_hash": "871969110c6a9edb4505f40bf20d1c7b",
     "semantic_hash": ""
   },
   "clients/javascript/tsconfig.json": {
@@ -1110,9 +1104,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/canary.yml": {
-    "mtime": 1791478542.597065,
-    "seen": 1791483544.114868,
-    "ast_hash": "2ef23fc95c2bf26c9320e34a3c7bb2ad",
+    "mtime": 1791487876.361532,
+    "seen": 1791488110.209418,
+    "ast_hash": "6020aa3a8cd6ad32f742488a80dc5b37",
     "semantic_hash": ""
   },
   "clients/javascript/bin/compile-client.cjs": {
@@ -1137,6 +1131,18 @@
     "mtime": 1791481830.0876577,
     "seen": 1791483544.114797,
     "ast_hash": "87781102abad1843f4d5b6658ccf929c",
+    "semantic_hash": ""
+  },
+  "clients/javascript/src/surreal.test.ts": {
+    "mtime": 1791487638.124172,
+    "seen": 1791488110.2093508,
+    "ast_hash": "748996f761d1fd9f0845e014311fd903",
+    "semantic_hash": ""
+  },
+  "clients/javascript/src/surreal.ts": {
+    "mtime": 1791487638.1241336,
+    "seen": 1791488110.209352,
+    "ast_hash": "5db72f1d8e1e5fb40ead7b6bea792b4e",
     "semantic_hash": ""
   }
 }
