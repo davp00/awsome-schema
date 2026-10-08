@@ -2,7 +2,7 @@
 
 Awesome Schema is a **schema modeling, migration, and code generation toolkit** for modern databases. It is inspired by [Prisma](https://www.prisma.io/) and [TypeORM](https://typeorm.io/), but designed from the ground up to express database-native capabilities—starting with **SurrealDB 3.x**.
 
-Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate a TypeScript Surreal client (dual shapes, CRUD, fluent `.select` / hybrid `.where`) — Rust client models still stubbed.
+Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate a TypeScript Surreal client. Rust client models are still a stub.
 
 ## Why Awesome Schema exists
 
@@ -12,7 +12,6 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 
 ## How it differs from Prisma and TypeORM
 
-
 |                   | Prisma                             | TypeORM                               | Awesome Schema                          |
 | ----------------- | ---------------------------------- | ------------------------------------- | --------------------------------------- |
 | Primary model     | Relational tables + Prisma Client  | Decorator-based entities + migrations | DSL → domain model → provider renderers |
@@ -21,55 +20,18 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 | Migration model   | SQL migrations (provider-specific) | TypeORM migration classes             | Domain operations → SurrealQL           |
 | Code generation   | Strong client focus                | Entity classes                        | Pluggable per-language generators       |
 
-
-
-
 ## Why SurrealDB first
 
 SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The current target is **SurrealDB 3.3.0**. The first milestone started on 3.1.5.
 
 Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate status`, `migrate rollback`) uses the official SurrealDB client. Applied migrations are tracked in `_awesome_migrations`. `@link` fields render as SurrealDB record references (`REFERENCE`); `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
 
-## Workspace structure
-
-This repository is a **Cargo workspace** with clean crate boundaries:
-
-```
-crates/
-├── cli                 # Binary: awesome-schema (orchestration only)
-├── core                # Domain model, ports, use cases, errors
-├── parser              # Awesome Schema DSL → domain model
-├── migrations          # Schema diffing → migration plans
-├── renderers           # Provider-specific DDL renderers (SurrealDB first)
-├── codegen             # Language-agnostic codegen contracts
-├── codegen-rust        # Rust model generator (stub)
-└── codegen-typescript  # TypeScript client (shared runtime + thin typed wrappers)
-```
-
-
-
-### Architecture (hexagonal / clean)
-
-- `core` owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases.
-- `parser`, `migrations`, `renderers`, and `codegen-*` are capability crates that implement or support ports.
-- `cli` wires dependencies via `di.rs`, implements adapters (filesystem, migration store, SurrealDB introspector/executor/ledger), and exposes commands through `clap`. **No business logic lives in the CLI.**
-
-Port traits (in `core`):
-
-- `SchemaRenderer` — render a full schema as provider DDL
-- `MigrationRenderer` — render a `MigrationPlan` as executable statements
-- `SchemaIntrospector` — pull live schema from a database
-- `MigrationStore` — load/save schema snapshots for diffs
-- `SchemaSource` — load the DSL file
-
-
-
 ## Getting started
 
 ### Prerequisites
 
-- Rust **2024 edition** (stable toolchain via `rust-toolchain.toml`)
-- Docker (optional) for live SurrealDB via Compose or e2e
+- Rust stable (toolchain in [`rust-toolchain.toml`](rust-toolchain.toml))
+- Docker (optional) for a local SurrealDB
 
 ### Local SurrealDB (Docker Compose)
 
@@ -80,47 +42,6 @@ docker compose down -v        # stop and wipe data volume
 ```
 
 Point `awesome.schema` at it with `url = "ws://127.0.0.1:8000"`, `namespace = "test"`, `database = "main"`.
-
-Manual index-kinds smoke test:
-
-```bash
-./scripts/manual-test-indexes.sh          # offline generate checks
-./scripts/manual-test-indexes.sh --live   # compose up + push + INFO + pull
-```
-
-### Build and test
-
-```bash
-cargo check --workspace
-cargo test --workspace --exclude e2e   # unit/integration without Docker
-cargo test -p e2e                      # full e2e (live SurrealDB soft-skips without Docker)
-./scripts/coverage.sh                  # llvm-cov HTML/LCOV report (excludes e2e)
-```
-
-Coverage uses `cargo llvm-cov` (install once: `rustup component add llvm-tools-preview` and `cargo install cargo-llvm-cov`). Optional gate: `COVERAGE_FAIL_UNDER_LINES=90 ./scripts/coverage.sh`.
-
-`cargo test -p e2e --test surreal` runs the Surreal CLI suite (live SurrealDB soft-skips without Docker). A single case is `cargo test -p e2e --test surreal <name>`:
-
-```bash
-cargo test -p e2e --test surreal offline_cli   # init + generate (always runs)
-cargo test -p e2e --test surreal migrate       # apply / status / rollback ledger
-cargo test -p e2e --test surreal db_sync       # db push / pull / split-by-table
-cargo test -p e2e --test surreal graph_edges   # TYPE RELATION roundtrip
-cargo test -p e2e --test surreal record_refs   # @link REFERENCE + COMPUTED
-```
-
-TypeScript generated-client e2e (Vitest; CRUD, nested `select` + nested relation `orderBy`, hybrid `where`, `orderBy`/`take`/`skip` + relation `_count`, bulk/`upsert`/`return`, single update/delete opts, `count`/`groupBy`, nested writes, `$transaction`). Hybrid orchestration: use `SURREALDB_URL` if set, otherwise start SurrealDB **v3.3.0** via testcontainers. Soft-skips locally when neither URL nor Docker is available; GitHub Actions workflow `typescript-e2e` fails instead of skipping (`CI=true`).
-
-```bash
-cd e2e/typescript && npm i && npm test
-
-# Fast local loop against Compose:
-docker compose up -d
-cd e2e/typescript && npm run test:external   # SURREALDB_URL=ws://127.0.0.1:8000
-
-# Optional hard-fail locally (same as CI):
-REQUIRE_SURREAL=1 npm test
-```
 
 ### Database pull and push
 
@@ -155,21 +76,6 @@ cargo run -p cli -- format --write
 
 # Generate SurrealQL, Rust stubs, or TypeScript client
 # TypeScript writes to generator.output by default; use --stdout to print only
-# Generated client shares select/create/update/delete/query helpers; named APIs are thin wrappers
-# Nested select: scalars + links/relations with typed GetPayload; SurrealQL via buildProjection
-# Relation select bags accept orderBy (target OrderByInput) via $parent / graph subqueries
-# Relation select bags also accept take/skip (literal LIMIT/START on that same subquery)
-# Hybrid where on findMany/findUnique: bare equals sugar + Prisma-lite operators / some|every|none (buildWhere)
-# findMany also supports orderBy (asc/desc) + take/skip (LIMIT/START)
-# orderBy relation _count on list links/edges: { posts: { _count: "desc" } }, { liked: { _count: "asc" } }
-# Bulk: createMany/updateMany/deleteMany default { count }; optional select → GetPayload rows
-# Optional return: 'NONE'|'BEFORE'|'AFTER'|'DIFF' on *Many (exclusive with select; BEFORE n/a on create, AFTER n/a on delete)
-# Single update(id, data, { select|return }) / delete(id, { select|return }); upsert adds return (exclusive with select)
-# count({ where? }) → number; groupBy({ by, where?, having?, _count/_sum/_avg/_min/_max, orderBy?, take?, skip? }) → Prisma-lite rows
-# Nested writes (one hop): create/update with posts/liked { create|connect|disconnect }; stored links accept connect/create(/disconnect)
-# $transaction(async (tx) => { … }) — interactive Surreal txn (WS/embedded); commit on success, cancel on throw
-# $queryRaw<T>(sql, vars?) returns the first statement's rows; $executeRaw(sql, vars?) returns the raw db.query result (also on the transaction client)
-# user.live() / $live(sql, vars?) — session LIVE SELECT (CREATE|UPDATE|DELETE); not on the transaction client
 cargo run -p cli -- generate
 cargo run -p cli -- generate --target rust
 cargo run -p cli -- generate --target typescript
@@ -193,8 +99,6 @@ Global flags:
 - `--schema <path>` — schema file (default: `awesome.schema`)
 - `--migrations-dir <path>` — migrations directory (default: `migrations`)
 
-
-
 ## Awesome Schema DSL
 
 See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The DSL supports (or is designed to support):
@@ -209,7 +113,6 @@ See [`examples/awesome.schema`](examples/awesome.schema) for a full example. The
 
 Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 
-
 | DSL attribute                            | SurrealDB clause                     | Behavior                                                         |
 | ---------------------------------------- | ------------------------------------ | ---------------------------------------------------------------- |
 | `@default(expr)`                         | `DEFAULT expr`                       | Applied on INSERT when no value is provided                      |
@@ -219,8 +122,7 @@ Field assignments map to SurrealDB `DEFINE FIELD` clauses:
 | `@readonly`                              | `READONLY`                           | Prevents manual updates (use with `@value`)                      |
 | `@flexible`                              | `FLEXIBLE`                           | Allows extra undefined keys on a schemafull object field         |
 | `@link` / `@link("Name")`                | `REFERENCE` (+ optional `ON DELETE`) | Stored record reference; pair name matches Prisma-style opposite |
-| `@onDelete(Cascade|Unset|Reject|Ignore)` | `ON DELETE …`                        | Delete policy on the stored `@link` side (default Ignore)        |
-
+| `@onDelete(Cascade\|Unset\|Reject\|Ignore)` | `ON DELETE …`                        | Delete policy on the stored `@link` side (default Ignore)        |
 
 Record references (provider-neutral in the domain; SurrealDB is the first renderer):
 
@@ -294,22 +196,9 @@ edge Likes {
 }
 ```
 
-
-
 ## Migrations
 
-Migrations work similarly to **TypeORM**:
-
-1. `migrate dev` parses the current schema and diffs it against the latest `snapshot.json`.
-2. Domain-level operations are produced (`CreateTable`, `CreateField`, `CreateIndex`, …).
-3. The SurrealDB renderer writes `migration.surql` (up) and `migration.down.surql` (down).
-4. A new `snapshot.json` is saved for the next diff.
-
-`migrate apply` records each successful up in the SurrealDB table `_awesome_migrations` (same namespace/database as the app schema) and skips migrations already listed there. `migrate status` compares local migration folders to that ledger. `migrate rollback [--steps N]` (default 1) runs `migration.down.surql` for the newest applied migrations, then removes those ledger rows. Empty or missing down scripts fail without clearing the ledger.
-
-Down migrations are computed as the reverse schema diff (`current → previous`), so rollback operations mirror the forward migration.
-
-Example layout:
+`migrate dev` diffs the current schema against the latest snapshot and writes a migration directory. `migrate apply` runs the up script and records it in `_awesome_migrations`. `migrate status` compares local folders to that ledger. `migrate rollback` runs the down script.
 
 ```
 migrations/
@@ -319,37 +208,16 @@ migrations/
     └── snapshot.json
 ```
 
-Each migration directory contains:
-
-- `migration.surql` — forward (up) operations to apply the schema change
-- `migration.down.surql` — reverse (down) operations for rollback
+- `migration.surql` — forward (up) operations
+- `migration.down.surql` — reverse (down) operations
 - `snapshot.json` — normalized schema state after the up migration
 
 See [`examples/migrations/`](examples/migrations/) for a reference migration.
 
-## Adding a new database provider
+## Contributing
 
-1. Implement `SchemaRenderer` and `MigrationRenderer` in `renderers` (e.g. `renderers::postgres`) or a dedicated `crates/providers/<name>` crate.
-2. Map domain `MigrationOperation` variants to provider DDL.
-3. Optionally implement `SchemaIntrospector` for `db pull`.
-4. Register the adapter in `cli/src/di.rs` based on `datasource.provider`.
-5. Keep SurrealDB-specific logic out of `core`, `migrations`, and `cli` commands.
-
-Planned providers: `surrealdb`, `mongodb`, `postgres`, `mysql`, `sqlite`.
-
-## Development
-
-```bash
-# Format and lint
-cargo fmt --all
-cargo clippy --workspace --all-targets
-
-# Run helper script (if configured)
-./scripts/check.sh
-```
-
-
+Workspace layout, tests, and adding a database provider are in [CONTRIBUTING.md](CONTRIBUTING.md). Status and the backlog are in [docs/roadmap](docs/roadmap/README.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)
