@@ -556,7 +556,7 @@ fn object_where_reference(
     if direct_object_children(fields, &field.name).is_empty() {
         return bare_object_where();
     }
-    inline_object_where_name(owner, &field.name)
+    inline_object_where_name(schema, owner, &field.name)
 }
 
 fn where_type_for_declared(
@@ -576,9 +576,32 @@ fn where_type_for_declared(
     }
 }
 
-fn inline_object_where_name(owner: &str, field_path: &str) -> String {
+fn inline_object_where_name(schema: &DatabaseSchema, owner: &str, field_path: &str) -> String {
     let suffix: String = field_path.split('.').map(pascal_ident).collect();
-    format!("{owner}{suffix}WhereInput")
+    let base = format!("{owner}{suffix}");
+    let primary = format!("{base}WhereInput");
+    if !where_input_name_reserved(schema, &primary) {
+        return primary;
+    }
+    // `User` + `metadata` is `UserMetadataWhereInput`, which is also the named type.
+    let fallback = format!("{base}InlineWhereInput");
+    for index in 0..=schema.object_types.len() {
+        let candidate =
+            if index == 0 { fallback.clone() } else { format!("{base}Inline{index}WhereInput") };
+        if !where_input_name_reserved(schema, &candidate) {
+            return candidate;
+        }
+    }
+    fallback
+}
+
+fn where_input_name_reserved(schema: &DatabaseSchema, name: &str) -> bool {
+    let Some(stem) = name.strip_suffix("WhereInput") else {
+        return false;
+    };
+    schema.object_types.iter().any(|object_type| object_type.name == stem)
+        || schema.models.iter().any(|model| model.name == stem)
+        || schema.edges.iter().any(|edge| edge.name == stem)
 }
 
 fn pascal_ident(name: &str) -> String {
@@ -647,7 +670,7 @@ fn emit_inline_object_where_inputs(
         if children.is_empty() {
             continue;
         }
-        let type_name = inline_object_where_name(owner, &field.name);
+        let type_name = inline_object_where_name(schema, owner, &field.name);
         out.push(format!("export type {type_name} = {{"));
         emit_where_combinators(out, &type_name);
         out.push("  equals?: Record<string, unknown>;".to_owned());

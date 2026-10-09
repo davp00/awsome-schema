@@ -173,6 +173,51 @@ fn emits_typed_object_and_array_where_inputs() {
 }
 
 #[test]
+fn inline_object_where_name_does_not_collide_with_named_type() {
+    let schema = parse(
+        r#"
+datasource db { provider = "surrealdb" }
+
+type UserMetadata {
+  user_id int?
+  source string
+}
+
+model User {
+  id @id
+  metadata object @flexible {
+    user_id int?
+    source string
+    test string
+  }
+  settings UserMetadata
+}
+"#,
+    )
+    .expect("parse");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+
+    assert_eq!(output.matches("export type UserMetadataWhereInput = {").count(), 1);
+    assert!(output.contains("settings?: UserMetadataWhereInput;"));
+    assert!(output.contains("metadata?: UserMetadataInlineWhereInput;"));
+    assert!(output.contains("export type UserMetadataInlineWhereInput = {"));
+
+    let named = output.find("export type UserMetadataWhereInput = {").expect("named where");
+    let named_end = output[named..].find("\nexport type ").expect("next type");
+    let named_block = &output[named..named + named_end];
+    assert!(named_block.contains("equals?: UserMetadata;"));
+    assert!(named_block.contains("source?: string | StringFilter;"));
+    assert!(!named_block.contains("test?:"));
+
+    let inline = output.find("export type UserMetadataInlineWhereInput = {").expect("inline where");
+    let inline_end = output[inline..].find("\nexport type ").expect("next type");
+    let inline_block = &output[inline..inline + inline_end];
+    assert!(inline_block.contains("test?: string | StringFilter;"));
+    assert!(inline_block.contains("user_id?: number | NumberFilter;"));
+    assert!(inline_block.contains("source?: string | StringFilter;"));
+}
+
+#[test]
 fn emits_thin_select_helpers_with_fetch() {
     let output = generate_fixture();
     assert!(output.contains("type SurrealLike,"));
