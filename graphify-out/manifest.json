@@ -198,9 +198,9 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/tests/generator.rs": {
-    "mtime": 1791489667.0970724,
-    "seen": 1791490503.8774989,
-    "ast_hash": "7983ea349b4ecaaa621f781e7c1614af",
+    "mtime": 1791543724.6313772,
+    "seen": 1791550955.689188,
+    "ast_hash": "bdbe9afa096fcb41a3286101ba71b370",
     "semantic_hash": ""
   },
   "crates/codegen/Cargo.toml": {
@@ -822,9 +822,9 @@
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/types.rs": {
-    "mtime": 1791489696.6127033,
-    "seen": 1791490503.8774989,
-    "ast_hash": "df257d81f807b8799b2f17ba13e72ce2",
+    "mtime": 1791543724.628115,
+    "seen": 1791550955.689188,
+    "ast_hash": "3001a2036939097e8079be7c1ebeb4ed",
     "semantic_hash": ""
   },
   "crates/e2e/tests/surreal.rs": {
