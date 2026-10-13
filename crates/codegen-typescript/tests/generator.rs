@@ -160,6 +160,7 @@ fn emits_typed_object_and_array_where_inputs() {
             .contains("profile?: Record<string, unknown> | { equals?: Record<string, unknown> };")
     );
     assert!(output.contains("export type UserPrefsWhereInput = {"));
+    assert!(output.contains("equals?: UserPrefs;"));
     assert!(output.contains("theme?: string | StringFilter;"));
     assert!(output.contains("prefs?: UserPrefsWhereInput;"));
     assert!(output.contains(
@@ -170,6 +171,43 @@ fn emits_typed_object_and_array_where_inputs() {
         "prefs: { kind: \"object\", fields: { theme: { kind: \"scalar\", filter: \"string\" } } }"
     ));
     assert!(output.contains("export type ArrayFilter<T> = {"));
+}
+
+#[test]
+fn emits_typed_inline_object_record_shapes() {
+    let output = generate_fixture();
+
+    let prefs_start = output.find("export type UserPrefs = {").expect("UserPrefs");
+    let prefs_end = output[prefs_start..].find("\nexport type ").expect("next type");
+    let prefs = &output[prefs_start..prefs_start + prefs_end];
+    assert!(prefs.contains("theme: string;"));
+    assert!(!prefs.contains("[key: string]"));
+
+    let user_start = output.find("export type User = {").expect("User");
+    let user_end = output.find("export type UserSelected = {").expect("UserSelected");
+    let user = &output[user_start..user_end];
+    assert!(user.contains("prefs: UserPrefs;"));
+    assert!(user.contains("profile?: Record<string, unknown>;"));
+
+    let selected_start = user_end;
+    let selected_end = output.find("export type UserCreateScalars = {").expect("CreateScalars");
+    let selected = &output[selected_start..selected_end];
+    assert!(selected.contains("prefs: UserPrefs;"));
+    assert!(selected.contains("profile?: Record<string, unknown>;"));
+
+    let create_start = selected_end;
+    let create_end = output.find("export type UserCreateInput = ").expect("CreateInput");
+    let create = &output[create_start..create_end];
+    assert!(create.contains("prefs: UserPrefs;"));
+    assert!(create.contains("profile?: Record<string, unknown>;"));
+
+    let update_start = output.find("export type UserUpdateInput = {").expect("UpdateInput");
+    let update_end = output[update_start..].find("\nexport type ").expect("next type");
+    let update = &output[update_start..update_start + update_end];
+    assert!(update.contains("prefs?: UserPrefs;"));
+    assert!(update.contains("profile?: Record<string, unknown>;"));
+
+    assert!(output.contains("prefs: UserPrefs;")); // Scalars / select payload
 }
 
 #[test]
@@ -201,6 +239,9 @@ model User {
     assert!(output.contains("settings?: UserMetadataWhereInput;"));
     assert!(output.contains("metadata?: UserMetadataInlineWhereInput;"));
     assert!(output.contains("export type UserMetadataInlineWhereInput = {"));
+    assert!(output.contains("export type UserMetadataInline = {"));
+    assert!(output.contains("metadata: UserMetadataInline;"));
+    assert!(output.contains("[key: string]: unknown;"));
 
     let named = output.find("export type UserMetadataWhereInput = {").expect("named where");
     let named_end = output[named..].find("\nexport type ").expect("next type");
@@ -212,6 +253,7 @@ model User {
     let inline = output.find("export type UserMetadataInlineWhereInput = {").expect("inline where");
     let inline_end = output[inline..].find("\nexport type ").expect("next type");
     let inline_block = &output[inline..inline + inline_end];
+    assert!(inline_block.contains("equals?: UserMetadataInline;"));
     assert!(inline_block.contains("test?: string | StringFilter;"));
     assert!(inline_block.contains("user_id?: number | NumberFilter;"));
     assert!(inline_block.contains("source?: string | StringFilter;"));
@@ -261,8 +303,38 @@ model UserMeta {
     assert!(output.contains("meta_data?: UserMetaDataWhereInput;"));
     assert!(output.contains("export type UserMetaDataInlineWhereInput = {"));
     assert!(output.contains("data?: UserMetaDataInlineWhereInput;"));
+    assert!(output.contains("export type UserMetaData = {"));
+    assert!(output.contains("export type UserMetaDataInline = {"));
+    assert!(output.contains("meta_data: UserMetaData;"));
+    assert!(output.contains("data: UserMetaDataInline;"));
     assert!(output.contains("theme?: string | StringFilter;"));
     assert!(output.contains("label?: string | StringFilter;"));
+}
+
+#[test]
+fn nested_inline_object_child_references_nested_type() {
+    let schema = parse(
+        r#"
+datasource db { provider = "surrealdb" }
+model User {
+  id @id
+  metadata object
+  metadata.address object
+  metadata.address.city string
+}
+"#,
+    )
+    .expect("parse");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+
+    assert!(output.contains("export type UserMetadata = {"));
+    assert!(output.contains("address: UserMetadataAddress;"));
+    assert!(output.contains("export type UserMetadataAddress = {"));
+    assert!(output.contains("city: string;"));
+    assert!(output.contains("metadata: UserMetadata;"));
+    assert!(output.contains("equals?: UserMetadata;"));
+    assert!(output.contains("equals?: UserMetadataAddress;"));
+    assert!(output.contains("address?: UserMetadataAddressWhereInput;"));
 }
 
 #[test]
