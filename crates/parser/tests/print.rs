@@ -25,6 +25,7 @@ fn bare_field(name: &str, field_type: FieldType) -> Field {
         on_delete: None,
         link_storage: None,
         link_opposite_field: None,
+        object_type_name: None,
         relation_name: None,
         attributes: BTreeMap::new(),
     }
@@ -43,10 +44,8 @@ fn print_schema_round_trips_example() {
 #[test]
 fn print_config_blocks_covers_naming_generators_object_types_and_extra() {
     let mut schema = parse(EXAMPLE).expect("parse");
-    schema.naming = NamingConvention {
-        tables: NamingCase::PascalCase,
-        fields: Some(NamingCase::CamelCase),
-    };
+    schema.naming =
+        NamingConvention { tables: NamingCase::PascalCase, fields: Some(NamingCase::CamelCase) };
     schema.datasource.extra.insert("timeout".to_owned(), "30s".to_owned());
     schema.generators.push(Generator {
         provider: "rust".to_owned(),
@@ -179,7 +178,11 @@ fn print_model_block_covers_indexes_defaults_links_and_types() {
     assert!(printed.contains("@fulltext"));
     assert!(printed.contains("@vector(128)"));
     assert!(printed.contains("@dist(Cosine)"));
-    assert!(printed.contains("@vector\n") || printed.contains("@vector\r") || printed.contains("@@index([other]) @vector"));
+    assert!(
+        printed.contains("@vector\n")
+            || printed.contains("@vector\r")
+            || printed.contains("@@index([other]) @vector")
+    );
 }
 
 #[test]
@@ -215,10 +218,7 @@ fn print_schema_includes_models_and_edges() {
 #[test]
 fn print_schema_includes_naming_and_plain_default() {
     let mut schema = parse(EXAMPLE).expect("parse");
-    schema.naming = NamingConvention {
-        tables: NamingCase::PascalCase,
-        fields: None,
-    };
+    schema.naming = NamingConvention { tables: NamingCase::PascalCase, fields: None };
     let mut status = bare_field("status", FieldType::String);
     status.default_value = Some("\"draft\"".to_owned());
     status.default_always = false;
@@ -233,10 +233,8 @@ fn print_schema_includes_naming_and_plain_default() {
     schema.models[0].fields.push(self_ref);
 
     // Array<record<…>> exercises print_field_type's RecordId arm via recursion.
-    let refs = bare_field(
-        "refs",
-        FieldType::Array(Box::new(FieldType::RecordId("Session".to_owned()))),
-    );
+    let refs =
+        bare_field("refs", FieldType::Array(Box::new(FieldType::RecordId("Session".to_owned()))));
     schema.models[0].fields.push(refs);
 
     let printed = print_schema(&schema);

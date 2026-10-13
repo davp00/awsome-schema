@@ -3,6 +3,12 @@ use std::collections::BTreeMap;
 use crate::domain::{DatabaseSchema, FieldType};
 use crate::errors::DomainError;
 
+const RESERVED_OBJECT_FIELD_NAMES: &[&str] = &["AND", "OR", "NOT", "equals"];
+
+fn is_reserved_object_field_name(name: &str) -> bool {
+    RESERVED_OBJECT_FIELD_NAMES.iter().any(|reserved| *reserved == name)
+}
+
 pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
     if schema.datasource.provider.is_empty() {
         return Err(DomainError::ValidationError("datasource provider is required".to_owned()));
@@ -12,6 +18,17 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
         return Err(DomainError::ValidationError(
             "schema must define at least one model or edge".to_owned(),
         ));
+    }
+
+    for object_type in &schema.object_types {
+        for field in &object_type.fields {
+            if is_reserved_object_field_name(&field.name) {
+                return Err(DomainError::ValidationError(format!(
+                    "object type `{}` field `{}` is reserved for where filters",
+                    object_type.name, field.name
+                )));
+            }
+        }
     }
 
     for model in &schema.models {
@@ -59,7 +76,13 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
                 )));
             }
 
-            if let Some(parent_path) = field.name.rsplit_once('.').map(|(parent, _)| parent) {
+            if let Some((parent_path, leaf)) = field.name.rsplit_once('.') {
+                if is_reserved_object_field_name(leaf) {
+                    return Err(DomainError::ValidationError(format!(
+                        "model `{}` nested field `{}` is reserved for where filters",
+                        model.name, field.name
+                    )));
+                }
                 let Some(parent) =
                     model.fields.iter().find(|candidate| candidate.name == parent_path)
                 else {
@@ -114,6 +137,17 @@ pub fn validate_schema(schema: &DatabaseSchema) -> Result<(), DomainError> {
                 "edge `{}` out model `{}` does not exist",
                 edge.name, edge.out_model
             )));
+        }
+
+        for field in &edge.fields {
+            if let Some((_, leaf)) = field.name.rsplit_once('.')
+                && is_reserved_object_field_name(leaf)
+            {
+                return Err(DomainError::ValidationError(format!(
+                    "edge `{}` nested field `{}` is reserved for where filters",
+                    edge.name, field.name
+                )));
+            }
         }
     }
 
@@ -262,6 +296,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         }
@@ -303,6 +338,7 @@ mod tests {
                     on_delete: None,
                     link_storage: None,
                     link_opposite_field: None,
+                    object_type_name: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 }],
@@ -432,6 +468,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: Some("Missing".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -460,6 +497,7 @@ mod tests {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -493,6 +531,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: Some("Likes".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -519,6 +558,7 @@ mod tests {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             },
@@ -538,6 +578,7 @@ mod tests {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             },
@@ -564,11 +605,79 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
         let error = validate_schema(&schema).expect_err("missing parent");
         assert!(matches!(error, DomainError::ValidationError(_)));
+    }
+
+    #[test]
+    fn rejects_reserved_object_type_field_names() {
+        let mut schema = sample_schema();
+        schema.object_types.push(crate::domain::ObjectTypeDefinition {
+            name: "Bag".to_owned(),
+            flexible: false,
+            fields: vec![crate::domain::ObjectTypeField {
+                name: "equals".to_owned(),
+                field_type: FieldType::String,
+                optional: false,
+            }],
+        });
+        let error = validate_schema(&schema).expect_err("reserved equals");
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("reserved for where filters"))
+        );
+    }
+
+    #[test]
+    fn rejects_reserved_nested_object_field_names() {
+        let mut schema = sample_schema();
+        schema.models[0].fields.push(Field {
+            name: "metadata".to_owned(),
+            field_type: FieldType::Object,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
+            object_type_name: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+        schema.models[0].fields.push(Field {
+            name: "metadata.AND".to_owned(),
+            field_type: FieldType::String,
+            optional: false,
+            unique: false,
+            is_id: false,
+            default_value: None,
+            default_always: false,
+            value_expression: None,
+            readonly: false,
+            flexible: false,
+            link_target: None,
+            link_name: None,
+            on_delete: None,
+            link_storage: None,
+            link_opposite_field: None,
+            object_type_name: None,
+            relation_name: None,
+            attributes: BTreeMap::new(),
+        });
+        let error = validate_schema(&schema).expect_err("reserved AND");
+        assert!(
+            matches!(error, DomainError::ValidationError(msg) if msg.contains("reserved for where filters"))
+        );
     }
 
     #[test]
@@ -590,6 +699,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });

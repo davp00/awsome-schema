@@ -74,6 +74,7 @@ fn normalize_model_object_types(
             object_types.iter().find(|candidate| candidate.name == *type_name)
         {
             let mut parent = field;
+            parent.object_type_name = Some(object_type.name.clone());
             parent.field_type = FieldType::Object;
             parent.flexible = object_type.flexible;
             let nested = nested_fields_from_object_type(&parent.name, &object_type.fields);
@@ -286,6 +287,7 @@ fn nested_fields_from_object_type(parent: &str, fields: &[ObjectTypeField]) -> V
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         })
@@ -350,6 +352,7 @@ mod tests {
                         on_delete: None,
                         link_storage: None,
                         link_opposite_field: None,
+                        object_type_name: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
                     },
@@ -369,6 +372,7 @@ mod tests {
                         on_delete: None,
                         link_storage: None,
                         link_opposite_field: None,
+                        object_type_name: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
                     },
@@ -399,6 +403,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         }
@@ -446,6 +451,7 @@ mod tests {
         let user = &schema.models[0];
         let metadata = user.fields.iter().find(|field| field.name == "metadata").unwrap();
         assert!(metadata.flexible);
+        assert_eq!(metadata.object_type_name.as_deref(), Some("UserMetadata"));
         assert_eq!(metadata.field_type, FieldType::Object);
         assert!(user.fields.iter().any(|field| field.name == "metadata.user_id"));
         assert!(user.fields.iter().any(|field| field.name == "metadata.source"));

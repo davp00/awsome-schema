@@ -37,6 +37,7 @@ fn schema_with_field(field_type: FieldType, optional: bool) -> DatabaseSchema {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],

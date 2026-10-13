@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   asRecordId,
   bindSchemaMeta,
+  buildGroupHaving,
   buildOrderBy,
   buildWhere,
   isNestedWriteBag,
@@ -80,6 +81,25 @@ describe("query fragments", () => {
     expect(buildWhere({ metadata: { extra: true, source: "a" } }, "user", meta, ignored)).toBe(
       "metadata.source = $w0",
     );
+  });
+
+  it("compiles nested object filters in groupBy having", () => {
+    const meta: Record<string, Record<string, FieldSelectMeta>> = {
+      user: {
+        metadata: {
+          kind: "object",
+          fields: {
+            source: { kind: "scalar", filter: "string" },
+          },
+        },
+      },
+    };
+    bindSchemaMeta(meta, {});
+    const ctx = { vars: {}, n: 0 };
+    expect(
+      buildGroupHaving("user", { metadata: { source: "web" } }, ["metadata"], [], ctx),
+    ).toBe("metadata.source = $w0");
+    expect(ctx.vars.w0).toBe("web");
   });
 });
 

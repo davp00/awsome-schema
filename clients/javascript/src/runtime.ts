@@ -1001,6 +1001,11 @@ export function buildGroupHaving(
     }
     if (!bySet.has(key)) throw new Error(`groupBy ${table}: having ${key} was not selected`);
     const fieldMeta = selectMetaByTable[table]?.[key];
+    if (fieldMeta?.kind === "object") {
+      const clause = compileObjectWhere(value, fieldMeta.fields, key, ctx);
+      if (clause) parts.push(clause);
+      continue;
+    }
     const filterKind = fieldMeta && fieldMeta.kind === "scalar" ? fieldMeta.filter : "string";
     parts.push(...scalarPredicate(key, value, filterKind, ctx));
   }

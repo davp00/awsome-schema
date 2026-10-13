@@ -256,9 +256,5 @@ fn naming_case_str(case: NamingCase) -> &'static str {
 }
 
 fn format_string_value(value: &str) -> String {
-    if value.starts_with("env(") {
-        value.to_owned()
-    } else {
-        format!("\"{value}\"")
-    }
+    if value.starts_with("env(") { value.to_owned() } else { format!("\"{value}\"") }
 }

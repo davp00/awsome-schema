@@ -1,6 +1,6 @@
 //! Map SurrealDB `INFO` define strings into the domain model.
 
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 
 use core::{
     DatabaseSchema, DomainError, Edge, Field, FieldType, Index, Model, NamingConvention, TableMode,
@@ -51,7 +51,10 @@ pub fn map_database_info(
             let mut fields = map_fields(table_name, &info, preserve, Some(table_name))?;
             ensure_model_id_field(&mut fields, &domain_name);
             let mut indexes = map_indexes(table_name, &info, &mut fields, preserve)?;
-            indexes.sort_by(|a, b| a.resolved_name(table_name, &preserve.naming).cmp(&b.resolved_name(table_name, &preserve.naming)));
+            indexes.sort_by(|a, b| {
+                a.resolved_name(table_name, &preserve.naming)
+                    .cmp(&b.resolved_name(table_name, &preserve.naming))
+            });
 
             models.push(Model {
                 name: domain_name,
@@ -102,22 +105,14 @@ fn parse_relation_endpoints(define: &str) -> Result<(String, String), DomainErro
 
 fn parse_table_mode(define: &str) -> TableMode {
     let normalized = normalize(define);
-    if normalized.contains(" schemaless") {
-        TableMode::Schemaless
-    } else {
-        TableMode::Schemafull
-    }
+    if normalized.contains(" schemaless") { TableMode::Schemaless } else { TableMode::Schemafull }
 }
 
 fn parse_permissions(define: &str) -> Option<String> {
     let tokens = tokenize(define);
     let pos = tokens.iter().position(|t| t.eq_ignore_ascii_case("permissions"))?;
     let rest = tokens.get(pos + 1..)?.join(" ");
-    if rest.is_empty() || rest.eq_ignore_ascii_case("none") {
-        None
-    } else {
-        Some(rest)
-    }
+    if rest.is_empty() || rest.eq_ignore_ascii_case("none") { None } else { Some(rest) }
 }
 
 /// SurrealDB 3.3 `INFO FOR TABLE` omits the primary `id` field even when it was
@@ -145,6 +140,7 @@ fn ensure_model_id_field(fields: &mut Vec<Field>, model_name: &str) {
         on_delete: None,
         link_storage: None,
         link_opposite_field: None,
+        object_type_name: None,
         relation_name: None,
         attributes: BTreeMap::new(),
     });
@@ -203,13 +199,17 @@ fn parse_field_define(
     preserve: &DatabaseSchema,
 ) -> Result<Field, DomainError> {
     let tokens = tokenize(define);
-    if tokens.len() < 6 || !tokens[0].eq_ignore_ascii_case("define") || !tokens[1].eq_ignore_ascii_case("field") {
+    if tokens.len() < 6
+        || !tokens[0].eq_ignore_ascii_case("define")
+        || !tokens[1].eq_ignore_ascii_case("field")
+    {
         return Err(DomainError::DatabaseError(format!("unexpected field define: {define}")));
     }
     let name = tokens[2].clone();
-    let on_pos = tokens.iter().position(|t| t.eq_ignore_ascii_case("on")).ok_or_else(|| {
-        DomainError::DatabaseError(format!("field define missing ON: {define}"))
-    })?;
+    let on_pos = tokens
+        .iter()
+        .position(|t| t.eq_ignore_ascii_case("on"))
+        .ok_or_else(|| DomainError::DatabaseError(format!("field define missing ON: {define}")))?;
     if tokens.get(on_pos + 1).map(String::as_str) != Some(table) {
         return Err(DomainError::DatabaseError(format!(
             "field define table mismatch: expected `{table}` in `{define}`"
@@ -217,7 +217,8 @@ fn parse_field_define(
     }
 
     if let Some(computed) = parse_computed_backlink(define, preserve) {
-        let field_type = FieldType::Array(Box::new(FieldType::Model(computed.target_model.clone())));
+        let field_type =
+            FieldType::Array(Box::new(FieldType::Model(computed.target_model.clone())));
         return Ok(Field {
             name,
             field_type,
@@ -238,6 +239,7 @@ fn parse_field_define(
             } else {
                 Some(computed.opposite_field)
             },
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -314,10 +316,7 @@ fn parse_field_define(
 
     // RECORD links map to @link; REFERENCE adds storage + on_delete
     let (link_storage, on_delete) = if link_target.is_some() {
-        (
-            Some(core::LinkStorage::Stored),
-            Some(on_delete.unwrap_or(core::OnDeleteAction::Ignore)),
-        )
+        (Some(core::LinkStorage::Stored), Some(on_delete.unwrap_or(core::OnDeleteAction::Ignore)))
     } else {
         (None, None)
     };
@@ -338,6 +337,7 @@ fn parse_field_define(
         on_delete,
         link_storage,
         link_opposite_field: None,
+        object_type_name: None,
         relation_name: None,
         attributes: BTreeMap::new(),
     })
@@ -389,12 +389,7 @@ fn pair_pulled_links(schema: &mut DatabaseSchema, preserve: &DatabaseSchema) {
             else {
                 continue;
             };
-            pairs.push((
-                model.name.clone(),
-                field.name.clone(),
-                target.clone(),
-                opposite.clone(),
-            ));
+            pairs.push((model.name.clone(), field.name.clone(), target.clone(), opposite.clone()));
         }
     }
 
@@ -451,9 +446,10 @@ fn parse_index_define(define: &str) -> Result<Index, DomainError> {
         return Err(DomainError::DatabaseError(format!("unexpected index define: {define}")));
     }
     let name = Some(tokens[2].clone());
-    let fields_pos = tokens.iter().position(|t| t.eq_ignore_ascii_case("fields")).ok_or_else(|| {
-        DomainError::DatabaseError(format!("index define missing FIELDS: {define}"))
-    })?;
+    let fields_pos =
+        tokens.iter().position(|t| t.eq_ignore_ascii_case("fields")).ok_or_else(|| {
+            DomainError::DatabaseError(format!("index define missing FIELDS: {define}"))
+        })?;
     let mut fields = Vec::new();
     let mut idx = fields_pos + 1;
     while idx < tokens.len() {
@@ -576,10 +572,7 @@ fn parse_type_name(raw: &str) -> Result<FieldType, DomainError> {
 
 /// Caller must pass a token that already matches `option<...>`.
 fn parse_inner_option_type(raw: &str) -> FieldType {
-    let inner = raw
-        .strip_prefix("option<")
-        .and_then(|s| s.strip_suffix('>'))
-        .unwrap_or(raw);
+    let inner = raw.strip_prefix("option<").and_then(|s| s.strip_suffix('>')).unwrap_or(raw);
     map_scalar_type_name(inner)
 }
 
@@ -603,7 +596,10 @@ fn map_scalar_type_name(name: &str) -> FieldType {
     }
 }
 
-fn map_record_links(field_type: FieldType, preserve: &DatabaseSchema) -> (FieldType, Option<String>) {
+fn map_record_links(
+    field_type: FieldType,
+    preserve: &DatabaseSchema,
+) -> (FieldType, Option<String>) {
     match field_type {
         FieldType::RecordId(target) => {
             let model = model_name_for_table(&target, preserve);
@@ -675,12 +671,7 @@ fn normalize(input: &str) -> String {
 }
 
 fn tokenize(input: &str) -> Vec<String> {
-    input
-        .trim()
-        .trim_end_matches(';')
-        .split_whitespace()
-        .map(ToOwned::to_owned)
-        .collect()
+    input.trim().trim_end_matches(';').split_whitespace().map(ToOwned::to_owned).collect()
 }
 
 #[cfg(test)]
@@ -728,19 +719,10 @@ mod tests {
     fn maps_user_table_from_fixture() {
         let preserve = preserve_with_user();
         let mut tables = BTreeMap::new();
-        tables.insert(
-            "user".into(),
-            "DEFINE TABLE user SCHEMAFULL;".into(),
-        );
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "email".into(),
-            "DEFINE FIELD email ON user TYPE string;".into(),
-        );
-        info.fields.insert(
-            "id".into(),
-            "DEFINE FIELD id ON user TYPE record<user>;".into(),
-        );
+        info.fields.insert("email".into(), "DEFINE FIELD email ON user TYPE string;".into());
+        info.fields.insert("id".into(), "DEFINE FIELD id ON user TYPE record<user>;".into());
         info.indexes.insert(
             "user_email_unique".into(),
             "DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;".into(),
@@ -764,10 +746,7 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL PERMISSIONS NONE;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "email".into(),
-            "DEFINE FIELD email ON user TYPE string;".into(),
-        );
+        info.fields.insert("email".into(), "DEFINE FIELD email ON user TYPE string;".into());
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), info);
 
@@ -785,18 +764,10 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("doc".into(), "DEFINE TABLE doc SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "id".into(),
-            "DEFINE FIELD id ON doc TYPE record<doc>;".into(),
-        );
-        info.fields.insert(
-            "title".into(),
-            "DEFINE FIELD title ON doc TYPE string;".into(),
-        );
-        info.fields.insert(
-            "embedding".into(),
-            "DEFINE FIELD embedding ON doc TYPE array<float>;".into(),
-        );
+        info.fields.insert("id".into(), "DEFINE FIELD id ON doc TYPE record<doc>;".into());
+        info.fields.insert("title".into(), "DEFINE FIELD title ON doc TYPE string;".into());
+        info.fields
+            .insert("embedding".into(), "DEFINE FIELD embedding ON doc TYPE array<float>;".into());
         info.indexes.insert(
             "doc_title_idx".into(),
             "DEFINE INDEX doc_title_idx ON doc FIELDS title FULLTEXT ANALYZER english BM25;".into(),
@@ -811,11 +782,7 @@ mod tests {
 
         let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
         let doc = &pulled.models[0];
-        let fulltext = doc
-            .indexes
-            .iter()
-            .find(|i| i.fulltext)
-            .expect("fulltext index");
+        let fulltext = doc.indexes.iter().find(|i| i.fulltext).expect("fulltext index");
         assert_eq!(fulltext.fulltext_analyzer.as_deref(), Some("english"));
         let vector = doc.indexes.iter().find(|i| i.vector).expect("vector index");
         assert_eq!(vector.vector_dimension, Some(1536));
@@ -845,6 +812,7 @@ mod tests {
                 on_delete: None,
                 link_storage: Some(core::LinkStorage::Computed),
                 link_opposite_field: Some("author".into()),
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -871,6 +839,7 @@ mod tests {
                 on_delete: Some(core::OnDeleteAction::Cascade),
                 link_storage: Some(core::LinkStorage::Stored),
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -885,20 +854,14 @@ mod tests {
         tables.insert("post".into(), "DEFINE TABLE post SCHEMAFULL;".into());
 
         let mut user_info = TableInfo::default();
-        user_info.fields.insert(
-            "id".into(),
-            "DEFINE FIELD id ON user TYPE record<user>;".into(),
-        );
+        user_info.fields.insert("id".into(), "DEFINE FIELD id ON user TYPE record<user>;".into());
         user_info.fields.insert(
             "posts".into(),
             "DEFINE FIELD posts ON user COMPUTED <~(post FIELD author);".into(),
         );
 
         let mut post_info = TableInfo::default();
-        post_info.fields.insert(
-            "id".into(),
-            "DEFINE FIELD id ON post TYPE record<post>;".into(),
-        );
+        post_info.fields.insert("id".into(), "DEFINE FIELD id ON post TYPE record<post>;".into());
         post_info.fields.insert(
             "author".into(),
             "DEFINE FIELD author ON post TYPE record<user> REFERENCE ON DELETE CASCADE;".into(),
@@ -936,10 +899,7 @@ mod tests {
     fn rejects_relation_define_missing_in_out() {
         let preserve = DatabaseSchema::empty();
         let mut tables = BTreeMap::new();
-        tables.insert(
-            "likes".into(),
-            "DEFINE TABLE likes TYPE RELATION SCHEMAFULL;".into(),
-        );
+        tables.insert("likes".into(), "DEFINE TABLE likes TYPE RELATION SCHEMAFULL;".into());
         let err = map_database_info(&tables, &BTreeMap::new(), &preserve).expect_err("missing IN");
         assert!(matches!(err, DomainError::DatabaseError(msg) if msg.contains("missing IN")));
     }
@@ -1019,10 +979,7 @@ mod tests {
         assert_eq!(field("flag").field_type, FieldType::Bool);
         assert_eq!(field("when").field_type, FieldType::Datetime);
         assert_eq!(field("meta").field_type, FieldType::Object);
-        assert_eq!(
-            field("tags").field_type,
-            FieldType::Array(Box::new(FieldType::String))
-        );
+        assert_eq!(field("tags").field_type, FieldType::Array(Box::new(FieldType::String)));
         assert_eq!(field("owner").link_target.as_deref(), Some("User"));
         assert_eq!(field("shape").field_type, FieldType::Custom("geometry".into()));
         assert_eq!(
@@ -1054,19 +1011,17 @@ mod tests {
         tables.insert("post".into(), "DEFINE TABLE post SCHEMAFULL;".into());
 
         let mut user_info = TableInfo::default();
-        user_info.fields.insert(
-            "posts".into(),
-            "DEFINE FIELD posts ON user COMPUTED <~ post;".into(),
-        );
+        user_info
+            .fields
+            .insert("posts".into(), "DEFINE FIELD posts ON user COMPUTED <~ post;".into());
         user_info.fields.insert(
             "authored".into(),
             "DEFINE FIELD authored ON user COMPUTED <~ (post FIELD author);".into(),
         );
         let mut post_info = TableInfo::default();
-        post_info.fields.insert(
-            "author".into(),
-            "DEFINE FIELD author ON post TYPE record<user>;".into(),
-        );
+        post_info
+            .fields
+            .insert("author".into(), "DEFINE FIELD author ON post TYPE record<user>;".into());
 
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), user_info);
@@ -1106,6 +1061,7 @@ mod tests {
                 on_delete: None,
                 link_storage: Some(core::LinkStorage::Computed),
                 link_opposite_field: Some("author".into()),
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -1134,10 +1090,7 @@ mod tests {
         );
         let mut post_info = TableInfo::default();
         // Non-record opposite so pair_pulled_links fills link_storage/on_delete defaults.
-        post_info.fields.insert(
-            "author".into(),
-            "DEFINE FIELD author ON post TYPE string;".into(),
-        );
+        post_info.fields.insert("author".into(), "DEFINE FIELD author ON post TYPE string;".into());
 
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), user_info);
@@ -1156,8 +1109,8 @@ mod tests {
         let short = parse_index_define("DEFINE INDEX x").expect_err("short");
         assert!(matches!(short, DomainError::DatabaseError(_)));
         // Need ≥7 tokens so the length check passes before FIELDS lookup.
-        let missing =
-            parse_index_define("DEFINE INDEX x ON user TABLE placeholder UNIQUE").expect_err("fields");
+        let missing = parse_index_define("DEFINE INDEX x ON user TABLE placeholder UNIQUE")
+            .expect_err("fields");
         assert!(matches!(missing, DomainError::DatabaseError(msg) if msg.contains("FIELDS")));
     }
 
@@ -1187,17 +1140,14 @@ mod tests {
     fn skips_internal_tables_and_array_item_field_defines() {
         let preserve = preserve_with_user();
         let mut tables = BTreeMap::new();
-        tables.insert("_awesome_migrations".into(), "DEFINE TABLE _awesome_migrations SCHEMAFULL;".into());
+        tables.insert(
+            "_awesome_migrations".into(),
+            "DEFINE TABLE _awesome_migrations SCHEMAFULL;".into(),
+        );
         tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "tags.*".into(),
-            "DEFINE FIELD tags.* ON user TYPE string;".into(),
-        );
-        info.fields.insert(
-            "email".into(),
-            "DEFINE FIELD email ON user TYPE string;".into(),
-        );
+        info.fields.insert("tags.*".into(), "DEFINE FIELD tags.* ON user TYPE string;".into());
+        info.fields.insert("email".into(), "DEFINE FIELD email ON user TYPE string;".into());
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), info);
 
@@ -1243,11 +1193,7 @@ mod tests {
         table_infos.insert("user".into(), info);
 
         let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
-        let edge_ref = pulled.models[0]
-            .fields
-            .iter()
-            .find(|f| f.name == "edge_ref")
-            .unwrap();
+        let edge_ref = pulled.models[0].fields.iter().find(|f| f.name == "edge_ref").unwrap();
         assert_eq!(edge_ref.link_target.as_deref(), Some("Likes"));
     }
 
@@ -1267,10 +1213,7 @@ mod tests {
     fn permissions_none_vs_full_on_table_and_edge() {
         let preserve = preserve_with_user();
         let mut tables = BTreeMap::new();
-        tables.insert(
-            "user".into(),
-            "DEFINE TABLE user SCHEMAFULL PERMISSIONS NONE;".into(),
-        );
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL PERMISSIONS NONE;".into());
         tables.insert(
             "likes".into(),
             "DEFINE TABLE likes TYPE RELATION IN user OUT user SCHEMAFULL PERMISSIONS FULL;".into(),
@@ -1286,10 +1229,7 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "id".into(),
-            "DEFINE FIELD id ON user TYPE string;".into(),
-        );
+        info.fields.insert("id".into(), "DEFINE FIELD id ON user TYPE string;".into());
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), info);
         let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
@@ -1304,10 +1244,7 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "email".into(),
-            "DEFINE FIELD email ON user TYPE string;".into(),
-        );
+        info.fields.insert("email".into(), "DEFINE FIELD email ON user TYPE string;".into());
         info.indexes.insert(
             "user_email_unique".into(),
             "DEFINE INDEX user_email_unique ON user FIELDS email UNIQUE;".into(),
@@ -1316,11 +1253,7 @@ mod tests {
         table_infos.insert("user".into(), info);
 
         let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
-        let email = pulled.models[0]
-            .fields
-            .iter()
-            .find(|f| f.name == "email")
-            .unwrap();
+        let email = pulled.models[0].fields.iter().find(|f| f.name == "email").unwrap();
         assert!(email.unique);
         assert!(pulled.models[0].indexes.is_empty());
     }
@@ -1329,18 +1262,9 @@ mod tests {
     fn rejects_relation_missing_out_and_targets() {
         let preserve = DatabaseSchema::empty();
         let cases = [
-            (
-                "DEFINE TABLE likes TYPE RELATION IN user SCHEMAFULL;",
-                "missing OUT",
-            ),
-            (
-                "DEFINE TABLE likes TYPE RELATION OUT user IN",
-                "missing IN target",
-            ),
-            (
-                "DEFINE TABLE likes TYPE RELATION IN user OUT",
-                "missing OUT target",
-            ),
+            ("DEFINE TABLE likes TYPE RELATION IN user SCHEMAFULL;", "missing OUT"),
+            ("DEFINE TABLE likes TYPE RELATION OUT user IN", "missing IN target"),
+            ("DEFINE TABLE likes TYPE RELATION IN user OUT", "missing OUT target"),
         ];
         for (define, needle) in cases {
             let mut tables = BTreeMap::new();
@@ -1359,14 +1283,9 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "score".into(),
-            "DEFINE FIELD score ON user COMPUTED 1 + 2;".into(),
-        );
-        info.fields.insert(
-            "weird".into(),
-            "DEFINE FIELD weird ON user COMPUTED <~ (post FIELD);".into(),
-        );
+        info.fields.insert("score".into(), "DEFINE FIELD score ON user COMPUTED 1 + 2;".into());
+        info.fields
+            .insert("weird".into(), "DEFINE FIELD weird ON user COMPUTED <~ (post FIELD);".into());
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), info);
 
@@ -1374,16 +1293,17 @@ mod tests {
         let err = map_database_info(&tables, &table_infos, &preserve).expect_err("no type");
         assert!(matches!(err, DomainError::DatabaseError(msg) if msg.contains("TYPE")));
 
-        assert!(parse_computed_backlink(
-            "DEFINE FIELD score ON user COMPUTED 1 + 2;",
-            &preserve
-        )
-        .is_none());
-        assert!(parse_computed_backlink(
-            "DEFINE FIELD weird ON user COMPUTED <~ (post FIELD);",
-            &preserve
-        )
-        .is_none());
+        assert!(
+            parse_computed_backlink("DEFINE FIELD score ON user COMPUTED 1 + 2;", &preserve)
+                .is_none()
+        );
+        assert!(
+            parse_computed_backlink(
+                "DEFINE FIELD weird ON user COMPUTED <~ (post FIELD);",
+                &preserve
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -1392,26 +1312,13 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("doc".into(), "DEFINE TABLE doc SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "meta".into(),
-            "DEFINE FIELD meta ON doc TYPE object FLEXIBLE;".into(),
-        );
-        info.fields.insert(
-            "flags".into(),
-            "DEFINE FIELD flags ON doc TYPE array<bool>;".into(),
-        );
-        info.fields.insert(
-            "when".into(),
-            "DEFINE FIELD when ON doc TYPE option<datetime>;".into(),
-        );
-        info.fields.insert(
-            "owner".into(),
-            "DEFINE FIELD owner ON doc TYPE array<record<user>>;".into(),
-        );
-        info.fields.insert(
-            "shape".into(),
-            "DEFINE FIELD shape ON doc TYPE option<geometry>;".into(),
-        );
+        info.fields.insert("meta".into(), "DEFINE FIELD meta ON doc TYPE object FLEXIBLE;".into());
+        info.fields.insert("flags".into(), "DEFINE FIELD flags ON doc TYPE array<bool>;".into());
+        info.fields.insert("when".into(), "DEFINE FIELD when ON doc TYPE option<datetime>;".into());
+        info.fields
+            .insert("owner".into(), "DEFINE FIELD owner ON doc TYPE array<record<user>>;".into());
+        info.fields
+            .insert("shape".into(), "DEFINE FIELD shape ON doc TYPE option<geometry>;".into());
         let mut table_infos = BTreeMap::new();
         table_infos.insert("doc".into(), info);
 
@@ -1419,10 +1326,7 @@ mod tests {
         let doc = &pulled.models[0];
         let field = |name: &str| doc.fields.iter().find(|f| f.name == name).unwrap();
         assert!(field("meta").flexible);
-        assert_eq!(
-            field("flags").field_type,
-            FieldType::Array(Box::new(FieldType::Bool))
-        );
+        assert_eq!(field("flags").field_type, FieldType::Array(Box::new(FieldType::Bool)));
         assert!(field("when").optional);
         assert_eq!(field("when").field_type, FieldType::Datetime);
         assert_eq!(
@@ -1464,23 +1368,19 @@ mod tests {
 
     #[test]
     fn index_analyzer_and_hnsw_empty_values_are_ignored() {
-        let ft = parse_index_define(
-            "DEFINE INDEX body_ft ON doc FIELDS body FULLTEXT ANALYZER;",
-        )
-        .expect("fulltext");
+        let ft = parse_index_define("DEFINE INDEX body_ft ON doc FIELDS body FULLTEXT ANALYZER;")
+            .expect("fulltext");
         assert!(ft.fulltext);
         assert!(ft.fulltext_analyzer.is_none());
 
         // FULLTEXT without ANALYZER keyword at all.
-        let ft_bare =
-            parse_index_define("DEFINE INDEX body_ft ON doc FIELDS body FULLTEXT").expect("ft bare");
+        let ft_bare = parse_index_define("DEFINE INDEX body_ft ON doc FIELDS body FULLTEXT")
+            .expect("ft bare");
         assert!(ft_bare.fulltext);
         assert!(ft_bare.fulltext_analyzer.is_none());
 
-        let hn_dim = parse_index_define(
-            "DEFINE INDEX emb ON doc FIELDS embedding HNSW DIMENSION",
-        )
-        .expect("hnsw dim");
+        let hn_dim = parse_index_define("DEFINE INDEX emb ON doc FIELDS embedding HNSW DIMENSION")
+            .expect("hnsw dim");
         assert!(hn_dim.vector);
         assert!(hn_dim.vector_dimension.is_none());
 
@@ -1490,10 +1390,9 @@ mod tests {
         assert!(hn_bare.vector);
         assert!(hn_bare.vector_dimension.is_none());
 
-        let hn_dist = parse_index_define(
-            "DEFINE INDEX emb ON doc FIELDS embedding HNSW DIMENSION 3 DIST",
-        )
-        .expect("hnsw dist");
+        let hn_dist =
+            parse_index_define("DEFINE INDEX emb ON doc FIELDS embedding HNSW DIMENSION 3 DIST")
+                .expect("hnsw dist");
         assert_eq!(hn_dist.vector_dimension, Some(3));
         assert!(hn_dist.vector_dist.is_none());
     }
@@ -1504,10 +1403,7 @@ mod tests {
         let mut tables = BTreeMap::new();
         tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
         let mut info = TableInfo::default();
-        info.fields.insert(
-            "email".into(),
-            "DEFINE FIELD email ON user TYPE string;".into(),
-        );
+        info.fields.insert("email".into(), "DEFINE FIELD email ON user TYPE string;".into());
         info.indexes.insert(
             "custom_email_idx".into(),
             "DEFINE INDEX custom_email_idx ON user FIELDS email UNIQUE;".into(),
@@ -1516,12 +1412,7 @@ mod tests {
         table_infos.insert("user".into(), info);
         let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
         assert_eq!(pulled.models[0].indexes.len(), 1);
-        assert!(!pulled.models[0]
-            .fields
-            .iter()
-            .find(|f| f.name == "email")
-            .unwrap()
-            .unique);
+        assert!(!pulled.models[0].fields.iter().find(|f| f.name == "email").unwrap().unique);
     }
 
     #[test]
@@ -1563,11 +1454,7 @@ mod tests {
         let mut table_infos = BTreeMap::new();
         table_infos.insert("user".into(), user_info);
         let pulled = map_database_info(&tables, &table_infos, &preserve).expect("map");
-        let posts = pulled.models[0]
-            .fields
-            .iter()
-            .find(|f| f.name == "posts")
-            .unwrap();
+        let posts = pulled.models[0].fields.iter().find(|f| f.name == "posts").unwrap();
         assert_eq!(posts.link_name.as_deref(), Some("PostUser"));
     }
 

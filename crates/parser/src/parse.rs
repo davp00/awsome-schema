@@ -386,6 +386,7 @@ impl Parser {
                 on_delete,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name,
                 attributes,
             },
@@ -643,9 +644,7 @@ impl Parser {
             ));
         }
         if vector_dist.is_some() && !vector {
-            return Err(DomainError::ParseError(
-                "@@index @dist requires @vector".to_owned(),
-            ));
+            return Err(DomainError::ParseError("@@index @dist requires @vector".to_owned()));
         }
         if vector && fields.len() != 1 {
             return Err(DomainError::ParseError(
@@ -800,12 +799,8 @@ struct ParsedFieldAttributes {
 }
 
 fn parse_index_fields(raw: &str) -> Result<Vec<String>, DomainError> {
-    let fields: Vec<String> = raw
-        .split(',')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(ToOwned::to_owned)
-        .collect();
+    let fields: Vec<String> =
+        raw.split(',').map(str::trim).filter(|s| !s.is_empty()).map(ToOwned::to_owned).collect();
     if fields.is_empty() {
         return Err(DomainError::ParseError(
             "@@index requires a non-empty field list, e.g. @@index([email])".to_owned(),

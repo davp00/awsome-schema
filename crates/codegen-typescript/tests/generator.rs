@@ -218,6 +218,83 @@ model User {
 }
 
 #[test]
+fn identical_object_types_keep_distinct_where_inputs() {
+    let schema = parse(
+        r#"
+datasource db { provider = "surrealdb" }
+type Alpha { source string }
+type Beta { source string }
+model User {
+  id @id
+  left Alpha
+  right Beta
+}
+"#,
+    )
+    .expect("parse");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+    assert!(output.contains("left: Alpha;"));
+    assert!(output.contains("right: Beta;"));
+    assert!(output.contains("left?: AlphaWhereInput;"));
+    assert!(output.contains("right?: BetaWhereInput;"));
+    assert!(!output.contains("right?: AlphaWhereInput;"));
+}
+
+#[test]
+fn distinct_inline_objects_get_unique_where_type_names() {
+    let schema = parse(
+        r#"
+datasource db { provider = "surrealdb" }
+model User {
+  id @id
+  meta_data object { theme string }
+}
+model UserMeta {
+  id @id
+  data object { label string }
+}
+"#,
+    )
+    .expect("parse");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+    assert_eq!(output.matches("export type UserMetaDataWhereInput = {").count(), 1);
+    assert!(output.contains("meta_data?: UserMetaDataWhereInput;"));
+    assert!(output.contains("export type UserMetaDataInlineWhereInput = {"));
+    assert!(output.contains("data?: UserMetaDataInlineWhereInput;"));
+    assert!(output.contains("theme?: string | StringFilter;"));
+    assert!(output.contains("label?: string | StringFilter;"));
+}
+
+#[test]
+fn nested_where_and_select_meta_use_field_naming() {
+    let schema = parse(
+        r#"
+datasource db { provider = "surrealdb" }
+naming {
+  tables = "snake_case"
+  fields = "camelCase"
+}
+type UserMetadata {
+  user_id int?
+  source string
+}
+model User {
+  id @id
+  metadata UserMetadata
+}
+"#,
+    )
+    .expect("parse");
+    let output = CodeGenerator::generate(&TypeScriptGenerator::new(), &schema).expect("generate");
+    assert!(output.contains("userId?: number | NumberFilter;"));
+    assert!(output.contains("userId?: number;"));
+    assert!(output.contains(
+        "metadata: { kind: \"object\", fields: { userId: { kind: \"scalar\", filter: \"number\" }, source: { kind: \"scalar\", filter: \"string\" } } }"
+    ));
+    assert!(!output.contains("user_id?: number | NumberFilter;"));
+}
+
+#[test]
 fn emits_thin_select_helpers_with_fetch() {
     let output = generate_fixture();
     assert!(output.contains("type SurrealLike,"));
@@ -607,6 +684,7 @@ fn maps_custom_field_type_passthrough() {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -656,6 +734,7 @@ fn respects_optional_marker() {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],

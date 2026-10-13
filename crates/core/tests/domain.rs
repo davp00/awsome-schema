@@ -70,6 +70,7 @@ fn model_and_edge_table_names_use_naming_convention() {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         }],

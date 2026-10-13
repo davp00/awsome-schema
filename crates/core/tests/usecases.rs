@@ -251,6 +251,7 @@ fn sample_schema() -> DatabaseSchema {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -885,6 +886,7 @@ fn migrate_dev_uses_previous_snapshot_for_down_migration() {
         on_delete: None,
         link_storage: None,
         link_opposite_field: None,
+        object_type_name: None,
         relation_name: None,
         attributes: BTreeMap::new(),
     });

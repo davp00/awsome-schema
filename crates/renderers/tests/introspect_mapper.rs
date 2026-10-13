@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use core::{DatabaseSchema, Model, NamingCase, TableMode};
-use renderers::{map_database_info, TableInfo};
+use renderers::{TableInfo, map_database_info};
 
 #[test]
 fn maps_minimal_user_fixture() {
@@ -98,10 +98,8 @@ fn maps_relation_table_to_edge() {
         "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;".into(),
     );
     let mut info = TableInfo::default();
-    info.fields.insert(
-        "in".into(),
-        "DEFINE FIELD in ON likes TYPE record<user> PERMISSIONS FULL;".into(),
-    );
+    info.fields
+        .insert("in".into(), "DEFINE FIELD in ON likes TYPE record<user> PERMISSIONS FULL;".into());
     info.fields.insert(
         "out".into(),
         "DEFINE FIELD out ON likes TYPE record<post> PERMISSIONS FULL;".into(),

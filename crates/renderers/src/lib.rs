@@ -3,4 +3,4 @@
 pub mod surrealdb;
 
 pub use surrealdb::SurrealDbRenderer;
-pub use surrealdb::{map_database_info, TableInfo};
+pub use surrealdb::{TableInfo, map_database_info};

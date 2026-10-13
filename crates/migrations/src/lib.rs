@@ -98,9 +98,8 @@ impl SchemaDiffPort for SchemaDiffer {
 
         for previous in from_edges {
             if !to.edges.iter().any(|edge| edge.name == previous.name) {
-                operations.push(MigrationOperation::DropTable {
-                    name: previous.table_name(naming),
-                });
+                operations
+                    .push(MigrationOperation::DropTable { name: previous.table_name(naming) });
             }
         }
 
@@ -344,6 +343,7 @@ mod tests {
                     on_delete: None,
                     link_storage: None,
                     link_opposite_field: None,
+                    object_type_name: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 },
@@ -363,6 +363,7 @@ mod tests {
                     on_delete: None,
                     link_storage: None,
                     link_opposite_field: None,
+                    object_type_name: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 },
@@ -393,6 +394,7 @@ mod tests {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -424,6 +426,7 @@ mod tests {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -536,6 +539,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: Some("Likes".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -625,6 +629,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -663,6 +668,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -815,6 +821,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -890,6 +897,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
@@ -909,6 +917,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: Some("Likes".to_owned()),
             attributes: BTreeMap::new(),
         });
@@ -957,12 +966,14 @@ mod tests {
             on_delete: Some(core::OnDeleteAction::Ignore),
             link_storage: Some(core::LinkStorage::Stored),
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         });
 
         let mut updated = previous.clone();
-        updated.models[0].fields.last_mut().unwrap().on_delete = Some(core::OnDeleteAction::Cascade);
+        updated.models[0].fields.last_mut().unwrap().on_delete =
+            Some(core::OnDeleteAction::Cascade);
 
         let plan = diff_schemas(Some(&previous), &updated, "on_delete");
         assert!(plan.operations.iter().any(|op| matches!(

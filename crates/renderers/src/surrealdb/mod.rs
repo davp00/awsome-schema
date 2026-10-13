@@ -86,7 +86,8 @@ fn render_edge_schema(edge: &Edge, naming: &NamingContext<'_>) -> Vec<String> {
     let table = naming.map_table_name(&edge.name, &edge.attributes);
     let in_table = naming.table_name_for_type(&edge.in_model);
     let out_table = naming.table_name_for_type(&edge.out_model);
-    let mut lines = vec![render_define_relation_table(&table, &in_table, &out_table, edge.table_mode)];
+    let mut lines =
+        vec![render_define_relation_table(&table, &in_table, &out_table, edge.table_mode)];
 
     for field in &edge.fields {
         lines.push(render_define_field(&table, field, naming));
@@ -307,6 +308,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -335,6 +337,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -366,6 +369,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -394,6 +398,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -425,6 +430,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -454,6 +460,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -478,6 +485,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -515,6 +523,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -571,6 +580,7 @@ mod tests {
                         on_delete: None,
                         link_storage: None,
                         link_opposite_field: None,
+                        object_type_name: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
                     },
@@ -617,6 +627,7 @@ mod tests {
                     on_delete: None,
                     link_storage: None,
                     link_opposite_field: None,
+                    object_type_name: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 }],
@@ -691,9 +702,7 @@ mod tests {
                     table: "user".to_owned(),
                     permission: "NONE".to_owned(),
                 },
-                MigrationOperation::DropPermission {
-                    table: "user".to_owned(),
-                },
+                MigrationOperation::DropPermission { table: "user".to_owned() },
             ],
             naming: NamingConvention::default(),
         };
@@ -795,6 +804,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -837,6 +847,7 @@ mod tests {
                         on_delete: None,
                         link_storage: None,
                         link_opposite_field: None,
+                        object_type_name: None,
                         relation_name: None,
                         attributes: BTreeMap::new(),
                     },
@@ -856,6 +867,7 @@ mod tests {
                         on_delete: None,
                         link_storage: None,
                         link_opposite_field: None,
+                        object_type_name: None,
                         relation_name: Some("Likes".to_owned()),
                         attributes: BTreeMap::new(),
                     },
@@ -894,6 +906,7 @@ mod tests {
                     on_delete: None,
                     link_storage: None,
                     link_opposite_field: None,
+                    object_type_name: None,
                     relation_name: None,
                     attributes: BTreeMap::new(),
                 }],
@@ -904,9 +917,7 @@ mod tests {
         };
 
         let rendered = SurrealDbRenderer::new().render_schema(&schema).expect("render");
-        assert!(rendered.contains(
-            "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"
-        ));
+        assert!(rendered.contains("DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"));
         assert!(rendered.contains("DEFINE FIELD score ON likes TYPE int;"));
         assert!(rendered.contains("DEFINE TABLE user PERMISSIONS FULL;"));
         assert!(!rendered.contains("posts"));
@@ -940,9 +951,7 @@ mod tests {
 
         let rendered =
             SurrealDbRenderer::new().render_migration(&plan).expect("migration should render");
-        assert!(rendered.contains(
-            "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"
-        ));
+        assert!(rendered.contains("DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;"));
     }
 
     #[test]
@@ -968,6 +977,7 @@ mod tests {
                 on_delete: None,
                 link_storage: None,
                 link_opposite_field: None,
+                object_type_name: None,
                 relation_name: None,
                 attributes: BTreeMap::new(),
             }],
@@ -988,9 +998,7 @@ mod tests {
 
         let rendered = renderer.render_schema(&schema).expect("render");
         assert!(rendered.contains("DEFINE TABLE user SCHEMALESS;"));
-        assert!(rendered.contains(
-            "DEFINE TABLE likes TYPE RELATION IN user OUT user SCHEMALESS;"
-        ));
+        assert!(rendered.contains("DEFINE TABLE likes TYPE RELATION IN user OUT user SCHEMALESS;"));
         assert!(rendered.contains("DEFINE TABLE likes PERMISSIONS FULL;"));
     }
 
@@ -1033,6 +1041,7 @@ mod tests {
             on_delete: Some(core::OnDeleteAction::Cascade),
             link_storage: Some(core::LinkStorage::Stored),
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -1057,6 +1066,7 @@ mod tests {
             on_delete: None,
             link_storage: Some(core::LinkStorage::Computed),
             link_opposite_field: Some("author".to_owned()),
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -1082,6 +1092,7 @@ mod tests {
             on_delete: None,
             link_storage: Some(core::LinkStorage::Computed),
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
@@ -1091,4 +1102,4 @@ mod tests {
 
 mod introspect;
 
-pub use introspect::{map_database_info, TableInfo};
+pub use introspect::{TableInfo, map_database_info};

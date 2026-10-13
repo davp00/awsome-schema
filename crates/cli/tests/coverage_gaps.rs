@@ -87,6 +87,7 @@ fn sample_pulled_schema() -> DatabaseSchema {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: Default::default(),
         }],

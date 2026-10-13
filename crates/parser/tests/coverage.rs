@@ -236,8 +236,8 @@ model Post {
 
 #[test]
 fn rejects_link_and_relation_on_same_field() {
-    let error = parse("model User { id @id posts Post[] @link @relation(\"Likes\") }")
-        .expect_err("both");
+    let error =
+        parse("model User { id @id posts Post[] @link @relation(\"Likes\") }").expect_err("both");
     assert!(matches!(error, DomainError::ParseError(_)));
 }
 
@@ -581,7 +581,9 @@ fn rejects_bad_object_type_attribute() {
 }",
     )
     .expect_err("bad attr");
-    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("does not support attribute")));
+    assert!(
+        matches!(error, DomainError::ParseError(msg) if msg.contains("does not support attribute"))
+    );
 }
 
 #[test]
@@ -603,7 +605,9 @@ fn rejects_object_type_field_with_attributes() {
 }",
     )
     .expect_err("field attr");
-    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("does not support field attributes")));
+    assert!(
+        matches!(error, DomainError::ParseError(msg) if msg.contains("does not support field attributes"))
+    );
 }
 
 #[test]
@@ -617,7 +621,9 @@ fn rejects_bad_on_delete_value() {
 fn rejects_on_delete_without_link() {
     let error = parse(r#"model Post { id @id author User @onDelete(Cascade) }"#)
         .expect_err("onDelete without link");
-    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("@onDelete requires @link")));
+    assert!(
+        matches!(error, DomainError::ParseError(msg) if msg.contains("@onDelete requires @link"))
+    );
 }
 
 #[test]
@@ -708,5 +714,7 @@ fn rejects_combine_fulltext_and_vector() {
 }"#,
     )
     .expect_err("combo");
-    assert!(matches!(error, DomainError::ParseError(msg) if msg.contains("cannot combine @fulltext and @vector")));
+    assert!(
+        matches!(error, DomainError::ParseError(msg) if msg.contains("cannot combine @fulltext and @vector"))
+    );
 }

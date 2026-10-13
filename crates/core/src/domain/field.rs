@@ -85,6 +85,9 @@ pub struct Field {
     /// On a computed side: DSL name of the stored field on the opposite model.
     #[serde(default)]
     pub link_opposite_field: Option<String>,
+    /// Named object type this field was expanded from (`settings UserMetadata`).
+    #[serde(default)]
+    pub object_type_name: Option<String>,
     pub relation_name: Option<String>,
     pub attributes: BTreeMap<String, String>,
 }
@@ -193,6 +196,7 @@ mod tests {
             on_delete: None,
             link_storage: None,
             link_opposite_field: None,
+            object_type_name: None,
             relation_name: None,
             attributes: BTreeMap::new(),
         };
