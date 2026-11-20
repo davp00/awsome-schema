@@ -12,12 +12,13 @@ use schema_core::usecases::{CodeGeneratorPort, SchemaDiffPort};
 use schema_core::{
     DatabaseSchema, DbPullUseCase, DbPushUseCase, DomainError, FormatSchemaUseCase,
     GenerateCodeUseCase, InitProjectUseCase, MigrateApplyUseCase, MigrateCreateUseCase,
-    MigrateDevUseCase, MigrateRollbackUseCase, MigrateStatusUseCase, ValidateSchemaUseCase,
+    MigrateDevUseCase, MigrateRollbackUseCase, MigrateStatusUseCase, UpgradeCliUseCase,
+    ValidateSchemaUseCase,
 };
 
 use crate::adapters::{
-    FsAdapter, MigrationStoreAdapter, SchemaFileSource, SurrealDbExecutor, SurrealDbIntrospector,
-    SurrealDbMigrationLedger,
+    FsAdapter, FsBinaryInstaller, GithubReleaseClient, MigrationStoreAdapter, SchemaFileSource,
+    SurrealDbExecutor, SurrealDbIntrospector, SurrealDbMigrationLedger,
 };
 
 pub struct AppContext {
@@ -33,6 +34,7 @@ pub struct AppContext {
     pub migrate_rollback: MigrateRollbackUseCase,
     pub db_pull: DbPullUseCase,
     pub db_push: DbPushUseCase,
+    pub upgrade_cli: UpgradeCliUseCase,
     pub schema_path: String,
     pub migrations_dir: String,
     pub filesystem: Arc<dyn FileSystemPort>,
@@ -135,6 +137,10 @@ fn build_context_with_introspector(
         ),
         db_pull: DbPullUseCase::new(introspector),
         db_push: DbPushUseCase::new(schema_source, schema_renderer, database),
+        upgrade_cli: UpgradeCliUseCase::new(
+            Arc::new(GithubReleaseClient),
+            Arc::new(FsBinaryInstaller),
+        ),
         schema_path,
         migrations_dir,
         filesystem,

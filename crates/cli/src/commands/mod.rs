@@ -3,6 +3,7 @@ pub mod format;
 mod generate;
 pub mod init;
 pub mod migrate;
+mod upgrade;
 mod validate;
 
 use anyhow::Result;
@@ -30,5 +31,8 @@ pub fn dispatch(cli: &Cli, printer: &Printer) -> Result<()> {
             DbCommands::Pull { split_by_table, force } => db::run_pull(&context, *split_by_table, *force, printer),
             DbCommands::Push => db::run_push(&context, printer),
         },
+        Commands::Upgrade { check, version, from } => {
+            upgrade::run(&context, *check, version.clone(), *from, printer)
+        }
     }
 }

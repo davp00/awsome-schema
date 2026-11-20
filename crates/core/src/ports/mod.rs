@@ -1,17 +1,21 @@
+pub mod binary_installer;
 pub mod database;
 pub mod filesystem;
 pub mod migration_ledger;
 pub mod migration_renderer;
 pub mod migration_store;
+pub mod release_client;
 pub mod schema_introspector;
 pub mod schema_renderer;
 pub mod schema_source;
 
+pub use binary_installer::{BinaryInstaller, InstallKind};
 pub use database::DatabaseExecutor;
 pub use filesystem::FileSystemPort;
 pub use migration_ledger::{AppliedMigration, MigrationLedger};
 pub use migration_renderer::MigrationRenderer;
 pub use migration_store::MigrationStore;
+pub use release_client::ReleaseClient;
 pub use schema_introspector::SchemaIntrospector;
 pub use schema_renderer::SchemaRenderer;
 pub use schema_source::SchemaSource;

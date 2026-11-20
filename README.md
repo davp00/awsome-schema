@@ -28,9 +28,24 @@ Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate s
 
 ## Getting started
 
+### Install the CLI
+
+```bash
+# From crates.io (builds from source)
+cargo install awesome-schema
+
+# Prebuilt binary (macOS / Linux)
+curl -fsSL https://raw.githubusercontent.com/davp00/awsome-schema/main/scripts/install.sh | sh
+
+# Via npm (downloads the matching GitHub Release binary on install)
+pnpm add -D awesome-schema@alpha surrealdb@2.0.10
+```
+
+Upgrade a standalone or curl install with `awesome-schema upgrade` (or `awesome-schema upgrade --check`). npm installs should use `pnpm update awesome-schema` / `npm update awesome-schema`. Reinstall from crates.io with `awesome-schema upgrade --from crates-io`.
+
 ### Prerequisites
 
-- Rust stable (toolchain in [`rust-toolchain.toml`](rust-toolchain.toml))
+- Rust stable (toolchain in [`rust-toolchain.toml`](rust-toolchain.toml)) — required for `cargo install` / local development
 - Docker (optional) for a local SurrealDB
 
 ### Local SurrealDB (Docker Compose)
@@ -49,13 +64,13 @@ Point `awesome.schema` at it with `url = "ws://127.0.0.1:8000"`, `namespace = "t
 
 ```bash
 # Pull into awesome.schema (requires --force to overwrite a non-empty file)
-cargo run -p cli -- db pull --force
+cargo run -p awesome-schema -- db pull --force
 
 # Pull one model/edge per file under schema/ (e.g. schema/tables/user.schema)
-cargo run -p cli -- db pull --split-by-table --force
+cargo run -p awesome-schema -- db pull --split-by-table --force
 
 # Point commands at a split schema directory
-cargo run -p cli -- --schema schema validate
+cargo run -p awesome-schema -- --schema schema validate
 ```
 
 Pull preserves `datasource`, `naming`, `generator`, and reusable `type` blocks from disk. `@relation` navigation fields are not stored in SurrealDB, so pull does not recreate them.
@@ -64,35 +79,35 @@ Pull preserves `datasource`, `naming`, `generator`, and reusable `type` blocks f
 
 ```bash
 # Initialize a new project (creates awesome.schema + migrations/)
-cargo run -p cli -- init
+cargo run -p awesome-schema -- init
 
 # Validate schema
-cargo run -p cli -- validate
-cargo run -p cli -- --schema examples/awesome.schema validate
+cargo run -p awesome-schema -- validate
+cargo run -p awesome-schema -- --schema examples/awesome.schema validate
 
 # Format schema (use --write to save)
-cargo run -p cli -- format
-cargo run -p cli -- format --write
+cargo run -p awesome-schema -- format
+cargo run -p awesome-schema -- format --write
 
 # Generate SurrealQL, Rust stubs, or TypeScript client
 # TypeScript writes to generator.output and imports the alpha `awesome-schema` package
 # Another project installs that package and runs `pnpm awesome-schema`; it does not clone this repo
-cargo run -p cli -- generate
-cargo run -p cli -- generate --target rust
-cargo run -p cli -- generate --target typescript
-cargo run -p cli -- generate --target typescript --stdout
+cargo run -p awesome-schema -- generate
+cargo run -p awesome-schema -- generate --target rust
+cargo run -p awesome-schema -- generate --target typescript
+cargo run -p awesome-schema -- generate --target typescript --stdout
 
 # Migrations
-cargo run -p cli -- migrate dev
-cargo run -p cli -- migrate create <name>
-cargo run -p cli -- migrate status
-cargo run -p cli -- migrate apply
-cargo run -p cli -- migrate rollback
-cargo run -p cli -- migrate rollback --steps 2
+cargo run -p awesome-schema -- migrate dev
+cargo run -p awesome-schema -- migrate create <name>
+cargo run -p awesome-schema -- migrate status
+cargo run -p awesome-schema -- migrate apply
+cargo run -p awesome-schema -- migrate rollback
+cargo run -p awesome-schema -- migrate rollback --steps 2
 
 # Database commands
-cargo run -p cli -- db pull --force
-cargo run -p cli -- db push
+cargo run -p awesome-schema -- db pull --force
+cargo run -p awesome-schema -- db push
 ```
 
 Global flags:

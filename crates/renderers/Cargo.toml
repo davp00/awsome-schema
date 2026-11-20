@@ -1,10 +1,16 @@
 [package]
-name = "renderers"
+name = "awesome-schema-renderers"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 description = "Database-specific schema and migration renderers."
+readme = "../../README.md"
+
+[lib]
+name = "renderers"
 
 [lints]
 workspace = true

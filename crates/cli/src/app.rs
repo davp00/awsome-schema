@@ -46,6 +46,24 @@ pub enum Commands {
         #[command(subcommand)]
         command: DbCommands,
     },
+    /// Upgrade the installed awesome-schema CLI.
+    Upgrade {
+        /// Report whether an update is available without installing it.
+        #[arg(long)]
+        check: bool,
+        /// Install a specific version (e.g. `0.1.0-alpha.1` or `v0.1.0-alpha.1`).
+        #[arg(long)]
+        version: Option<String>,
+        /// Where to fetch the upgrade from.
+        #[arg(long, value_enum, default_value_t = UpgradeFrom::Github)]
+        from: UpgradeFrom,
+    },
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum UpgradeFrom {
+    Github,
+    CratesIo,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

@@ -230,6 +230,84 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "awesome-schema"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "awesome-schema-codegen-rust",
+ "awesome-schema-codegen-typescript",
+ "awesome-schema-core",
+ "awesome-schema-migrations",
+ "awesome-schema-parser",
+ "awesome-schema-renderers",
+ "clap",
+ "predicates",
+ "serde_json",
+ "surrealdb",
+ "tempfile",
+ "tokio",
+ "ureq",
+]
+
+[[package]]
+name = "awesome-schema-codegen"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-core",
+]
+
+[[package]]
+name = "awesome-schema-codegen-rust"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-codegen",
+ "awesome-schema-core",
+]
+
+[[package]]
+name = "awesome-schema-codegen-typescript"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-codegen",
+ "awesome-schema-core",
+ "awesome-schema-parser",
+]
+
+[[package]]
+name = "awesome-schema-core"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "temp-env",
+ "thiserror",
+]
+
+[[package]]
+name = "awesome-schema-migrations"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-core",
+]
+
+[[package]]
+name = "awesome-schema-parser"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-core",
+]
+
+[[package]]
+name = "awesome-schema-renderers"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-core",
+ "serde_json",
+]
+
+[[package]]
 name = "axum"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -590,50 +668,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "clap",
- "codegen-rust",
- "codegen-typescript",
- "core",
- "migrations",
- "parser",
- "predicates",
- "renderers",
- "serde_json",
- "surrealdb",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "codegen"
-version = "0.1.0"
-dependencies = [
- "core",
-]
-
-[[package]]
-name = "codegen-rust"
-version = "0.1.0"
-dependencies = [
- "codegen",
- "core",
-]
-
-[[package]]
-name = "codegen-typescript"
-version = "0.1.0"
-dependencies = [
- "codegen",
- "core",
- "parser",
-]
-
-[[package]]
 name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -646,17 +680,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
 dependencies = [
  "crossbeam-utils",
-]
-
-[[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
- "temp-env",
- "thiserror",
 ]
 
 [[package]]
@@ -811,10 +834,10 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "e2e"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "assert_cmd",
- "cli",
+ "awesome-schema",
  "predicates",
  "serde_json",
  "surrealdb",
@@ -1787,13 +1810,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88904434abc2901f197fe8cc55f0445e7ded921dba5911dad2e2b39b48e663c4"
 
 [[package]]
-name = "migrations"
-version = "0.1.0"
-dependencies = [
- "core",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1976,13 +1992,6 @@ dependencies = [
  "regex-syntax",
  "structmeta",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "parser"
-version = "0.1.0"
-dependencies = [
- "core",
 ]
 
 [[package]]
@@ -2399,14 +2408,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71fe3824f5629716b1589be05dacd749f6aa084c87e00e016714a8cdfccc997c"
 dependencies = [
  "bytecheck",
-]
-
-[[package]]
-name = "renderers"
-version = "0.1.0"
-dependencies = [
- "core",
- "serde_json",
 ]
 
 [[package]]
@@ -3705,6 +3706,7 @@ dependencies = [
  "rustls-pki-types",
  "ureq-proto",
  "utf8-zero",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -3894,6 +3896,15 @@ checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "1.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7265c9301c16a8711c992c2d8da90ee77ef54b1ed51482d6dfeb00dc756b1297"
+dependencies = [
+ "rustls-pki-types",
 ]
 
 [[package]]

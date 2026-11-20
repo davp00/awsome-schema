@@ -1,12 +1,18 @@
 [package]
-name = "cli"
+name = "awesome-schema"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Awesome Schema CLI."
+repository.workspace = true
+homepage.workspace = true
+description = "Awesome Schema CLI — schema modeling, migrations, and codegen for SurrealDB."
+readme = "../../README.md"
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
+name = "cli"
 path = "src/lib.rs"
 
 [[bin]]
@@ -28,6 +34,7 @@ codegen-typescript.workspace = true
 serde_json.workspace = true
 surrealdb.workspace = true
 tokio.workspace = true
+ureq.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

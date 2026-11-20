@@ -13,17 +13,17 @@ This repository is a Cargo workspace:
 
 ```
 crates/
-├── cli                 # Binary: awesome-schema (orchestration only)
-├── core                # Domain model, ports, use cases, errors
-├── parser              # Awesome Schema DSL → domain model
-├── migrations          # Schema diffing → migration plans
-├── renderers           # Provider-specific DDL renderers (SurrealDB first)
-├── codegen             # Language-agnostic codegen contracts
-├── codegen-rust        # Rust model generator (stub)
-└── codegen-typescript  # TypeScript client (shared runtime + thin typed wrappers)
+├── cli                 # Package awesome-schema; binary awesome-schema (orchestration only)
+├── core                # Package awesome-schema-core; domain, ports, use cases
+├── parser              # Package awesome-schema-parser; DSL → domain model
+├── migrations          # Package awesome-schema-migrations; schema diff → plans
+├── renderers           # Package awesome-schema-renderers; SurrealDB first
+├── codegen             # Package awesome-schema-codegen; language-agnostic contracts
+├── codegen-rust        # Package awesome-schema-codegen-rust (stub)
+└── codegen-typescript  # Package awesome-schema-codegen-typescript
 ```
 
-`core` owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases. `parser`, `migrations`, `renderers`, and `codegen-*` implement or support those ports. `cli` wires dependencies in `di.rs`, implements adapters, and exposes commands through `clap`. Business logic stays out of the CLI.
+Directory names stay short; crates.io package names use the `awesome-schema-*` prefix. `core` owns the database-agnostic domain: models, fields, indexes, edges, migration operations, port traits, and use cases. `parser`, `migrations`, `renderers`, and `codegen-*` implement or support those ports. The CLI crate wires dependencies in `di.rs`, implements adapters, and exposes commands through `clap`. Business logic stays out of the CLI. Local builds use `cargo run -p awesome-schema -- …`.
 
 Port traits in `core`:
 
@@ -116,6 +116,23 @@ Index-kind smoke test:
 ```
 
 The alpha client package is `clients/javascript` (`awesome-schema`). `pnpm --filter awesome-schema test` runs its unit tests. From the repo root, `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema` runs a binary you just built. Other projects download one platform binary from the GitHub Release for the package version. Pushes to `main` publish `awesome-schema@test` as `1.0.0-test.<commit>` and upload the matching binaries.
+
+### Releases and crates.io
+
+Tagged releases (`v*`, workflow `cli-release`) build platform binaries, publish the npm package, create/upload the GitHub Release, and publish Rust crates to crates.io in dependency order:
+
+`awesome-schema-core` → `awesome-schema-parser` / `awesome-schema-migrations` / `awesome-schema-codegen` / `awesome-schema-renderers` → `awesome-schema-codegen-rust` / `awesome-schema-codegen-typescript` → `awesome-schema`.
+
+Keep these versions in sync for a cut: workspace `Cargo.toml` `[workspace.package].version`, `clients/javascript/package.json`, and the git tag (`v0.1.0-alpha.1`). Repository metadata uses `https://github.com/davp00/awsome-schema` (same spelling as the GitHub Release assets the npm launcher downloads).
+
+Required secrets:
+
+- `NPM_TOKEN` (or whatever the npm publish job already uses)
+- `CARGO_REGISTRY_TOKEN` — crates.io API token for the `crates-io` job (skipped cleanly if unset)
+
+Local dry-run: `cargo publish -p awesome-schema --dry-run --locked`.
+
+Install paths for contributors/users: `cargo install awesome-schema`, `curl -fsSL …/scripts/install.sh | sh`, or the npm package. Standalone binaries upgrade with `awesome-schema upgrade`.
 
 ## Adding a database provider
 

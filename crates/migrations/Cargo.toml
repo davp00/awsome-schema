@@ -1,10 +1,16 @@
 [package]
-name = "migrations"
+name = "awesome-schema-migrations"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 description = "Schema diffing and migration planning."
+readme = "../../README.md"
+
+[lib]
+name = "migrations"
 
 [lints]
 workspace = true

@@ -46,6 +46,12 @@ TypeScript `generate --target typescript` dispatches on `datasource.provider` an
 - Assertions and a richer permissions model than a raw string.
 - Providers: MongoDB, Postgres, MySQL, SQLite, each behind the existing renderer and introspector ports.
 
+## 8. CLI distribution — done
+
+- crates.io package rename (`awesome-schema` + `awesome-schema-*` libs) so `cargo install awesome-schema` works after tagged publish.
+- `scripts/install.sh` installs the matching GitHub Release binary to `~/.local/bin`.
+- `awesome-schema upgrade` replaces the running binary from GitHub Releases (or `--from crates-io`).
+
 ## Last live check
 
-2026-11-20: Surreal 3.3 stabilize cut (`0.1.0-alpha.1`). `cargo test -p e2e --test surreal` (11); `pnpm --filter awesome-schema test` (18); `pnpm --filter awesome-schema-typescript-e2e test` (50) against SurrealDB v3.3.0; `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema validate --schema examples/awesome.schema`.
+2026-11-20: Surreal 3.3 stabilize cut (`0.1.0-alpha.1`). `cargo test -p e2e --test surreal` (11); `pnpm --filter awesome-schema test` (18); `pnpm --filter awesome-schema-typescript-e2e test` (50) against SurrealDB v3.3.0; `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema validate --schema examples/awesome.schema`. CLI install/upgrade unit + dispatch tests green; `cargo publish -p awesome-schema --dry-run --allow-dirty` succeeds.

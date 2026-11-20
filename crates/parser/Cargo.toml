@@ -1,10 +1,16 @@
 [package]
-name = "parser"
+name = "awesome-schema-parser"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 description = "Awesome Schema DSL parser."
+readme = "../../README.md"
+
+[lib]
+name = "parser"
 
 [lints]
 workspace = true

@@ -12,6 +12,10 @@ fn domain_error_codes_cover_all_variants() {
     assert_eq!(DomainError::CodegenError("x".into()).code(), "CODEGEN_ERROR");
     assert_eq!(DomainError::DatabaseError("x".into()).code(), "DATABASE_ERROR");
     assert_eq!(DomainError::UnsupportedProvider("x".into()).code(), "UNSUPPORTED_PROVIDER");
+    assert_eq!(DomainError::UnsupportedPlatform("x".into()).code(), "UNSUPPORTED_PLATFORM");
+    assert_eq!(DomainError::DownloadFailed("x".into()).code(), "DOWNLOAD_FAILED");
+    assert_eq!(DomainError::UpgradeFailed("x".into()).code(), "UPGRADE_FAILED");
+    assert_eq!(DomainError::NpmManagedInstall("x".into()).code(), "NPM_MANAGED_INSTALL");
     assert_eq!(DomainError::NotImplemented("x".into()).code(), "NOT_IMPLEMENTED");
 }
 

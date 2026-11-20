@@ -1,10 +1,16 @@
 [package]
-name = "codegen-rust"
+name = "awesome-schema-codegen-rust"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 description = "Rust model code generation."
+readme = "../../README.md"
+
+[lib]
+name = "codegen_rust"
 
 [lints]
 workspace = true

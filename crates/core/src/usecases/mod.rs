@@ -8,6 +8,7 @@ pub mod migrate_create;
 pub mod migrate_dev;
 pub mod migrate_rollback;
 pub mod migrate_status;
+pub mod upgrade_cli;
 pub mod validate_schema;
 
 pub use db_pull::{DbPullInput, DbPullOutput, DbPullUseCase};
@@ -26,4 +27,5 @@ pub use migrate_status::{
     MigrateStatusInput, MigrateStatusOutput, MigrateStatusUseCase, MigrationApplyState,
     MigrationStatusRow,
 };
+pub use upgrade_cli::{UpgradeCliInput, UpgradeCliOutput, UpgradeCliUseCase, UpgradeSource};
 pub use validate_schema::{ValidateSchemaInput, ValidateSchemaOutput, ValidateSchemaUseCase};

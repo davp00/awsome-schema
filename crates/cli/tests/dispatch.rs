@@ -378,6 +378,38 @@ fn migration_store_lists_and_snapshots() {
 }
 
 #[test]
+fn parse_upgrade_check_command() {
+    let (_temp, cli) = temp_cli(&["upgrade", "--check"]);
+    match cli.command {
+        cli::app::Commands::Upgrade { check, version, from } => {
+            assert!(check);
+            assert!(version.is_none());
+            assert!(matches!(from, cli::app::UpgradeFrom::Github));
+        }
+        other => panic!("expected Upgrade, got {other:?}"),
+    }
+}
+
+#[test]
+fn parse_upgrade_from_crates_io() {
+    let (_temp, cli) = temp_cli(&[
+        "upgrade",
+        "--from",
+        "crates-io",
+        "--version",
+        "0.1.0-alpha.1",
+    ]);
+    match cli.command {
+        cli::app::Commands::Upgrade { check, version, from } => {
+            assert!(!check);
+            assert_eq!(version.as_deref(), Some("0.1.0-alpha.1"));
+            assert!(matches!(from, cli::app::UpgradeFrom::CratesIo));
+        }
+        other => panic!("expected Upgrade, got {other:?}"),
+    }
+}
+
+#[test]
 fn schema_directory_loads_merged_schema() {
     use cli::adapters::SchemaFileSource;
     use schema_core::{FileSystemPort, SchemaSource};

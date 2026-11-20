@@ -16,7 +16,8 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 
 | Area | What works | Where it was checked |
 |---|---|---|
-| Workspace layout | `cli`, `core`, `parser`, `migrations`, `renderers`, `codegen`, `codegen-rust`, `codegen-typescript`, `e2e` | `Cargo.toml` |
+| Workspace layout | crates.io names `awesome-schema`, `awesome-schema-core`, … (dirs still `crates/cli`, `crates/core`, …); `e2e` unpublished | `Cargo.toml` |
+| CLI install | `cargo install awesome-schema`; `scripts/install.sh` curl installer; npm launcher; `awesome-schema upgrade` (`--check`, `--from github\|crates-io`) | release workflow crates-io job; unit + dispatch tests |
 | `init` | Writes `awesome.schema` and `migrations/` | `crates/e2e` offline_cli; CLI dispatch tests |
 | `validate` | Provider required, at least one model or edge, `@id` rules, flexible objects, nested parents, edge `in`/`out` | `crates/core/src/validation.rs` |
 | `format` | Formats the DSL; `--write` saves it | CLI command + use case tests |

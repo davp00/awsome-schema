@@ -42,7 +42,7 @@ done
 
 WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/awesome-index-XXXXXX")"
 SCHEMA="$WORKDIR/awesome.schema"
-CLI=(cargo run -q -p cli -- --schema "$SCHEMA")
+CLI=(cargo run -q -p awesome-schema -- --schema "$SCHEMA")
 
 compose() {
   docker compose -f "$ROOT/docker-compose.yml" "$@"
@@ -165,7 +165,7 @@ SQL
 echo "==> db pull --force (round-trip DSL)"
 PULL="$WORKDIR/pulled.schema"
 cp "$SCHEMA" "$PULL"
-cargo run -q -p cli -- --schema "$PULL" db pull --force
+cargo run -q -p awesome-schema -- --schema "$PULL" db pull --force
 echo "---- pulled indexes ----"
 grep -E '@@index' "$PULL" || true
 

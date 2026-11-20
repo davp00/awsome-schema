@@ -108,14 +108,14 @@ function writeEnv(env: E2eEnv) {
 }
 
 function runCli(workspaceRoot: string, args: string[]) {
-  const result = spawnSync("cargo", ["run", "-p", "cli", "--quiet", "--", ...args], {
+  const result = spawnSync("cargo", ["run", "-p", "awesome-schema", "--quiet", "--", ...args], {
     cwd: workspaceRoot,
     encoding: "utf8",
     env: process.env,
   });
   if (result.status !== 0) {
     const detail = [result.stdout, result.stderr].filter(Boolean).join("\n");
-    throw new Error(`cargo run -p cli -- ${args.join(" ")} failed:\n${detail}`);
+    throw new Error(`cargo run -p awesome-schema -- ${args.join(" ")} failed:\n${detail}`);
   }
 }
 

@@ -32,6 +32,18 @@ pub enum DomainError {
     #[error("unsupported provider: {0}")]
     UnsupportedProvider(String),
 
+    #[error("unsupported platform: {0}")]
+    UnsupportedPlatform(String),
+
+    #[error("download failed: {0}")]
+    DownloadFailed(String),
+
+    #[error("upgrade failed: {0}")]
+    UpgradeFailed(String),
+
+    #[error("npm-managed install: {0}")]
+    NpmManagedInstall(String),
+
     #[error("not implemented: {0}")]
     NotImplemented(String),
 }
@@ -50,6 +62,10 @@ impl DomainError {
             Self::CodegenError(_) => "CODEGEN_ERROR",
             Self::DatabaseError(_) => "DATABASE_ERROR",
             Self::UnsupportedProvider(_) => "UNSUPPORTED_PROVIDER",
+            Self::UnsupportedPlatform(_) => "UNSUPPORTED_PLATFORM",
+            Self::DownloadFailed(_) => "DOWNLOAD_FAILED",
+            Self::UpgradeFailed(_) => "UPGRADE_FAILED",
+            Self::NpmManagedInstall(_) => "NPM_MANAGED_INSTALL",
             Self::NotImplemented(_) => "NOT_IMPLEMENTED",
         }
     }

@@ -115,7 +115,7 @@ jobs:
           cache-workspace-crates: true
 
       - name: Build release CLI
-        run: cargo build --release -p cli --locked
+        run: cargo build --release -p awesome-schema --locked
 
       - name: Upload the test and canary binaries
         shell: bash

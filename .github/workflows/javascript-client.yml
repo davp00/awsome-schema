@@ -30,7 +30,7 @@ jobs:
         run: pnpm --filter awesome-schema test
 
       - name: Build the CLI
-        run: cargo build -p cli --locked
+        run: cargo build -p awesome-schema --locked
 
       - name: Smoke the launcher
         env:

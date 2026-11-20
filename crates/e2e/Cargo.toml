@@ -8,7 +8,7 @@ publish = false
 workspace = true
 
 [dependencies]
-cli = { path = "../cli" }
+cli = { package = "awesome-schema", path = "../cli" }
 assert_cmd.workspace = true
 predicates.workspace = true
 tempfile.workspace = true
