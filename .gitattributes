@@ -1,1 +1,4 @@
 graphify-out/graph.json merge=graphify
+
+# Generated Graphify artifacts — keep in git, hide from GitHub language stats
+graphify-out/** linguist-generated=true
