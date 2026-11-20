@@ -43,6 +43,10 @@ async fn cli_db_push_and_pull_preserves_relation_edge() {
         pulled.contains("score") && pulled.contains("int"),
         "edge field score int should survive pull:\n{pulled}"
     );
+    assert!(
+        pulled.contains("@relation(\"Likes\")") && pulled.contains("liked"),
+        "synthesized @relation nav field should survive pull:\n{pulled}"
+    );
 
     project.awesome_schema_cmd().arg("validate").assert().success();
 }

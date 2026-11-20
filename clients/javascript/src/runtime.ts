@@ -9,8 +9,8 @@ export type FieldSelectMeta =
 
 export type FieldWriteMeta =
   | { kind: "scalar" }
-  | { kind: "stored"; targetTable: string; list: boolean; optional: boolean }
-  | { kind: "computed"; targetTable: string; list: boolean; backLinkField: string; backLinkOptional: boolean }
+  | { kind: "stored"; targetTable: string; list: boolean; optional: boolean; uniqueFields: string[] }
+  | { kind: "computed"; targetTable: string; list: boolean; backLinkField: string; backLinkOptional: boolean; uniqueFields: string[] }
   | { kind: "edge"; edgeTable: string; dir: "out" | "in"; list: boolean; inTable: string; outTable: string; payloadFields: string[] };
 
 let selectMetaByTable: Record<string, Record<string, FieldSelectMeta>> = {};
@@ -169,10 +169,20 @@ export type SingleUpsertResult<
         : Full
   : Payload;
 
+const NESTED_WRITE_KEYS = [
+  "create",
+  "connect",
+  "disconnect",
+  "set",
+  "update",
+  "delete",
+  "upsert",
+  "connectOrCreate",
+] as const;
+
 export function isNestedWriteBag(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value) && (
-    "create" in value || "connect" in value || "disconnect" in value
-  );
+  return !!value && typeof value === "object" && !Array.isArray(value) &&
+    NESTED_WRITE_KEYS.some((key) => key in value);
 }
 
 export function assertNoNestedWrites(
@@ -246,12 +256,20 @@ export function statementRows<T>(statement: unknown): T[] {
   return [statement as T];
 }
 
+type StoredNestedResolved = {
+  value?: unknown;
+  create?: Record<string, unknown>;
+  skip?: boolean;
+  /** Delete this related record after the parent fk is cleared. */
+  deleteAfter?: string;
+};
+
 export function readStoredLink(
   table: string,
   field: string,
   value: unknown,
   meta: Extract<FieldWriteMeta, { kind: "stored" }>,
-): { value?: unknown; create?: Record<string, unknown> } {
+): StoredNestedResolved {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return { value };
   const bag = value as Record<string, unknown>;
   if ("disconnect" in bag) {
@@ -301,14 +319,187 @@ export async function insertStoredCreates(
   return ids;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
+}
+
+function equalityWhere(
+  where: unknown,
+  uniqueFields: readonly string[],
+  label: string,
+): { field: string; value: string } {
+  const record = asRecord(where);
+  if (!record) throw new Error(`${label}: where accepts exactly one equality key`);
+  const keys = Object.keys(record).filter((key) => record[key] !== undefined);
+  if (keys.length !== 1) throw new Error(`${label}: where accepts exactly one equality key`);
+  const field = keys[0]!;
+  if (field !== "id" && !uniqueFields.includes(field)) {
+    throw new Error(`${label}: where field ${field} is not unique`);
+  }
+  const value = record[field];
+  if (typeof value !== "string") throw new Error(`${label}: where.${field} must be a string`);
+  return { field, value };
+}
+
+/** Record ids and record-link fields must compare via `type::record`; scalar uniques stay plain equality. */
+function recordEq(field: string, varName: string): string {
+  return `${field} = type::record($${varName})`;
+}
+
+async function findIdByWhere(
+  db: SurrealOpsLike,
+  table: string,
+  where: unknown,
+  uniqueFields: readonly string[],
+  label: string,
+): Promise<string | undefined> {
+  const { field, value } = equalityWhere(where, uniqueFields, label);
+  const bound = field === "id" ? normalizeThing(table, value) : value;
+  const predicate = field === "id" ? recordEq("id", "v") : `${field} = $v`;
+  const rows = await queryRows<{ id?: unknown }>(
+    db,
+    `SELECT id FROM ${table} WHERE ${predicate} LIMIT 1`,
+    { v: bound },
+  );
+  const id = rows[0]?.id;
+  return id == null ? undefined : String(id);
+}
+
+async function selectColumn(
+  db: SurrealOpsLike,
+  table: string,
+  id: string,
+  field: string,
+): Promise<unknown> {
+  const rows = await queryRows<Record<string, unknown>>(
+    db,
+    `SELECT ${field} FROM type::record($thing)`,
+    { thing: normalizeThing(table, id) },
+  );
+  return rows[0]?.[field];
+}
+
+async function selectIdsWhere(
+  db: SurrealOpsLike,
+  table: string,
+  field: string,
+  value: string,
+): Promise<string[]> {
+  const rows = await queryRows<{ id?: unknown }>(
+    db,
+    `SELECT id FROM ${table} WHERE ${recordEq(field, "v")}`,
+    { v: value },
+  );
+  return rows.flatMap((row) => (row.id == null ? [] : [String(row.id)]));
+}
+
+async function mergeRecord(
+  db: SurrealOpsLike,
+  table: string,
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  await queryRows(db, `UPDATE type::record($thing) MERGE $patch RETURN NONE`, {
+    thing: normalizeThing(table, id),
+    patch,
+  });
+}
+
+function storedUpdatePatch(
+  update: unknown,
+  label: string,
+): { where?: unknown; data: Record<string, unknown> } {
+  const record = asRecord(update);
+  if (!record) throw new Error(`${label}.update data required`);
+  if ("where" in record && "data" in record) {
+    const data = asRecord(record.data);
+    if (!data) throw new Error(`${label}.update data required`);
+    return { where: record.where, data };
+  }
+  return { data: record };
+}
+
+async function resolveStoredNested(
+  db: SurrealOpsLike,
+  table: string,
+  field: string,
+  bag: Record<string, unknown>,
+  meta: Extract<FieldWriteMeta, { kind: "stored" }>,
+  parentId: string | undefined,
+): Promise<StoredNestedResolved> {
+  const label = `${table}.${field}`;
+  if ("delete" in bag) {
+    if (!meta.optional) throw new Error(`update ${table}: cannot delete required link ${field}`);
+    if (!parentId) throw new Error(`${label}.delete requires an existing parent`);
+    const current = await selectColumn(db, table, parentId, field);
+    if (current != null && current !== "") {
+      return {
+        value: null,
+        deleteAfter: normalizeThing(meta.targetTable, String(current)),
+      };
+    }
+    return { value: null };
+  }
+  if ("update" in bag) {
+    const parsed = storedUpdatePatch(bag.update, label);
+    let targetId: string | undefined;
+    if (parsed.where !== undefined) {
+      targetId = await findIdByWhere(db, meta.targetTable, parsed.where, meta.uniqueFields, label);
+      if (!targetId) throw new Error(`${label}.update where matched no record`);
+    } else {
+      if (!parentId) throw new Error(`${label}.update requires an existing parent`);
+      const current = await selectColumn(db, table, parentId, field);
+      if (current == null || current === "") throw new Error(`${label}.update has no linked record`);
+      targetId = String(current);
+    }
+    assertNoNestedWrites(parsed.data, meta.targetTable, `update ${label}`);
+    await mergeRecord(db, meta.targetTable, targetId, parsed.data);
+    return { skip: true };
+  }
+  if ("connectOrCreate" in bag) {
+    const spec = asRecord(bag.connectOrCreate);
+    if (!spec) throw new Error(`${label}.connectOrCreate required`);
+    const create = asRecord(spec.create);
+    if (!create) throw new Error(`${label}.connectOrCreate.create required`);
+    assertNoNestedWrites(create, meta.targetTable, `create ${label}`);
+    const existing = await findIdByWhere(db, meta.targetTable, spec.where, meta.uniqueFields, label);
+    if (existing) return { value: existing };
+    return { create };
+  }
+  if ("upsert" in bag) {
+    const spec = asRecord(bag.upsert);
+    if (!spec) throw new Error(`${label}.upsert required`);
+    const update = asRecord(spec.update);
+    const create = asRecord(spec.create);
+    if (!update) throw new Error(`${label}.upsert.update required`);
+    if (!create) throw new Error(`${label}.upsert.create required`);
+    assertNoNestedWrites(update, meta.targetTable, `update ${label}`);
+    assertNoNestedWrites(create, meta.targetTable, `create ${label}`);
+    const existing = await findIdByWhere(db, meta.targetTable, spec.where, meta.uniqueFields, label);
+    if (existing) {
+      await mergeRecord(db, meta.targetTable, existing, update);
+      return { value: existing };
+    }
+    return { create };
+  }
+  return readStoredLink(table, field, bag, meta);
+}
+
 export async function splitAndResolveWriteData(
   db: SurrealOpsLike,
   table: string,
   data: Record<string, unknown>,
-): Promise<{ scalars: Record<string, unknown>; nested: Record<string, unknown> }> {
+  parentId?: string,
+): Promise<{
+  scalars: Record<string, unknown>;
+  nested: Record<string, unknown>;
+  deleteAfter: string[];
+}> {
   const meta = writeMetaByTable[table] ?? {};
   const scalars: Record<string, unknown> = {};
   const nested: Record<string, unknown> = {};
+  const deleteAfter: string[] = [];
   const storedCreates: { key: string; table: string; data: Record<string, unknown> }[] = [];
   for (const [key, value] of Object.entries(data)) {
     if (value === undefined) continue;
@@ -318,7 +509,11 @@ export async function splitAndResolveWriteData(
       continue;
     }
     if (fieldMeta.kind === "stored") {
-      const resolved = readStoredLink(table, key, value, fieldMeta);
+      const resolved = isNestedWriteBag(value)
+        ? await resolveStoredNested(db, table, key, value, fieldMeta, parentId)
+        : readStoredLink(table, key, value, fieldMeta);
+      if (resolved.skip) continue;
+      if (resolved.deleteAfter) deleteAfter.push(resolved.deleteAfter);
       if (resolved.create) {
         assertNoNestedWrites(resolved.create, fieldMeta.targetTable, `create ${table}.${key}`);
         storedCreates.push({ key, table: fieldMeta.targetTable, data: resolved.create });
@@ -329,7 +524,7 @@ export async function splitAndResolveWriteData(
     }
     if (fieldMeta.kind === "computed" || fieldMeta.kind === "edge") {
       if (!isNestedWriteBag(value)) {
-        throw new Error(`${table}.${key}: expected { create|connect|disconnect }`);
+        throw new Error(`${table}.${key}: expected a nested write`);
       }
       nested[key] = value;
     }
@@ -338,7 +533,13 @@ export async function splitAndResolveWriteData(
     const ids = await insertStoredCreates(db, storedCreates);
     for (const create of storedCreates) scalars[create.key] = ids[create.key];
   }
-  return { scalars, nested };
+  return { scalars, nested, deleteAfter };
+}
+
+async function runDeferredDeletes(db: SurrealOpsLike, ids: string[]): Promise<void> {
+  for (const id of ids) {
+    await queryRows(db, `DELETE type::record($thing) RETURN NONE`, { thing: id });
+  }
 }
 
 export type NestedScriptOp =
@@ -377,7 +578,9 @@ export function renderNestedOps(ops: NestedScriptOp[]): { sql: string; vars: Rec
     } else if (op.kind === "deleteIds") {
       parts.push(`DELETE ${bindNested(vars, op.ids)}`);
     } else if (op.kind === "deletePairs") {
-      parts.push(`FOR $pair IN ${bindNested(vars, op.pairs)} { DELETE ${op.table} WHERE in = $pair.from AND out = $pair.to }`);
+      parts.push(
+        `FOR $pair IN ${bindNested(vars, op.pairs)} { DELETE ${op.table} WHERE in = type::record($pair.from) AND out = type::record($pair.to) }`,
+      );
     } else {
       const relate = op.farIsOut
         ? `$parent->${op.edgeTable}->$far`
@@ -433,60 +636,291 @@ export function edgeFarData(
   return data;
 }
 
-export function collectComputed(
+async function flushOps(db: SurrealOpsLike, ops: NestedScriptOp[]): Promise<void> {
+  if (ops.length === 0) return;
+  await runNestedOps(db, ops);
+  ops.length = 0;
+}
+
+function requiredThing(item: unknown, table: string, label: string): string {
+  const id = asRecord(item)?.id;
+  if (typeof id !== "string") throw new Error(`${label}.id required`);
+  return normalizeThing(table, id);
+}
+
+export async function collectComputed(
+  db: SurrealOpsLike,
   ops: NestedScriptOp[],
   parentTable: string,
   parentId: string,
   field: string,
   bag: Record<string, unknown>,
   meta: Extract<FieldWriteMeta, { kind: "computed" }>,
-): void {
+): Promise<void> {
   const parentThing = normalizeThing(parentTable, parentId);
-  const creates = Array.isArray(bag.create) ? bag.create : [];
-  const rows: Record<string, unknown>[] = [];
-  for (const item of creates) {
-    if (!item || typeof item !== "object") continue;
-    const data = { ...(item as Record<string, unknown>), [meta.backLinkField]: parentThing };
-    assertNoNestedWrites(data, meta.targetTable, `create ${parentTable}.${field}`);
-    rows.push(data);
+  const label = `${parentTable}.${field}`;
+  const unique = meta.uniqueFields ?? [];
+
+  if (Array.isArray(bag.set)) {
+    const next = bag.set.map((item) => requiredThing(item, meta.targetTable, `${label}.set`));
+    const nextSet = new Set(next);
+    const current = (await selectIdsWhere(db, meta.targetTable, meta.backLinkField, parentThing))
+      .map((id) => normalizeThing(meta.targetTable, id));
+    const remove = current.filter((id) => !nextSet.has(id));
+    if (remove.length > 0 && !meta.backLinkOptional) {
+      throw new Error(`${label}: cannot disconnect required back-link ${meta.backLinkField}`);
+    }
+    if (remove.length > 0) ops.push({ kind: "unset", ids: remove, field: meta.backLinkField });
+    if (next.length > 0) ops.push({ kind: "merge", ids: next, patch: { [meta.backLinkField]: parentThing } });
   }
-  if (rows.length > 0) ops.push({ kind: "insert", table: meta.targetTable, rows });
-  const connects = Array.isArray(bag.connect) ? bag.connect : [];
-  const connectIds: string[] = [];
-  for (const item of connects) {
-    const id = item && typeof item === "object" ? (item as { id?: unknown }).id : undefined;
-    if (typeof id !== "string") throw new Error(`${parentTable}.${field}.connect.id required`);
-    connectIds.push(normalizeThing(meta.targetTable, id));
-  }
-  if (connectIds.length > 0) {
-    ops.push({ kind: "merge", ids: connectIds, patch: { [meta.backLinkField]: parentThing } });
-  }
+
   const disconnects = Array.isArray(bag.disconnect) ? bag.disconnect : [];
   const disconnectIds: string[] = [];
   for (const item of disconnects) {
     const id = item && typeof item === "object" ? (item as { id?: unknown }).id : undefined;
-    if (typeof id !== "string") throw new Error(`${parentTable}.${field}.disconnect.id required`);
+    if (typeof id !== "string") throw new Error(`${label}.disconnect.id required`);
     if (!meta.backLinkOptional) {
-      throw new Error(`${parentTable}.${field}: cannot disconnect required back-link ${meta.backLinkField}`);
+      throw new Error(`${label}: cannot disconnect required back-link ${meta.backLinkField}`);
     }
     disconnectIds.push(normalizeThing(meta.targetTable, id));
   }
   if (disconnectIds.length > 0) {
     ops.push({ kind: "unset", ids: disconnectIds, field: meta.backLinkField });
   }
+
+  if (Array.isArray(bag.delete)) {
+    const ids = bag.delete.map((item) => requiredThing(item, meta.targetTable, `${label}.delete`));
+    if (ids.length > 0) ops.push({ kind: "deleteIds", ids });
+  }
+
+  const connects = Array.isArray(bag.connect) ? bag.connect : [];
+  const connectIds: string[] = [];
+  for (const item of connects) {
+    const id = item && typeof item === "object" ? (item as { id?: unknown }).id : undefined;
+    if (typeof id !== "string") throw new Error(`${label}.connect.id required`);
+    connectIds.push(normalizeThing(meta.targetTable, id));
+  }
+  if (connectIds.length > 0) {
+    ops.push({ kind: "merge", ids: connectIds, patch: { [meta.backLinkField]: parentThing } });
+  }
+  await flushOps(db, ops);
+
+  if (Array.isArray(bag.connectOrCreate)) {
+    const link: string[] = [];
+    const rows: Record<string, unknown>[] = [];
+    for (const item of bag.connectOrCreate) {
+      const spec = asRecord(item);
+      if (!spec) throw new Error(`${label}.connectOrCreate required`);
+      const create = asRecord(spec.create);
+      if (!create) throw new Error(`${label}.connectOrCreate.create required`);
+      const existing = await findIdByWhere(db, meta.targetTable, spec.where, unique, label);
+      if (existing) {
+        link.push(normalizeThing(meta.targetTable, existing));
+      } else {
+        const data = { ...create, [meta.backLinkField]: parentThing };
+        assertNoNestedWrites(data, meta.targetTable, `create ${label}`);
+        rows.push(data);
+      }
+    }
+    if (link.length > 0) ops.push({ kind: "merge", ids: link, patch: { [meta.backLinkField]: parentThing } });
+    if (rows.length > 0) ops.push({ kind: "insert", table: meta.targetTable, rows });
+  }
+
+  const creates = Array.isArray(bag.create) ? bag.create : [];
+  const rows: Record<string, unknown>[] = [];
+  for (const item of creates) {
+    if (!item || typeof item !== "object") continue;
+    const data = { ...(item as Record<string, unknown>), [meta.backLinkField]: parentThing };
+    assertNoNestedWrites(data, meta.targetTable, `create ${label}`);
+    rows.push(data);
+  }
+  if (rows.length > 0) ops.push({ kind: "insert", table: meta.targetTable, rows });
+  await flushOps(db, ops);
+
+  if (Array.isArray(bag.update)) {
+    for (const item of bag.update) {
+      const spec = asRecord(item);
+      if (!spec) throw new Error(`${label}.update required`);
+      const data = asRecord(spec.data);
+      if (!data) throw new Error(`${label}.update data required`);
+      const id = await findIdByWhere(db, meta.targetTable, spec.where, unique, label);
+      if (!id) throw new Error(`${label}.update where matched no record`);
+      assertNoNestedWrites(data, meta.targetTable, `update ${label}`);
+      ops.push({ kind: "merge", ids: [normalizeThing(meta.targetTable, id)], patch: data });
+    }
+  }
+  await flushOps(db, ops);
+
+  if (Array.isArray(bag.upsert)) {
+    const created: Record<string, unknown>[] = [];
+    for (const item of bag.upsert) {
+      const spec = asRecord(item);
+      if (!spec) throw new Error(`${label}.upsert required`);
+      const update = asRecord(spec.update);
+      const create = asRecord(spec.create);
+      if (!update) throw new Error(`${label}.upsert.update required`);
+      if (!create) throw new Error(`${label}.upsert.create required`);
+      const existing = await findIdByWhere(db, meta.targetTable, spec.where, unique, label);
+      if (existing) {
+        assertNoNestedWrites(update, meta.targetTable, `update ${label}`);
+        ops.push({ kind: "merge", ids: [normalizeThing(meta.targetTable, existing)], patch: update });
+      } else {
+        const data = { ...create, [meta.backLinkField]: parentThing };
+        assertNoNestedWrites(data, meta.targetTable, `create ${label}`);
+        created.push(data);
+      }
+    }
+    if (created.length > 0) ops.push({ kind: "insert", table: meta.targetTable, rows: created });
+  }
+  await flushOps(db, ops);
 }
 
-export function collectEdge(
+function edgeParentField(meta: Extract<FieldWriteMeta, { kind: "edge" }>): "in" | "out" {
+  return meta.dir === "out" ? "in" : "out";
+}
+
+function edgeConnectRows(
+  meta: Extract<FieldWriteMeta, { kind: "edge" }>,
+  parentId: string,
+  items: unknown[],
+  label: string,
+): Record<string, unknown>[] {
+  const farKey = meta.dir;
+  const rows: Record<string, unknown>[] = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const farId = row[farKey];
+    if (typeof farId !== "string") throw new Error(`${label}.${farKey} required`);
+    rows.push(relationRow(meta, parentId, farId, edgeContent(row, meta.payloadFields)));
+  }
+  return rows;
+}
+
+function queueEdgeRemoval(
+  ops: NestedScriptOp[],
+  meta: Extract<FieldWriteMeta, { kind: "edge" }>,
+  parentTable: string,
+  parentId: string,
+  field: string,
+  items: unknown[],
+  op: "disconnect" | "delete",
+): void {
+  const farKey = meta.dir;
+  let deleteIds: string[] = [];
+  let deletePairs: { from: string; to: string }[] = [];
+  const flushIds = () => {
+    if (deleteIds.length === 0) return;
+    ops.push({ kind: "deleteIds", ids: deleteIds });
+    deleteIds = [];
+  };
+  const flushPairs = () => {
+    if (deletePairs.length === 0) return;
+    ops.push({ kind: "deletePairs", table: meta.edgeTable, pairs: deletePairs });
+    deletePairs = [];
+  };
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.id === "string") {
+      flushPairs();
+      deleteIds.push(normalizeThing(meta.edgeTable, row.id));
+      continue;
+    }
+    const farId = row[farKey];
+    if (typeof farId !== "string") throw new Error(`${parentTable}.${field}.${op}.${farKey} required`);
+    flushIds();
+    const ends = relationRow(meta, parentId, farId, {});
+    deletePairs.push({ from: String(ends.in), to: String(ends.out) });
+  }
+  flushIds();
+  flushPairs();
+}
+
+async function findEdgeId(
+  db: SurrealOpsLike,
+  meta: Extract<FieldWriteMeta, { kind: "edge" }>,
+  parentThing: string,
+  where: unknown,
+  label: string,
+): Promise<string | undefined> {
+  const farKey = meta.dir;
+  const { field, value } = equalityWhere(where, [farKey], label);
+  if (field === "id") {
+    const rows = await queryRows<{ id?: unknown }>(
+      db,
+      `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq("id", "v")} LIMIT 1`,
+      { v: normalizeThing(meta.edgeTable, value) },
+    );
+    return rows[0]?.id == null ? undefined : String(rows[0].id);
+  }
+  const farTable = field === "out" ? meta.outTable : meta.inTable;
+  const parentField = edgeParentField(meta);
+  const rows = await queryRows<{ id?: unknown }>(
+    db,
+    `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq(parentField, "parent")} AND ${recordEq(field, "far")} LIMIT 1`,
+    { parent: parentThing, far: normalizeThing(farTable, value) },
+  );
+  return rows[0]?.id == null ? undefined : String(rows[0].id);
+}
+
+export async function collectEdge(
+  db: SurrealOpsLike,
   ops: NestedScriptOp[],
   parentTable: string,
   parentId: string,
   field: string,
   bag: Record<string, unknown>,
   meta: Extract<FieldWriteMeta, { kind: "edge" }>,
-): void {
+): Promise<void> {
   const farKey = meta.dir;
   const farTable = meta.dir === "out" ? meta.outTable : meta.inTable;
   const parentThing = normalizeThing(parentTable, parentId);
+  const label = `${parentTable}.${field}`;
+
+  if (Array.isArray(bag.set)) {
+    const current = (await selectIdsWhere(db, meta.edgeTable, edgeParentField(meta), parentThing))
+      .map((id) => normalizeThing(meta.edgeTable, id));
+    if (current.length > 0) ops.push({ kind: "deleteIds", ids: current });
+    const rows = edgeConnectRows(meta, parentId, bag.set, `${label}.set`);
+    if (rows.length > 0) ops.push({ kind: "relate", table: meta.edgeTable, rows });
+  }
+
+  if (Array.isArray(bag.disconnect)) {
+    queueEdgeRemoval(ops, meta, parentTable, parentId, field, bag.disconnect, "disconnect");
+  }
+  if (Array.isArray(bag.delete)) {
+    queueEdgeRemoval(ops, meta, parentTable, parentId, field, bag.delete, "delete");
+  }
+
+  const connects = Array.isArray(bag.connect) ? bag.connect : [];
+  const connectRows: Record<string, unknown>[] = [];
+  for (const item of connects) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.id === "string") {
+      throw new Error(`${parentTable}.${field}.connect by edge id is not supported for connect (use create or out/in)`);
+    }
+    const farId = row[farKey];
+    if (typeof farId !== "string") throw new Error(`${parentTable}.${field}.connect.${farKey} required`);
+    connectRows.push(relationRow(meta, parentId, farId, edgeContent(row, meta.payloadFields)));
+  }
+  if (connectRows.length > 0) ops.push({ kind: "relate", table: meta.edgeTable, rows: connectRows });
+  await flushOps(db, ops);
+
+  if (Array.isArray(bag.connectOrCreate)) {
+    const rows: Record<string, unknown>[] = [];
+    for (const item of bag.connectOrCreate) {
+      const spec = asRecord(item);
+      if (!spec) throw new Error(`${label}.connectOrCreate required`);
+      const create = asRecord(spec.create);
+      if (!create) throw new Error(`${label}.connectOrCreate.create required`);
+      const existing = await findEdgeId(db, meta, parentThing, spec.where, label);
+      if (!existing) rows.push(...edgeConnectRows(meta, parentId, [create], `${label}.connectOrCreate.create`));
+    }
+    if (rows.length > 0) ops.push({ kind: "relate", table: meta.edgeTable, rows });
+  }
+
   const creates = Array.isArray(bag.create) ? bag.create : [];
   let relateRows: Record<string, unknown>[] = [];
   let farItems: { far: Record<string, unknown>; content: Record<string, unknown>; parent: string }[] = [];
@@ -510,57 +944,53 @@ export function collectEdge(
       relateRows.push(relationRow(meta, parentId, farVal, content));
     } else if (farVal && typeof farVal === "object" && "create" in (farVal as object)) {
       const createData = { ...((farVal as { create?: Record<string, unknown> }).create ?? {}) };
-      assertNoNestedWrites(createData, farTable, `create ${parentTable}.${field}.${farKey}`);
+      assertNoNestedWrites(createData, farTable, `create ${label}.${farKey}`);
       flushRelate();
       farItems.push({ far: edgeFarData(parentTable, parentId, farTable, createData), content, parent: parentThing });
     } else {
-      throw new Error(`${parentTable}.${field}.create.${farKey} required`);
+      throw new Error(`${label}.create.${farKey} required`);
     }
   }
   flushRelate();
   flushFar();
-  const connects = Array.isArray(bag.connect) ? bag.connect : [];
-  const connectRows: Record<string, unknown>[] = [];
-  for (const item of connects) {
-    if (!item || typeof item !== "object") continue;
-    const row = item as Record<string, unknown>;
-    if (typeof row.id === "string") {
-      throw new Error(`${parentTable}.${field}.connect by edge id is not supported for connect (use create or out/in)`);
+  await flushOps(db, ops);
+
+  if (Array.isArray(bag.update)) {
+    for (const item of bag.update) {
+      const spec = asRecord(item);
+      if (!spec) throw new Error(`${label}.update required`);
+      const data = asRecord(spec.data);
+      if (!data) throw new Error(`${label}.update data required`);
+      const id = await findEdgeId(db, meta, parentThing, spec.where, label);
+      if (!id) throw new Error(`${label}.update where matched no record`);
+      ops.push({ kind: "merge", ids: [normalizeThing(meta.edgeTable, id)], patch: edgeContent(data, meta.payloadFields) });
     }
-    const farId = row[farKey];
-    if (typeof farId !== "string") throw new Error(`${parentTable}.${field}.connect.${farKey} required`);
-    connectRows.push(relationRow(meta, parentId, farId, edgeContent(row, meta.payloadFields)));
   }
-  if (connectRows.length > 0) ops.push({ kind: "relate", table: meta.edgeTable, rows: connectRows });
-  const disconnects = Array.isArray(bag.disconnect) ? bag.disconnect : [];
-  let deleteIds: string[] = [];
-  let deletePairs: { from: string; to: string }[] = [];
-  const flushIds = () => {
-    if (deleteIds.length === 0) return;
-    ops.push({ kind: "deleteIds", ids: deleteIds });
-    deleteIds = [];
-  };
-  const flushPairs = () => {
-    if (deletePairs.length === 0) return;
-    ops.push({ kind: "deletePairs", table: meta.edgeTable, pairs: deletePairs });
-    deletePairs = [];
-  };
-  for (const item of disconnects) {
-    if (!item || typeof item !== "object") continue;
-    const row = item as Record<string, unknown>;
-    if (typeof row.id === "string") {
-      flushPairs();
-      deleteIds.push(normalizeThing(meta.edgeTable, row.id));
-      continue;
+  await flushOps(db, ops);
+
+  if (Array.isArray(bag.upsert)) {
+    const rows: Record<string, unknown>[] = [];
+    for (const item of bag.upsert) {
+      const spec = asRecord(item);
+      if (!spec) throw new Error(`${label}.upsert required`);
+      const update = asRecord(spec.update);
+      const create = asRecord(spec.create);
+      if (!update) throw new Error(`${label}.upsert.update required`);
+      if (!create) throw new Error(`${label}.upsert.create required`);
+      const existing = await findEdgeId(db, meta, parentThing, spec.where, label);
+      if (existing) {
+        ops.push({
+          kind: "merge",
+          ids: [normalizeThing(meta.edgeTable, existing)],
+          patch: edgeContent(update, meta.payloadFields),
+        });
+      } else {
+        rows.push(...edgeConnectRows(meta, parentId, [create], `${label}.upsert.create`));
+      }
     }
-    const farId = row[farKey];
-    if (typeof farId !== "string") throw new Error(`${parentTable}.${field}.disconnect.${farKey} required`);
-    flushIds();
-    const ends = relationRow(meta, parentId, farId, {});
-    deletePairs.push({ from: String(ends.in), to: String(ends.out) });
+    if (rows.length > 0) ops.push({ kind: "relate", table: meta.edgeTable, rows });
   }
-  flushIds();
-  flushPairs();
+  await flushOps(db, ops);
 }
 
 export async function applyNestedWrites(
@@ -575,9 +1005,9 @@ export async function applyNestedWrites(
     const fieldMeta = meta[field];
     if (!fieldMeta || !isNestedWriteBag(value)) continue;
     if (fieldMeta.kind === "computed") {
-      collectComputed(ops, table, parentId, field, value, fieldMeta);
+      await collectComputed(db, ops, table, parentId, field, value, fieldMeta);
     } else if (fieldMeta.kind === "edge") {
-      collectEdge(ops, table, parentId, field, value, fieldMeta);
+      await collectEdge(db, ops, table, parentId, field, value, fieldMeta);
     }
   }
   await runNestedOps(db, ops);
@@ -590,10 +1020,42 @@ export async function createWithNested<T extends { id?: unknown }>(
 ): Promise<T> {
   const hasNested = rowHasNestedWrite(table, data);
   return withWriteTransaction(db, hasNested, async (ops) => {
-    const { scalars, nested } = await splitAndResolveWriteData(ops, table, data);
+    const { scalars, nested, deleteAfter } = await splitAndResolveWriteData(ops, table, data);
     const created = await createRecord<T>(ops, table, scalars);
     await applyNestedWrites(ops, table, String(created.id), nested);
+    await runDeferredDeletes(ops, deleteAfter);
     return created;
+  });
+}
+
+/** Surreal option<record> rejects JSON null — clear via UNSET instead of MERGE null. */
+export function partitionNullLinkClears(
+  table: string,
+  data: Record<string, unknown>,
+): { patch: Record<string, unknown>; unsetFields: string[] } {
+  const meta = writeMetaByTable[table] ?? {};
+  const patch: Record<string, unknown> = {};
+  const unsetFields: string[] = [];
+  for (const [key, value] of Object.entries(data)) {
+    const fieldMeta = meta[key];
+    if (value === null && fieldMeta?.kind === "stored" && fieldMeta.optional) {
+      unsetFields.push(key);
+      continue;
+    }
+    patch[key] = value;
+  }
+  return { patch, unsetFields };
+}
+
+async function unsetRecordFields(
+  db: SurrealOpsLike,
+  table: string,
+  id: string,
+  fields: string[],
+): Promise<void> {
+  if (fields.length === 0) return;
+  await queryRows(db, `UPDATE type::record($thing) UNSET ${fields.join(", ")} RETURN NONE`, {
+    thing: normalizeThing(table, id),
   });
 }
 
@@ -606,9 +1068,15 @@ export async function updateWithNested<T>(
 ): Promise<T | undefined | void | unknown> {
   const hasNested = rowHasNestedWrite(table, data);
   return withWriteTransaction(db, hasNested, async (ops) => {
-    const { scalars, nested } = await splitAndResolveWriteData(ops, table, data);
-    const updated = await updateOneRecord<T>(ops, table, id, scalars, opts);
+    const { scalars, nested, deleteAfter } = await splitAndResolveWriteData(ops, table, data, id);
+    const { patch, unsetFields } = partitionNullLinkClears(table, scalars);
+    await unsetRecordFields(ops, table, id, unsetFields);
+    const updated =
+      Object.keys(patch).length === 0 && unsetFields.length > 0 && !opts?.select && opts?.return === undefined
+        ? await selectRecord<T>(ops, table, id)
+        : await updateOneRecord<T>(ops, table, id, patch, opts);
     await applyNestedWrites(ops, table, id, nested);
+    await runDeferredDeletes(ops, deleteAfter);
     return updated;
   });
 }
@@ -756,7 +1224,9 @@ export function projectField(
     let nested = buildProjection(bag.select, nestedTable, allMeta);
     const countProj = collectOrderByCountProjections(bag.orderBy, nestedTable, allMeta);
     if (countProj.length > 0) nested = `${nested}, ${countProj.join(", ")}`;
-    const orderClause = buildOrderBy(bag.orderBy, nestedTable, allMeta);
+    const orderClause =
+      buildOrderBy(bag.orderBy, nestedTable, allMeta)
+      || ((bag.take !== undefined || bag.skip !== undefined) ? "ORDER BY id" : "");
     const pageClause = nestedLimitClause(bag.take, bag.skip);
     if (orderClause || pageClause) {
       const tail = `${orderClause ? ` ${orderClause}` : ""}${pageClause}`;
@@ -860,7 +1330,10 @@ export async function findManyRecords<T>(
   } else {
     sql = `SELECT ${projection} FROM ${table}`;
   }
-  const orderClause = buildOrderBy(args.orderBy, table);
+  let orderClause = buildOrderBy(args.orderBy, table);
+  if (!orderClause && (args.take !== undefined || args.skip !== undefined)) {
+    orderClause = "ORDER BY id";
+  }
   if (orderClause) sql = `${sql} ${orderClause}`;
   sql = appendLimitStart(sql, args.take, args.skip, vars);
   const rows = await queryRows<T>(db, sql, vars);
@@ -1475,11 +1948,16 @@ export function scalarPredicate(
   ctx: WhereBuildCtx,
 ): string[] {
   if (value === undefined) return [];
+  const recordIdentity = filter === "id";
+  const eq = (bound: unknown) =>
+    recordIdentity
+      ? `${path} = type::record(${nextWhereVar(ctx, bound)})`
+      : `${path} = ${nextWhereVar(ctx, bound)}`;
   if (!isScalarFilterObject(value)) {
-    return [`${path} = ${nextWhereVar(ctx, value)}`];
+    return [eq(value)];
   }
   const parts: string[] = [];
-  if (value.equals !== undefined) parts.push(`${path} = ${nextWhereVar(ctx, value.equals)}`);
+  if (value.equals !== undefined) parts.push(eq(value.equals));
   if (value.in !== undefined) parts.push(`${path} IN ${nextWhereVar(ctx, value.in)}`);
   if (value.contains !== undefined) {
     if (filter === "array") parts.push(`${path} CONTAINS ${nextWhereVar(ctx, value.contains)}`);
@@ -1490,6 +1968,15 @@ export function scalarPredicate(
   if (value.lt !== undefined) parts.push(`${path} < ${nextWhereVar(ctx, value.lt)}`);
   if (value.lte !== undefined) parts.push(`${path} <= ${nextWhereVar(ctx, value.lte)}`);
   return parts;
+}
+
+/** `{ id: "table:key" }` means record identity on a stored/computed link field. */
+export function isRecordIdOnlyFilter(value: unknown): value is { id: string } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Object.keys(value as Record<string, unknown>).filter(
+    (key) => (value as Record<string, unknown>)[key] !== undefined,
+  );
+  return keys.length === 1 && keys[0] === "id" && typeof (value as { id: unknown }).id === "string";
 }
 
 export function relationMode(value: Record<string, unknown>, list: boolean): {
@@ -1596,6 +2083,10 @@ export function buildWhere(
       );
       const pred = listRelationPredicate(path, mode, nestedClause);
       if (pred) parts.push(pred);
+      continue;
+    }
+    if (isRecordIdOnlyFilter(nested)) {
+      parts.push(`${path} = type::record(${nextWhereVar(ctx, nested.id)})`);
       continue;
     }
     const nestedClause = buildWhere(

@@ -1,6 +1,16 @@
 # SurrealDB 3.3.0
 
-Checked on 2026-10-06. Latest stable server and Rust SDK are **3.3.0** (24 Sep 2026). A later patch, 3.2.5 (5 Oct 2026), exists on the previous line. This repo tracks the 3.3 line.
+Checked on 2026-11-20. This repo’s **supported matrix** is SurrealDB **v3.3.0** end-to-end. A later patch on the 3.2 line (3.2.5) exists; we stay on 3.3.
+
+## Supported 3.3 matrix
+
+| Piece | Pin | Where |
+|---|---|---|
+| Server image | `surrealdb/surrealdb:v3.3.0` | `e2e/typescript/surreal/globalSetup.ts` (`SURREAL_IMAGE`); Rust e2e `with_tag("v3.3.0")` in `crates/e2e/tests/surreal/common/mod.rs` |
+| Rust SDK crate | `3.3.0` | workspace `Cargo.toml` (`surrealdb` with `protocol-ws`) |
+| JS / npm SDK | `surrealdb@2.0.10` (exact) | `clients/javascript` peer + devDependency; `e2e/typescript` devDependency |
+
+The JS SDK stays on the **2.x npm line** (`2.0.10`), which speaks WebSocket to a 3.3 server. That is intentional: do not bump the npm package to 3.x unless e2e is re-proven. Soft-skip without Docker is **local-only**; CI (`typescript-e2e` with `CI=true`) and PR checklist (`cargo test -p e2e --locked --test surreal`) must run live against this matrix.
 
 ## What was running before
 
@@ -9,8 +19,9 @@ Checked on 2026-10-06. Latest stable server and Rust SDK are **3.3.0** (24 Sep 2
 | README target | 3.1.5 | 3.3.0 |
 | Rust SDK (`surrealdb` crate) | 2.6.5 (manifest said `2.2`) | 3.3.0 |
 | End-to-end container | `surrealdb/surrealdb:v2.2` (hardcoded in `testcontainers-modules` 0.15) | `v3.3.0` via `with_tag` |
+| JS npm SDK | `^2.0.0` / `^2.0.10` | exact `2.0.10` |
 
-SDK 2.x cannot open a WebSocket to a 3.x server (subprotocol mismatch). `Root` sign-in now takes owned `String` username and password.
+Official Rust SDK 2.x cannot open a WebSocket to a 3.x server (subprotocol mismatch). `Root` sign-in now takes owned `String` username and password.
 
 ## Schema features we already emit
 

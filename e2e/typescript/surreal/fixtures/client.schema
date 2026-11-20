@@ -28,6 +28,7 @@ model User {
   metadata UserMetadata
   tags string[]
   posts Post[] @link("PostAuthor")
+  edited Post[] @link("PostEditor")
   liked Post[] @relation("Likes")
   @@table(schemafull)
 }
@@ -36,6 +37,7 @@ model Post {
   id @id
   title string
   author User @link("PostAuthor") @onDelete(Cascade)
+  editor User? @link("PostEditor")
   @@table(schemafull)
 }
 

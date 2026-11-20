@@ -434,6 +434,10 @@ impl schema_core::ports::DatabaseExecutor for OkExecutor {
     ) -> Result<(), DomainError> {
         Ok(())
     }
+
+    fn list_analyzers(&self, _config: &DatabaseConfig) -> Result<Vec<String>, DomainError> {
+        Ok(Vec::new())
+    }
 }
 
 struct StatusLedger {

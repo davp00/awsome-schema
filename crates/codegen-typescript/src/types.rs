@@ -134,6 +134,91 @@ fn emit_model_selected(
     out.push(String::new());
 }
 
+fn unique_scalar_fields<'a>(
+    schema: &'a DatabaseSchema,
+    model_name: &str,
+) -> Vec<&'a Field> {
+    let Some(model) = schema.models.iter().find(|model| model.name == model_name) else {
+        return Vec::new();
+    };
+    model
+        .fields
+        .iter()
+        .filter(|field| {
+            !field.name.contains('.')
+                && field.unique
+                && !field.is_id
+                && !field.is_link()
+                && field.relation_name.is_none()
+        })
+        .collect()
+}
+
+fn model_unique_field_list(
+    schema: &DatabaseSchema,
+    model_name: &str,
+    naming: &NamingContext<'_>,
+) -> String {
+    let names = unique_scalar_fields(schema, model_name)
+        .into_iter()
+        .map(|field| format!("\"{}\"", naming.field_name(field)))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("[{names}]")
+}
+
+fn model_unique_equality_where(
+    schema: &DatabaseSchema,
+    model_name: &str,
+    naming: &NamingContext<'_>,
+    inline_object_names: &InlineObjectTypeNames,
+) -> String {
+    let Some(model) = schema.models.iter().find(|model| model.name == model_name) else {
+        return "{ id: string }".to_owned();
+    };
+    let mut parts = vec!["{ id: string }".to_owned()];
+    for field in unique_scalar_fields(schema, model_name) {
+        let name = naming.field_name(field);
+        let ts = map_model_field_record(schema, model, field, naming, inline_object_names);
+        parts.push(format!("{{ {name}: {ts} }}"));
+    }
+    parts.join(" | ")
+}
+
+fn emit_stored_link_write(
+    out: &mut Vec<String>,
+    name: &str,
+    link_optional: bool,
+    for_update: bool,
+    table: &str,
+    target: &str,
+    where_ty: &str,
+) {
+    let mut alts = vec![
+        format!("RecordId<\"{table}\">"),
+        "string".to_owned(),
+        "{ connect: { id: string } }".to_owned(),
+        format!("{{ create: {target}CreateScalars }}"),
+        format!(
+            "{{ connectOrCreate: {{ where: {where_ty}; create: {target}CreateScalars }} }}"
+        ),
+        format!(
+            "{{ upsert: {{ where: {where_ty}; update: {target}UpdateScalars; create: {target}CreateScalars }} }}"
+        ),
+    ];
+    if for_update {
+        alts.push(format!(
+            "{{ update: {target}UpdateScalars | {{ where: {where_ty}; data: {target}UpdateScalars }} }}"
+        ));
+        if link_optional {
+            alts.push("{ disconnect: true }".to_owned());
+            alts.push("{ delete: true }".to_owned());
+        }
+    }
+    let mark = if for_update || link_optional { "?" } else { "" };
+    out.push(format!("  {name}{mark}: {};", alts.join(" | ")));
+}
+
 fn emit_model_inputs(
     out: &mut Vec<String>,
     schema: &DatabaseSchema,
@@ -141,6 +226,18 @@ fn emit_model_inputs(
     naming: &NamingContext<'_>,
     inline_object_names: &InlineObjectTypeNames,
 ) {
+    out.push(format!("export type {}UpdateScalars = {{", model.name));
+    for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
+        if field.is_id || should_omit_on_record(field) || field.is_stored_link() {
+            continue;
+        }
+        let ts = map_model_field_record(schema, model, field, naming, inline_object_names);
+        let name = naming.field_name(field);
+        out.push(format!("  {name}?: {ts};"));
+    }
+    out.push("};".to_owned());
+    out.push(String::new());
+
     out.push(format!("export type {}CreateScalars = {{", model.name));
     for field in model.fields.iter().filter(|f| !f.name.contains('.')) {
         if field.is_id || should_omit_on_record(field) {
@@ -183,10 +280,17 @@ fn emit_model_inputs(
                 .or_else(|| field.field_type.link_model_name())
                 .unwrap_or("unknown");
             let table = table_for_model_name(schema, target, naming);
-            let optional = if field.optional { "?" } else { "" };
-            out.push(format!(
-                "  {name}{optional}: RecordId<\"{table}\"> | string | {{ connect: {{ id: string }} }} | {{ create: {target}CreateScalars }};"
-            ));
+            let where_ty =
+                model_unique_equality_where(schema, target, naming, inline_object_names);
+            emit_stored_link_write(
+                out,
+                name,
+                field.optional,
+                false,
+                &table,
+                target,
+                &where_ty,
+            );
         }
     }
     emit_model_nested_write_bags(out, schema, model, naming, inline_object_names, false);
@@ -206,15 +310,16 @@ fn emit_model_inputs(
                 .or_else(|| field.field_type.link_model_name())
                 .unwrap_or("unknown");
             let table = table_for_model_name(schema, target, naming);
-            if field.optional {
-                out.push(format!(
-                    "  {name}?: RecordId<\"{table}\"> | string | {{ connect: {{ id: string }} }} | {{ create: {target}CreateScalars }} | {{ disconnect: true }};"
-                ));
-            } else {
-                out.push(format!(
-                    "  {name}?: RecordId<\"{table}\"> | string | {{ connect: {{ id: string }} }} | {{ create: {target}CreateScalars }};"
-                ));
-            }
+            let where_ty = model_unique_equality_where(schema, target, naming, inline_object_names);
+            emit_stored_link_write(
+                out,
+                &name,
+                field.optional,
+                true,
+                &table,
+                target,
+                &where_ty,
+            );
         } else {
             let ts = map_model_field_record(schema, model, field, naming, inline_object_names);
             out.push(format!("  {name}?: {ts};"));
@@ -288,14 +393,43 @@ fn emit_model_nested_write_bags(
                 let optional = if ef.optional { "?" } else { "" };
                 let _ = write!(payload_fields, " {ef_name}{optional}: {ts};");
             }
+            let where_ty = format!("{{ id: string }} | {{ {far}: string }}");
+            let connect_item = format!("({{ {far}: string }} & {{{payload_fields}}})");
+            let mut update_payload = String::new();
+            for ef in edge.fields.iter().filter(|f| !f.name.contains('.')) {
+                let ef_name = naming.field_name(ef);
+                let ts = map_scalar_or_object(
+                    Some(ObjectMapCtx {
+                        schema,
+                        owner: &edge.name,
+                        fields: &edge.fields,
+                        inline_object_names,
+                    }),
+                    &ef.field_type,
+                    ef,
+                    naming,
+                );
+                let _ = write!(update_payload, " {ef_name}?: {ts};");
+            }
             out.push(format!("  {name}?: {{"));
             out.push(format!(
                 "    create?: Array<{{{payload_fields} {far}: string | {{ create: {far_create_ty} }}; }}>;"
             ));
             out.push(format!(
-                "    connect?: Array<({{ {far}: string }} & {{{payload_fields}}}) | {{ id: string }}>;"
+                "    connect?: Array<{connect_item} | {{ id: string }}>;"
             ));
             out.push(format!("    disconnect?: Array<{{ {far}: string }} | {{ id: string }}>;"));
+            out.push(format!("    set?: Array<{connect_item}>;"));
+            out.push(format!(
+                "    update?: Array<{{ where: {where_ty}; data: {{{update_payload}}} }}>;"
+            ));
+            out.push(format!("    delete?: Array<{{ {far}: string }} | {{ id: string }}>;"));
+            out.push(format!(
+                "    upsert?: Array<{{ where: {where_ty}; update: {{{update_payload}}}; create: {connect_item} }}>;"
+            ));
+            out.push(format!(
+                "    connectOrCreate?: Array<{{ where: {where_ty}; create: {connect_item} }}>;"
+            ));
             out.push("  };".to_owned());
         } else if field.is_computed_link() {
             let target = field
@@ -304,10 +438,24 @@ fn emit_model_nested_write_bags(
                 .or_else(|| field.field_type.link_model_name())
                 .unwrap_or("unknown");
             let back = field.link_opposite_field.as_deref().unwrap_or("id");
+            let where_ty =
+                model_unique_equality_where(schema, target, naming, inline_object_names);
+            let create_ty = format!("Omit<{target}CreateScalars, \"{back}\">");
             out.push(format!("  {name}?: {{"));
-            out.push(format!("    create?: Array<Omit<{target}CreateScalars, \"{back}\">>;"));
+            out.push(format!("    create?: Array<{create_ty}>;"));
             out.push("    connect?: Array<{ id: string }>;".to_owned());
             out.push("    disconnect?: Array<{ id: string }>;".to_owned());
+            out.push("    set?: Array<{ id: string }>;".to_owned());
+            out.push(format!(
+                "    update?: Array<{{ where: {where_ty}; data: {target}UpdateScalars }}>;"
+            ));
+            out.push("    delete?: Array<{ id: string }>;".to_owned());
+            out.push(format!(
+                "    upsert?: Array<{{ where: {where_ty}; update: {target}UpdateScalars; create: {create_ty} }}>;"
+            ));
+            out.push(format!(
+                "    connectOrCreate?: Array<{{ where: {where_ty}; create: {create_ty} }}>;"
+            ));
             out.push("  };".to_owned());
         }
     }
@@ -1745,11 +1893,11 @@ fn emit_write_meta_registry(
     out.push("export type FieldWriteMeta =".to_owned());
     out.push("  | { kind: \"scalar\" }".to_owned());
     out.push(
-        "  | { kind: \"stored\"; targetTable: string; list: boolean; optional: boolean }"
+        "  | { kind: \"stored\"; targetTable: string; list: boolean; optional: boolean; uniqueFields: string[] }"
             .to_owned(),
     );
     out.push(
-        "  | { kind: \"computed\"; targetTable: string; list: boolean; backLinkField: string; backLinkOptional: boolean }"
+        "  | { kind: \"computed\"; targetTable: string; list: boolean; backLinkField: string; backLinkOptional: boolean; uniqueFields: string[] }"
             .to_owned(),
     );
     out.push(
@@ -1807,8 +1955,9 @@ fn emit_write_meta_registry(
                     .unwrap_or_else(|| "id".to_owned());
                 let back_optional = find_stored_opposite_optional(schema, field).unwrap_or(false);
                 let list = field.is_list_link();
+                let unique_fields = model_unique_field_list(schema, target, naming);
                 out.push(format!(
-                    "    {name}: {{ kind: \"computed\", targetTable: \"{target_table}\", list: {list}, backLinkField: \"{back}\", backLinkOptional: {back_optional} }},"
+                    "    {name}: {{ kind: \"computed\", targetTable: \"{target_table}\", list: {list}, backLinkField: \"{back}\", backLinkOptional: {back_optional}, uniqueFields: {unique_fields} }},"
                 ));
             } else if field.is_stored_link() {
                 let target = field
@@ -1818,8 +1967,9 @@ fn emit_write_meta_registry(
                     .unwrap_or("unknown");
                 let target_table = table_for_model_name(schema, target, naming);
                 let list = field.is_list_link();
+                let unique_fields = model_unique_field_list(schema, target, naming);
                 out.push(format!(
-                    "    {name}: {{ kind: \"stored\", targetTable: \"{target_table}\", list: {list}, optional: {} }},",
+                    "    {name}: {{ kind: \"stored\", targetTable: \"{target_table}\", list: {list}, optional: {}, uniqueFields: {unique_fields} }},",
                     field.optional
                 ));
             } else if !field.is_id {

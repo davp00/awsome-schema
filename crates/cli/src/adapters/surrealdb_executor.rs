@@ -1,4 +1,5 @@
 use schema_core::{DatabaseConfig, DatabaseExecutor, DomainError};
+use serde_json::Value;
 
 use super::surrealdb_connection;
 
@@ -13,6 +14,15 @@ impl DatabaseExecutor for SurrealDbExecutor {
 
         runtime.block_on(execute_script_async(config, script))
     }
+
+    fn list_analyzers(&self, config: &DatabaseConfig) -> Result<Vec<String>, DomainError> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| DomainError::DatabaseError(error.to_string()))?;
+
+        runtime.block_on(list_analyzers_async(config))
+    }
 }
 
 async fn execute_script_async(config: &DatabaseConfig, script: &str) -> Result<(), DomainError> {
@@ -25,6 +35,24 @@ async fn execute_script_async(config: &DatabaseConfig, script: &str) -> Result<(
     }
 
     Ok(())
+}
+
+async fn list_analyzers_async(config: &DatabaseConfig) -> Result<Vec<String>, DomainError> {
+    let db = surrealdb_connection::connect(config).await?;
+    let mut response = db
+        .query("INFO FOR DB;")
+        .await
+        .map_err(|error| DomainError::DatabaseError(error.to_string()))?;
+    let info: Option<Value> = response
+        .take(0)
+        .map_err(|error| DomainError::DatabaseError(error.to_string()))?;
+    let Some(info) = info else {
+        return Ok(Vec::new());
+    };
+    let Some(analyzers) = info.get("analyzers").and_then(Value::as_object) else {
+        return Ok(Vec::new());
+    };
+    Ok(analyzers.keys().cloned().collect())
 }
 
 fn split_surql(script: &str) -> Vec<String> {

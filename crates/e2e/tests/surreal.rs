@@ -15,3 +15,5 @@ mod migrate;
 mod offline_cli;
 #[path = "surreal/record_refs.rs"]
 mod record_refs;
+#[path = "surreal/schema_roundtrip.rs"]
+mod schema_roundtrip;

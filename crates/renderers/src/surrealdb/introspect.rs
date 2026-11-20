@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 
 use core::{
-    DatabaseSchema, DomainError, Edge, Field, FieldType, Index, Model, NamingConvention, TableMode,
-    VectorDist,
+    DatabaseSchema, DomainError, Edge, Field, FieldType, Index, Model, NamingCase, NamingConvention,
+    TableMode, VectorDist,
 };
 
 /// Per-table payload from `INFO FOR TABLE`.
@@ -79,6 +79,7 @@ pub fn map_database_info(
         edges,
     };
     pair_pulled_links(&mut schema, preserve);
+    synthesize_relation_nav_fields(&mut schema, preserve);
     Ok(schema)
 }
 
@@ -437,6 +438,164 @@ fn preserved_link_name(
         .find(|field| field.name == field_name)?
         .link_name
         .clone()
+}
+
+/// Rebuild DSL-only `@relation` navigation fields from pulled RELATION edges.
+///
+/// SurrealDB does not store these; when `preserve` has matching nav fields we keep
+/// their names, otherwise we invent stable defaults from the edge endpoints.
+fn synthesize_relation_nav_fields(schema: &mut DatabaseSchema, preserve: &DatabaseSchema) {
+    let edges: Vec<(String, String, String)> = schema
+        .edges
+        .iter()
+        .map(|edge| (edge.name.clone(), edge.in_model.clone(), edge.out_model.clone()))
+        .collect();
+
+    for (edge_name, in_model, out_model) in edges {
+        let preserved_in = preserved_relation_fields(preserve, &in_model, &edge_name);
+        let preserved_out = if in_model == out_model {
+            Vec::new()
+        } else {
+            preserved_relation_fields(preserve, &out_model, &edge_name)
+        };
+
+        if preserved_in.is_empty() && preserved_out.is_empty() {
+            ensure_relation_nav_field(
+                schema,
+                &in_model,
+                &out_model,
+                &edge_name,
+                &default_relation_field_name(&out_model, &edge_name, true),
+            );
+            if in_model != out_model {
+                ensure_relation_nav_field(
+                    schema,
+                    &out_model,
+                    &in_model,
+                    &edge_name,
+                    &default_relation_field_name(&in_model, &edge_name, false),
+                );
+            }
+            continue;
+        }
+
+        for (field_name, target) in preserved_in {
+            ensure_relation_nav_field(schema, &in_model, &target, &edge_name, &field_name);
+        }
+        for (field_name, target) in preserved_out {
+            ensure_relation_nav_field(schema, &out_model, &target, &edge_name, &field_name);
+        }
+    }
+}
+
+fn preserved_relation_fields(
+    preserve: &DatabaseSchema,
+    model_name: &str,
+    edge_name: &str,
+) -> Vec<(String, String)> {
+    let Some(edge) = preserve.edges.iter().find(|edge| edge.name == edge_name) else {
+        // Still match by relation string alone when preserve has the nav field but
+        // the edge list was empty (lossy prior pull).
+        return preserve
+            .models
+            .iter()
+            .find(|model| model.name == model_name)
+            .into_iter()
+            .flat_map(|model| model.fields.iter())
+            .filter_map(|field| {
+                let relation = field.relation_name.as_deref()?;
+                if relation != edge_name {
+                    return None;
+                }
+                let target = field.field_type.link_model_name()?.to_owned();
+                Some((field.name.clone(), target))
+            })
+            .collect();
+    };
+    let table_name = edge.table_name(&preserve.naming);
+    let Some(model) = preserve.models.iter().find(|model| model.name == model_name) else {
+        return Vec::new();
+    };
+    model
+        .fields
+        .iter()
+        .filter_map(|field| {
+            let relation = field.relation_name.as_deref()?;
+            if relation != edge_name && relation != table_name {
+                return None;
+            }
+            let target = field.field_type.link_model_name().map(str::to_owned).unwrap_or_else(|| {
+                if model_name == edge.in_model {
+                    edge.out_model.clone()
+                } else {
+                    edge.in_model.clone()
+                }
+            });
+            Some((field.name.clone(), target))
+        })
+        .collect()
+}
+
+fn default_relation_field_name(opposite_model: &str, edge_name: &str, from_in_side: bool) -> String {
+    let _ = from_in_side;
+    let base = NamingCase::CamelCase.apply(opposite_model);
+    if base.is_empty() {
+        return NamingCase::CamelCase.apply(edge_name);
+    }
+    if base.ends_with('s') {
+        base
+    } else {
+        format!("{base}s")
+    }
+}
+
+fn ensure_relation_nav_field(
+    schema: &mut DatabaseSchema,
+    model_name: &str,
+    target_model: &str,
+    edge_name: &str,
+    preferred_name: &str,
+) {
+    let Some(model) = schema.models.iter_mut().find(|model| model.name == model_name) else {
+        return;
+    };
+    if model.fields.iter().any(|field| field.relation_name.as_deref() == Some(edge_name)
+        && field.field_type.link_model_name() == Some(target_model))
+    {
+        return;
+    }
+
+    let mut name = preferred_name.to_owned();
+    if model.fields.iter().any(|field| field.name == name) {
+        let fallback = NamingCase::CamelCase.apply(edge_name);
+        name = if model.fields.iter().any(|field| field.name == fallback) {
+            format!("{fallback}Nav")
+        } else {
+            fallback
+        };
+    }
+
+    model.fields.push(Field {
+        name,
+        field_type: FieldType::Array(Box::new(FieldType::Model(target_model.to_owned()))),
+        optional: false,
+        unique: false,
+        is_id: false,
+        default_value: None,
+        default_always: false,
+        value_expression: None,
+        readonly: false,
+        flexible: false,
+        link_target: None,
+        link_name: None,
+        on_delete: None,
+        link_storage: None,
+        link_opposite_field: None,
+        object_type_name: None,
+        relation_name: Some(edge_name.to_owned()),
+        attributes: BTreeMap::new(),
+    });
+    model.fields.sort_by(|a, b| a.name.cmp(&b.name));
 }
 
 fn parse_index_define(define: &str) -> Result<Index, DomainError> {
@@ -1221,6 +1380,70 @@ mod tests {
         let pulled = map_database_info(&tables, &BTreeMap::new(), &preserve).expect("map");
         assert!(pulled.models[0].permissions.is_none());
         assert_eq!(pulled.edges[0].permissions.as_deref(), Some("FULL"));
+    }
+
+    #[test]
+    fn synthesizes_relation_nav_fields_preserving_names() {
+        let mut preserve = DatabaseSchema::empty();
+        preserve.datasource.provider = "surrealdb".into();
+        preserve.naming.tables = core::NamingCase::SnakeCase;
+        preserve.models.push(Model {
+            name: "User".into(),
+            fields: vec![Field {
+                name: "liked".into(),
+                field_type: FieldType::Array(Box::new(FieldType::Model("Post".into()))),
+                optional: false,
+                unique: false,
+                is_id: false,
+                default_value: None,
+                default_always: false,
+                value_expression: None,
+                readonly: false,
+                flexible: false,
+                link_target: None,
+                link_name: None,
+                on_delete: None,
+                link_storage: None,
+                link_opposite_field: None,
+                object_type_name: None,
+                relation_name: Some("Likes".into()),
+                attributes: BTreeMap::new(),
+            }],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+        preserve.models.push(Model {
+            name: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+        preserve.edges.push(Edge {
+            name: "Likes".into(),
+            in_model: "User".into(),
+            out_model: "Post".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: BTreeMap::new(),
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        tables.insert("post".into(), "DEFINE TABLE post SCHEMAFULL;".into());
+        tables.insert(
+            "likes".into(),
+            "DEFINE TABLE likes TYPE RELATION IN user OUT post SCHEMAFULL;".into(),
+        );
+        let pulled = map_database_info(&tables, &BTreeMap::new(), &preserve).expect("map");
+        let user = pulled.models.iter().find(|m| m.name == "User").expect("user");
+        let liked = user.fields.iter().find(|f| f.name == "liked").expect("liked");
+        assert_eq!(liked.relation_name.as_deref(), Some("Likes"));
+        assert_eq!(liked.field_type.link_model_name(), Some("Post"));
     }
 
     #[test]

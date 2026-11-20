@@ -25,11 +25,9 @@ impl DbPullUseCase {
     pub fn execute(&self, port: DbPullInput) -> Result<DbPullOutput, DomainError> {
         let config = DatabaseConfig::from_datasource(&port.preserve.datasource)?;
         let pulled = self.introspector.introspect(&config, &port.preserve)?;
-        let lossy = pulled
-            .models
-            .iter()
-            .any(|model| model.fields.iter().any(|field| field.relation_name.is_some()))
-            || !port.preserve.edges.is_empty() && pulled.edges.is_empty();
+        // `@relation` nav fields are synthesized from RELATION edges; residual loss is
+        // when preserve had edges that the database no longer exposes.
+        let lossy = !port.preserve.edges.is_empty() && pulled.edges.is_empty();
         let schema = merge_pulled_schema(&port.preserve, &pulled);
         Ok(DbPullOutput { schema, lossy })
     }

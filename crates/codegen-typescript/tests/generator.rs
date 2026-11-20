@@ -636,7 +636,18 @@ fn emits_nested_writes() {
     assert!(output.contains("export type FieldWriteMeta ="));
     assert!(output.contains("export const WriteMetaByTable"));
     assert!(output.contains("backLinkField: \"author\""));
+    assert!(output.contains("uniqueFields: [\"email\"]"));
+    assert!(output.contains("uniqueFields: []"));
     assert!(output.contains("kind: \"edge\""));
+    assert!(output.contains("export type PostUpdateScalars = {"));
+    assert!(output.contains("set?: Array<{ id: string }>;"));
+    assert!(output.contains(
+        "connectOrCreate?: Array<{ where: { id: string }; create: Omit<PostCreateScalars, \"author\"> }>;"
+    ));
+    assert!(output.contains("delete?: Array<{ id: string }>;"));
+    assert!(output.contains("upsert?: Array<{ where: { id: string }; update: PostUpdateScalars; create: Omit<PostCreateScalars, \"author\"> }>;"));
+    assert!(output.contains("set?: Array<({ out: string } & { score: number;})>;"));
+    assert!(output.contains("connectOrCreate: { where: { id: string } | { email: string }; create: UserCreateScalars }"));
     assert!(output.contains("createWithNested,"));
     assert!(output.contains("updateWithNested,"));
     assert!(output.contains("relateEdge,"));

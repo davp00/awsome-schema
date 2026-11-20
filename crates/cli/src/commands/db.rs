@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use parser::{print_config_blocks, print_edge_block, print_model_block, print_schema};
 use schema_core::{DbPullInput};
 

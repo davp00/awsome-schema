@@ -1,13 +1,14 @@
 # Status
 
-Checked on 2026-10-07 against `main` (TypeScript client e2e).
+**Last live check:** 2026-11-20 against SurrealDB **v3.3.0** (stabilize surface → npm `0.1.0-alpha.1`).
 
 Check so far:
 
 - Read the CLI, domain, parser, differ, SurrealDB renderer, codegen, and `db` adapters.
 - `cargo test --workspace --exclude e2e` — unit/integration suite.
-- `cargo test -p e2e --locked --test surreal` — Surreal CLI suite against SurrealDB **v3.3.0** via Docker/testcontainers.
-- `cd e2e/typescript && npm test` — Vitest generated-client CRUD + nested select e2e (hybrid URL / testcontainers); CI via `.github/workflows/typescript-e2e.yml`.
+- `cargo test -p e2e --locked --test surreal` — Surreal CLI suite against SurrealDB **v3.3.0** via Docker/testcontainers (incl. schema round-trip + `@relation` pull).
+- `pnpm --filter awesome-schema-typescript-e2e test` — Vitest generated-client e2e (CRUD, nested writes, txn, optional delete, stable take/skip); CI via `.github/workflows/typescript-e2e.yml`.
+- Supported matrix: server `v3.3.0`, Rust crate `3.3.0`, JS `surrealdb@2.0.10` — see [surrealdb-3.3.md](surrealdb-3.3.md).
 
 Legend: **done** means the behavior exists and is covered by unit or CLI tests. **partial** means some of the path works and a specific gap remains. **not started** means the command or type exists but does not do the job.
 
@@ -44,7 +45,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Area | What works | Gap |
 |---|---|---|
 | `edge` blocks | Parsed and rendered as `DEFINE TABLE … TYPE RELATION IN … OUT …`; differ create/alter/drop; edge permissions; e2e roundtrip | `LIGHTWEIGHT` / `INLINE` not modeled |
-| `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen) | Not restored by `db pull` (not stored in DB) |
+| `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen); `db pull` synthesizes nav fields from RELATION edges (preserve names when present) | — |
 | Events, functions | `CreateEvent`, `DropEvent`, `CreateFunction`, `DropFunction` render | No DSL syntax. Nothing in the parser produces them |
 | Rust codegen | `generate --target rust` emits struct shells (optionals/arrays) | Still a stub: no dual link shapes, edges as real types, or client helpers |
 

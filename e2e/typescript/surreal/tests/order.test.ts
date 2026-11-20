@@ -79,6 +79,19 @@ describe("generated TypeScript client orderBy take/skip", () => {
     const filteredOurs = filtered.filter((row) => ids.has(recordIdString(row.id)));
     expect(filteredOurs.map((row) => row.age)).toEqual([20, 30]);
 
+    // take/skip without orderBy is stable via ORDER BY id
+    const stableA = await client.user.findMany({
+      where: { email: { contains: suffix } },
+      take: 2,
+    });
+    const stableB = await client.user.findMany({
+      where: { email: { contains: suffix } },
+      take: 2,
+    });
+    expect(stableA.map((row) => recordIdString(row.id))).toEqual(
+      stableB.map((row) => recordIdString(row.id)),
+    );
+
     for (const row of created) {
       await client.user.delete(recordIdString(row.id));
     }

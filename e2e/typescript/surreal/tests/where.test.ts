@@ -123,9 +123,12 @@ describe("generated TypeScript client hybrid where", () => {
       expect(uniquePost!.title).toBe(title);
       expect(uniquePost!.author.email).toBe(email);
 
-      // findUnique: edge some filter
+      // findUnique: edge some filter (scoped to this user — suite shares DB)
       const uniqueWithLike = await client.user.findUnique({
-        where: { liked: { some: { score: { gte: 5 } } } },
+        where: {
+          email,
+          liked: { some: { score: { gte: 5 } } },
+        },
       });
       expect(uniqueWithLike).toBeDefined();
       expect(recordIdString(uniqueWithLike!.id)).toBe(userId);

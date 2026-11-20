@@ -1,6 +1,6 @@
 {
   "name": "awesome-schema",
-  "version": "0.0.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Awesome Schema client runtime and CLI launcher (alpha).",
   "license": "MIT",
   "type": "module",
@@ -46,10 +46,10 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "surrealdb": "^2.0.0"
+    "surrealdb": "2.0.10"
   },
   "devDependencies": {
-    "surrealdb": "^2.0.10",
+    "surrealdb": "2.0.10",
     "typescript": "^5.8.2",
     "vitest": "^3.0.9"
   }

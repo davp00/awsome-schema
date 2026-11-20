@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use core::domain::{
-    DatabaseSchema, Datasource, Field, FieldType, MigrationOperation, MigrationPlan, Model,
+    DatabaseSchema, Datasource, Field, FieldType, Index, MigrationOperation, MigrationPlan, Model,
     NamingConvention, TableMode,
 };
 use core::ports::{
@@ -103,12 +103,30 @@ impl MigrationRenderer for RecordingRenderer {
 
 struct RecordingDatabase {
     scripts: Mutex<Vec<String>>,
+    analyzers: Vec<String>,
+}
+
+impl RecordingDatabase {
+    fn new() -> Self {
+        Self { scripts: Mutex::new(Vec::new()), analyzers: Vec::new() }
+    }
+
+    fn with_analyzers(analyzers: &[&str]) -> Self {
+        Self {
+            scripts: Mutex::new(Vec::new()),
+            analyzers: analyzers.iter().map(|name| (*name).to_owned()).collect(),
+        }
+    }
 }
 
 impl DatabaseExecutor for RecordingDatabase {
     fn execute_script(&self, _config: &DatabaseConfig, script: &str) -> Result<(), DomainError> {
         self.scripts.lock().expect("lock").push(script.to_owned());
         Ok(())
+    }
+
+    fn list_analyzers(&self, _config: &DatabaseConfig) -> Result<Vec<String>, DomainError> {
+        Ok(self.analyzers.clone())
     }
 }
 
@@ -405,7 +423,7 @@ fn migrate_apply_executes_pending_migration_scripts() {
         migrations: Mutex::new(vec!["001_init".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::new());
 
     let use_case = MigrateApplyUseCase::new(store, fs, database.clone(), ledger.clone());
@@ -440,7 +458,7 @@ fn migrate_apply_skips_already_recorded_migrations() {
         migrations: Mutex::new(vec!["001_init".to_owned(), "002_next".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
 
     let use_case = MigrateApplyUseCase::new(store, fs, database.clone(), ledger.clone());
@@ -473,7 +491,7 @@ fn migrate_rollback_runs_down_then_removes_ledger() {
         migrations: Mutex::new(vec!["001_init".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
 
     let use_case = MigrateRollbackUseCase::new(store, fs, database.clone(), ledger.clone());
@@ -502,7 +520,7 @@ fn migrate_rollback_errors_when_down_missing() {
         migrations: Mutex::new(vec!["001_init".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
 
     let use_case = MigrateRollbackUseCase::new(store, fs, database, ledger.clone());
@@ -531,7 +549,7 @@ fn migrate_rollback_steps_zero_is_noop() {
         migrations: Mutex::new(vec!["001_init".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
 
     let use_case = MigrateRollbackUseCase::new(store, fs, database.clone(), ledger);
@@ -554,7 +572,7 @@ fn migrate_rollback_errors_when_local_directory_missing() {
         migrations: Mutex::new(Vec::new()),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
 
     let use_case = MigrateRollbackUseCase::new(store, fs, database, ledger);
@@ -581,7 +599,7 @@ fn migrate_rollback_errors_when_down_script_empty() {
         migrations: Mutex::new(vec!["001_init".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger::with_applied(&["001_init"]));
 
     let use_case = MigrateRollbackUseCase::new(store, fs, database, ledger);
@@ -629,7 +647,7 @@ fn migrate_rollback_sorts_by_applied_at_descending() {
         migrations: Mutex::new(vec!["001_first".to_owned(), "002_second".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger {
         applied: Mutex::new(vec![
             AppliedMigration {
@@ -670,7 +688,7 @@ fn migrate_rollback_falls_back_to_name_when_applied_at_missing() {
         migrations: Mutex::new(vec!["001_first".to_owned(), "002_second".to_owned()]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let ledger = Arc::new(MemoryLedger {
         applied: Mutex::new(vec![
             AppliedMigration {
@@ -725,12 +743,60 @@ fn db_push_renders_and_applies_schema() {
     let schema = sample_schema();
     let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
     let renderer = Arc::new(RecordingRenderer { output: "DEFINE TABLE user;".to_owned() });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let use_case = DbPushUseCase::new(source, renderer, database.clone());
     let output =
         use_case.execute(DbPushInput { datasource: sample_schema().datasource }).expect("push");
 
     assert_eq!(output.statements, "DEFINE TABLE user;");
+    assert_eq!(database.scripts.lock().expect("lock").len(), 1);
+}
+
+#[test]
+fn db_push_fails_when_fulltext_analyzer_missing() {
+    let mut schema = sample_schema();
+    schema.models[0].indexes.push(Index {
+        name: Some("title_ft".to_owned()),
+        fields: vec!["email".to_owned()],
+        unique: false,
+        fulltext: true,
+        fulltext_analyzer: Some("english".to_owned()),
+        vector: false,
+        vector_dimension: None,
+        vector_dist: None,
+    });
+    let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
+    let renderer = Arc::new(RecordingRenderer { output: "DEFINE TABLE user;".to_owned() });
+    let database = Arc::new(RecordingDatabase::new());
+    let use_case = DbPushUseCase::new(source, renderer, database.clone());
+    let error = match use_case.execute(DbPushInput { datasource: sample_schema().datasource }) {
+        Ok(_) => panic!("expected missing analyzer"),
+        Err(error) => error,
+    };
+    assert!(
+        matches!(error, DomainError::ValidationError(msg) if msg.contains("fulltext analyzer `english`"))
+    );
+    assert!(database.scripts.lock().expect("lock").is_empty());
+}
+
+#[test]
+fn db_push_succeeds_when_fulltext_analyzer_present() {
+    let mut schema = sample_schema();
+    schema.models[0].indexes.push(Index {
+        name: Some("title_ft".to_owned()),
+        fields: vec!["email".to_owned()],
+        unique: false,
+        fulltext: true,
+        fulltext_analyzer: Some("english".to_owned()),
+        vector: false,
+        vector_dimension: None,
+        vector_dist: None,
+    });
+    let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
+    let renderer = Arc::new(RecordingRenderer { output: "DEFINE TABLE user;".to_owned() });
+    let database = Arc::new(RecordingDatabase::with_analyzers(&["english"]));
+    let use_case = DbPushUseCase::new(source, renderer, database.clone());
+    use_case.execute(DbPushInput { datasource: sample_schema().datasource }).expect("push");
     assert_eq!(database.scripts.lock().expect("lock").len(), 1);
 }
 
@@ -831,7 +897,7 @@ fn migrate_apply_skips_missing_and_empty_scripts() {
         ]),
         snapshot: Mutex::new(None),
     });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
 
     let use_case =
         MigrateApplyUseCase::new(store, fs, database.clone(), Arc::new(MemoryLedger::new()));
@@ -985,7 +1051,7 @@ fn generate_schema_refuses_unknown_provider_before_render() {
 fn db_push_refuses_unknown_provider_before_render() {
     let source = Arc::new(StaticSchemaSource { schema: postgres_schema(), raw: String::new() });
     let renderer = Arc::new(CountingRenderer { calls: AtomicUsize::new(0) });
-    let database = Arc::new(RecordingDatabase { scripts: Mutex::new(Vec::new()) });
+    let database = Arc::new(RecordingDatabase::new());
     let use_case = DbPushUseCase::new(source, renderer.clone(), database.clone());
 
     let error = match use_case.execute(DbPushInput { datasource: postgres_schema().datasource }) {

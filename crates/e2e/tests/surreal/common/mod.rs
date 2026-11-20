@@ -84,6 +84,7 @@ naming {{
 
 model User {{
   id @id
+  liked Post[] @relation("Likes")
   @@table(schemafull)
 }}
 
@@ -136,8 +137,25 @@ impl TestProject {
 }
 
 fn docker_unavailable(error: &impl std::fmt::Display) -> bool {
-    let message = error.to_string();
-    message.contains("SocketNotFoundError") || message.contains("docker.sock")
+    let message = error.to_string().to_lowercase();
+    message.contains("socketnotfounderror")
+        || message.contains("docker.sock")
+        || message.contains("client error (connect)")
+        || message.contains("connection refused")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::docker_unavailable;
+
+    #[test]
+    fn treats_unreachable_docker_as_unavailable() {
+        assert!(docker_unavailable(&"SocketNotFoundError: /var/run/docker.sock"));
+        assert!(docker_unavailable(
+            &"Error in the hyper legacy client: client error (Connect)"
+        ));
+        assert!(!docker_unavailable(&"image pull denied"));
+    }
 }
 
 pub type SurrealContainer = testcontainers_modules::testcontainers::ContainerAsync<SurrealDb>;
