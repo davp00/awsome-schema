@@ -39,3 +39,60 @@ fn db_pull_use_case_delegates_to_introspector() {
         DbPullUseCase::new(Arc::new(Stub)).execute(DbPullInput { preserve }).expect("pull");
     assert!(output.schema.models.is_empty());
 }
+
+#[test]
+fn db_pull_marks_lossy_when_any_preserve_edge_is_missing() {
+    use core::domain::{Edge, TableMode};
+    use core::ports::SchemaIntrospector;
+    use core::usecases::{DbPullInput, DbPullUseCase};
+    use std::collections::BTreeMap;
+    use std::sync::Arc;
+
+    struct KeepOneEdge;
+    impl SchemaIntrospector for KeepOneEdge {
+        fn introspect(
+            &self,
+            _config: &core::DatabaseConfig,
+            _preserve: &core::DatabaseSchema,
+        ) -> Result<core::DatabaseSchema, DomainError> {
+            let mut schema = core::DatabaseSchema::empty();
+            schema.edges.push(Edge {
+                name: "Kept".into(),
+                in_model: "User".into(),
+                out_model: "Post".into(),
+                fields: vec![],
+                table_mode: TableMode::Schemafull,
+                permissions: None,
+                attributes: BTreeMap::new(),
+            });
+            Ok(schema)
+        }
+    }
+
+    let mut preserve = core::DatabaseSchema::empty();
+    preserve.datasource.provider = "surrealdb".into();
+    preserve.datasource.url = Some("127.0.0.1:1".into());
+    preserve.edges.push(Edge {
+        name: "Kept".into(),
+        in_model: "User".into(),
+        out_model: "Post".into(),
+        fields: vec![],
+        table_mode: TableMode::Schemafull,
+        permissions: None,
+        attributes: BTreeMap::new(),
+    });
+    preserve.edges.push(Edge {
+        name: "Lost".into(),
+        in_model: "User".into(),
+        out_model: "Post".into(),
+        fields: vec![],
+        table_mode: TableMode::Schemafull,
+        permissions: None,
+        attributes: BTreeMap::new(),
+    });
+
+    let output = DbPullUseCase::new(Arc::new(KeepOneEdge))
+        .execute(DbPullInput { preserve })
+        .expect("pull");
+    assert!(output.lossy, "partial edge loss must set lossy");
+}

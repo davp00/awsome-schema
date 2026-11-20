@@ -203,14 +203,23 @@ export function assertNoNestedWrites(
   }
 }
 
+function isTransactionClient(db: SurrealOpsLike): db is SurrealTransactionLike {
+  return typeof (db as SurrealTransactionLike).commit === "function"
+    && typeof (db as SurrealTransactionLike).cancel === "function";
+}
+
 export async function withWriteTransaction<T>(
   db: SurrealOpsLike,
   needsTxn: boolean,
   fn: (ops: SurrealOpsLike) => Promise<T>,
 ): Promise<T> {
   if (!needsTxn) return fn(db);
+  // Already inside an interactive transaction — reuse it (no nested begin).
+  if (isTransactionClient(db)) return fn(db);
   const begin = (db as SurrealLike).beginTransaction;
-  if (typeof begin !== "function") return fn(db);
+  if (typeof begin !== "function") {
+    throw new Error("nested writes require a session with beginTransaction()");
+  }
   const txn = await begin.call(db);
   try {
     const result = await fn(txn);
@@ -846,16 +855,16 @@ async function findEdgeId(
 ): Promise<string | undefined> {
   const farKey = meta.dir;
   const { field, value } = equalityWhere(where, [farKey], label);
+  const parentField = edgeParentField(meta);
   if (field === "id") {
     const rows = await queryRows<{ id?: unknown }>(
       db,
-      `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq("id", "v")} LIMIT 1`,
-      { v: normalizeThing(meta.edgeTable, value) },
+      `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq("id", "v")} AND ${recordEq(parentField, "parent")} LIMIT 1`,
+      { v: normalizeThing(meta.edgeTable, value), parent: parentThing },
     );
     return rows[0]?.id == null ? undefined : String(rows[0].id);
   }
   const farTable = field === "out" ? meta.outTable : meta.inTable;
-  const parentField = edgeParentField(meta);
   const rows = await queryRows<{ id?: unknown }>(
     db,
     `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq(parentField, "parent")} AND ${recordEq(field, "far")} LIMIT 1`,
@@ -903,7 +912,15 @@ export async function collectEdge(
     }
     const farId = row[farKey];
     if (typeof farId !== "string") throw new Error(`${parentTable}.${field}.connect.${farKey} required`);
-    connectRows.push(relationRow(meta, parentId, farId, edgeContent(row, meta.payloadFields)));
+    const existing = await findEdgeId(db, meta, parentThing, { [farKey]: farId }, label);
+    const payload = edgeContent(row, meta.payloadFields);
+    if (existing) {
+      if (Object.keys(payload).length > 0) {
+        ops.push({ kind: "merge", ids: [normalizeThing(meta.edgeTable, existing)], patch: payload });
+      }
+      continue;
+    }
+    connectRows.push(relationRow(meta, parentId, farId, payload));
   }
   if (connectRows.length > 0) ops.push({ kind: "relate", table: meta.edgeTable, rows: connectRows });
   await flushOps(db, ops);
@@ -1632,12 +1649,9 @@ export async function createManyVia<T extends { id?: unknown }>(
   const hasNested = args.data.some((data) => rowHasNestedWrite(table, data));
   if (hasNested) {
     if (args.return === "DIFF") {
-      const diffs: unknown[] = [];
-      for (const data of args.data) {
-        const part = await queryRows<unknown>(db, `CREATE ${table} CONTENT $__row RETURN DIFF`, { __row: data });
-        diffs.push(...part);
-      }
-      return diffs;
+      throw new Error(
+        `createMany ${table}: return DIFF is not supported with nested writes (use create / createMany without DIFF)`,
+      );
     }
     if (args.select) {
       const rows: T[] = [];
@@ -1690,6 +1704,43 @@ export async function updateManyRecords<T>(
 ): Promise<{ count: number } | T[] | unknown[]> {
   assertNonEmptyWhere(args.where, "updateMany", table);
   assertReturnSelectExclusive("updateMany", table, args.select, args.return);
+  if (rowHasNestedWrite(table, args.data)) {
+    if (args.return === "DIFF" || args.return === "BEFORE") {
+      throw new Error(
+        `updateMany ${table}: return ${args.return} is not supported with nested writes`,
+      );
+    }
+    const matched = await findManyRecords<{ id?: unknown }>(db, table, {
+      where: args.where,
+      select: { id: true },
+    });
+    const ids = matched.map((row) => {
+      if (row.id == null) throw new Error(`updateMany ${table}: matched row missing id`);
+      return String(row.id);
+    });
+    return withWriteTransaction(db, true, async (ops) => {
+      if (args.select) {
+        const rows: T[] = [];
+        for (const id of ids) {
+          const updated = await updateWithNested<T>(ops, table, id, args.data, { select: args.select });
+          if (updated !== undefined && updated !== null) rows.push(updated as T);
+        }
+        return rows;
+      }
+      if (args.return === "AFTER") {
+        const rows: T[] = [];
+        for (const id of ids) {
+          const updated = await updateWithNested<T>(ops, table, id, args.data, { return: "AFTER" });
+          if (updated !== undefined && updated !== null) rows.push(updated as T);
+        }
+        return rows;
+      }
+      for (const id of ids) {
+        await updateWithNested(ops, table, id, args.data, args.return === "NONE" ? { return: "NONE" } : undefined);
+      }
+      return { count: ids.length };
+    });
+  }
   const vars: Record<string, unknown> = { __data: args.data };
   const whereClause = buildWhere(args.where, table, selectMetaByTable, { vars, n: 0 });
   if (!whereClause) throw new Error(`updateMany ${table}: where must not be empty`);
@@ -1946,19 +1997,34 @@ export function scalarPredicate(
   value: unknown,
   filter: string,
   ctx: WhereBuildCtx,
+  idTable?: string,
 ): string[] {
   if (value === undefined) return [];
   const recordIdentity = filter === "id";
+  const bindRecord = (bound: unknown) => {
+    const raw = typeof bound === "string" && idTable ? normalizeThing(idTable, bound) : bound;
+    return `type::record(${nextWhereVar(ctx, raw)})`;
+  };
   const eq = (bound: unknown) =>
     recordIdentity
-      ? `${path} = type::record(${nextWhereVar(ctx, bound)})`
+      ? `${path} = ${bindRecord(bound)}`
       : `${path} = ${nextWhereVar(ctx, bound)}`;
   if (!isScalarFilterObject(value)) {
     return [eq(value)];
   }
   const parts: string[] = [];
   if (value.equals !== undefined) parts.push(eq(value.equals));
-  if (value.in !== undefined) parts.push(`${path} IN ${nextWhereVar(ctx, value.in)}`);
+  if (value.in !== undefined) {
+    if (recordIdentity) {
+      if (!Array.isArray(value.in)) {
+        throw new Error(`${path}.in must be an array of record ids`);
+      }
+      const items = value.in.map((item) => bindRecord(item));
+      parts.push(`${path} IN [${items.join(", ")}]`);
+    } else {
+      parts.push(`${path} IN ${nextWhereVar(ctx, value.in)}`);
+    }
+  }
   if (value.contains !== undefined) {
     if (filter === "array") parts.push(`${path} CONTAINS ${nextWhereVar(ctx, value.contains)}`);
     else parts.push(`string::contains(${path}, ${nextWhereVar(ctx, value.contains)})`);
@@ -1970,13 +2036,24 @@ export function scalarPredicate(
   return parts;
 }
 
-/** `{ id: "table:key" }` means record identity on a stored/computed link field. */
+/** `{ id: "…" }` or `{ id: { equals: "…" } }` means record identity on a link field. */
+export function recordIdFilterValue(value: unknown): string | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record).filter((key) => record[key] !== undefined);
+  if (keys.length !== 1 || keys[0] !== "id") return undefined;
+  const id = record.id;
+  if (typeof id === "string") return id;
+  if (id && typeof id === "object" && !Array.isArray(id)) {
+    const equals = (id as { equals?: unknown }).equals;
+    if (typeof equals === "string") return equals;
+  }
+  return undefined;
+}
+
+/** @deprecated use recordIdFilterValue */
 export function isRecordIdOnlyFilter(value: unknown): value is { id: string } {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const keys = Object.keys(value as Record<string, unknown>).filter(
-    (key) => (value as Record<string, unknown>)[key] !== undefined,
-  );
-  return keys.length === 1 && keys[0] === "id" && typeof (value as { id: unknown }).id === "string";
+  return typeof recordIdFilterValue(value) === "string" && typeof (value as { id?: unknown }).id === "string";
 }
 
 export function relationMode(value: Record<string, unknown>, list: boolean): {
@@ -2052,7 +2129,15 @@ export function buildWhere(
     if (!fieldMeta) continue;
     const path = pathPrefix ? `${pathPrefix}.${key}` : key;
     if (fieldMeta.kind === "scalar") {
-      parts.push(...scalarPredicate(path, value, fieldMeta.filter, ctx));
+      parts.push(
+        ...scalarPredicate(
+          path,
+          value,
+          fieldMeta.filter,
+          ctx,
+          fieldMeta.filter === "id" ? table : undefined,
+        ),
+      );
       continue;
     }
     if (fieldMeta.kind === "object") {
@@ -2085,8 +2170,11 @@ export function buildWhere(
       if (pred) parts.push(pred);
       continue;
     }
-    if (isRecordIdOnlyFilter(nested)) {
-      parts.push(`${path} = type::record(${nextWhereVar(ctx, nested.id)})`);
+    const linkId = recordIdFilterValue(nested);
+    if (linkId !== undefined) {
+      parts.push(
+        `${path} = type::record(${nextWhereVar(ctx, normalizeThing(fieldMeta.targetTable, linkId))})`,
+      );
       continue;
     }
     const nestedClause = buildWhere(

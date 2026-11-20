@@ -92,6 +92,21 @@ describe("generated TypeScript client orderBy take/skip", () => {
       stableB.map((row) => recordIdString(row.id)),
     );
 
+    const paged = await client.user.findMany({
+      where: { email: { contains: suffix } },
+      take: 3,
+    });
+    expect(paged).toHaveLength(3);
+    expect(new Set(paged.map((row) => recordIdString(row.id)))).toEqual(ids);
+    const pagedAgain = await client.user.findMany({
+      where: { email: { contains: suffix } },
+      skip: 1,
+      take: 2,
+    });
+    expect(pagedAgain.map((row) => recordIdString(row.id))).toEqual(
+      paged.slice(1).map((row) => recordIdString(row.id)),
+    );
+
     for (const row of created) {
       await client.user.delete(recordIdString(row.id));
     }

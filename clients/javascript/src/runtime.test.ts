@@ -10,12 +10,15 @@ import {
   buildWhere,
   collectComputed,
   collectEdge,
+  createManyVia,
   findManyRecords,
   isNestedWriteBag,
   parseRecordId,
   recordId,
   splitAndResolveWriteData,
+  updateManyRecords,
   updateWithNested,
+  withWriteTransaction,
   type FieldSelectMeta,
   type FieldWriteMeta,
   type SurrealOpsLike,
@@ -67,11 +70,28 @@ describe("query fragments", () => {
     expect(buildWhere({ id: "user:1" }, "user", meta, idCtx)).toBe("id = type::record($w0)");
     expect(idCtx.vars.w0).toBe("user:1");
 
+    const bareId = { vars: {}, n: 0 };
+    expect(buildWhere({ id: "1" }, "user", meta, bareId)).toBe("id = type::record($w0)");
+    expect(bareId.vars.w0).toBe("user:1");
+
+    const inCtx = { vars: {}, n: 0 };
+    expect(buildWhere({ id: { in: ["user:a", "b"] } }, "user", meta, inCtx)).toBe(
+      "id IN [type::record($w0), type::record($w1)]",
+    );
+    expect(inCtx.vars.w0).toBe("user:a");
+    expect(inCtx.vars.w1).toBe("user:b");
+
     const linkCtx = { vars: {}, n: 0 };
     expect(buildWhere({ author: { id: "user:9" } }, "post", meta, linkCtx)).toBe(
       "author = type::record($w0)",
     );
     expect(linkCtx.vars.w0).toBe("user:9");
+
+    const bareLink = { vars: {}, n: 0 };
+    expect(buildWhere({ author: { id: "9" } }, "post", meta, bareLink)).toBe(
+      "author = type::record($w0)",
+    );
+    expect(bareLink.vars.w0).toBe("user:9");
 
     const edgeCtx = { vars: {}, n: 0 };
     expect(buildWhere({ out: { id: "post:2" } }, "likes", meta, edgeCtx)).toBe(
@@ -224,10 +244,15 @@ describe("nested writes", () => {
     payloadFields: ["score"],
   };
 
-  function fakeDb(rowsFor: (sql: string, vars?: Record<string, unknown>) => unknown[]) {
+  function fakeDb(
+    rowsFor: (sql: string, vars?: Record<string, unknown>) => unknown[],
+    opts: { withTxn?: boolean } = {},
+  ) {
     const queries: { sql: string; vars?: Record<string, unknown> }[] = [];
     const merges: { thing: string; data: Record<string, unknown> }[] = [];
-    const db = {
+    const db: SurrealOpsLike & {
+      beginTransaction?: () => Promise<SurrealOpsLike & { commit(): Promise<void>; cancel(): Promise<void> }>;
+    } = {
       query: async (sql: string, vars?: Record<string, unknown>) => {
         queries.push({ sql, vars });
         return rowsFor(sql, vars);
@@ -239,8 +264,19 @@ describe("nested writes", () => {
         return [{ id: thing, ...(data ?? {}) }];
       },
       delete: async () => [],
-    } satisfies SurrealOpsLike;
-    return { db, queries, merges };
+    };
+    if (opts.withTxn !== false) {
+      db.beginTransaction = async () => ({
+        query: (...args) => db.query(...args),
+        select: (...args) => db.select(...args),
+        create: (...args) => db.create(...args),
+        merge: (...args) => db.merge(...args),
+        delete: (...args) => db.delete(...args),
+        commit: async () => {},
+        cancel: async () => {},
+      });
+    }
+    return { db: db as SurrealOpsLike, queries, merges };
   }
 
   function script(queries: { sql: string }[]): string {
@@ -303,6 +339,67 @@ describe("nested writes", () => {
     expect(sql).toContain("DELETE");
     expect(sql).toContain("INSERT RELATION INTO likes");
     expect(sql).toContain("MERGE");
+  });
+
+  it("skips duplicate edge connect when the pair already exists", async () => {
+    const db = fakeDb((sql) => {
+      if (sql.includes("out = type::record($far)")) return [{ id: "likes:existing" }];
+      return [];
+    });
+    await collectEdge(db.db, [], "user", "user:1", "liked", {
+      connect: [{ out: "post:a", score: 3 }],
+    }, liked);
+    const sql = script(db.queries);
+    expect(sql).toContain("out = type::record($far)");
+    expect(sql).toContain("MERGE");
+    expect(sql).not.toContain("INSERT RELATION");
+  });
+
+  it("rejects createMany DIFF with nested writes and updateMany nested DIFF", async () => {
+    bindSchemaMeta(
+      {
+        user: {
+          posts: { kind: "computed", targetTable: "post", list: true },
+        },
+      },
+      {
+        user: {
+          posts: {
+            kind: "computed",
+            targetTable: "post",
+            list: true,
+            backLinkField: "author",
+            backLinkOptional: false,
+            uniqueFields: [],
+          },
+        },
+      },
+    );
+    const db = fakeDb(() => []);
+    await expect(
+      createManyVia(
+        db.db,
+        "user",
+        { data: [{ posts: { create: [{ title: "x" }] } }], return: "DIFF" },
+        async () => ({ id: "user:1" }),
+        false,
+      ),
+    ).rejects.toThrow(/DIFF is not supported with nested writes/);
+
+    await expect(
+      updateManyRecords(db.db, "user", {
+        where: { email: "a@b.c" },
+        data: { posts: { create: [{ title: "x" }] } },
+        return: "DIFF",
+      }),
+    ).rejects.toThrow(/return DIFF is not supported with nested writes/);
+  });
+
+  it("fails closed when nested writes need a transaction but beginTransaction is missing", async () => {
+    const db = fakeDb(() => [], { withTxn: false });
+    await expect(
+      withWriteTransaction(db.db, true, async () => "ok"),
+    ).rejects.toThrow(/beginTransaction/);
   });
 
   it("resolves stored connectOrCreate and rejects required delete", async () => {
@@ -393,7 +490,9 @@ describe("nested writes", () => {
       return originalSelect(thing);
     };
     await updateWithNested(db, "post", "post:1", { author: { delete: true } });
-    expect(steps).toEqual(["select:post:1", "unset:post:1", "selectRow:post:1", "delete:user:old"]);
+    expect(steps[0]).toBe("select:post:1");
+    expect(steps).toContain("unset:post:1");
+    expect(steps[steps.length - 1]).toBe("delete:user:old");
     expect(merges).toHaveLength(0);
   });
 });

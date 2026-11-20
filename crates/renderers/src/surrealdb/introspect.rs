@@ -452,6 +452,7 @@ fn synthesize_relation_nav_fields(schema: &mut DatabaseSchema, preserve: &Databa
         .collect();
 
     for (edge_name, in_model, out_model) in edges {
+        // Self-relations live on one model; collect all preserved nav fields once.
         let preserved_in = preserved_relation_fields(preserve, &in_model, &edge_name);
         let preserved_out = if in_model == out_model {
             Vec::new()
@@ -479,11 +480,12 @@ fn synthesize_relation_nav_fields(schema: &mut DatabaseSchema, preserve: &Databa
             continue;
         }
 
-        for (field_name, target) in preserved_in {
-            ensure_relation_nav_field(schema, &in_model, &target, &edge_name, &field_name);
+        // Self-relation: `preserved_in` already includes every nav field on the shared model.
+        for (field_name, target) in &preserved_in {
+            ensure_relation_nav_field(schema, &in_model, target, &edge_name, field_name);
         }
-        for (field_name, target) in preserved_out {
-            ensure_relation_nav_field(schema, &out_model, &target, &edge_name, &field_name);
+        for (field_name, target) in &preserved_out {
+            ensure_relation_nav_field(schema, &out_model, target, &edge_name, field_name);
         }
     }
 }
@@ -559,8 +561,12 @@ fn ensure_relation_nav_field(
     let Some(model) = schema.models.iter_mut().find(|model| model.name == model_name) else {
         return;
     };
-    if model.fields.iter().any(|field| field.relation_name.as_deref() == Some(edge_name)
-        && field.field_type.link_model_name() == Some(target_model))
+    // Idempotent per field name (self-relations may have multiple nav fields
+    // sharing the same edge + target).
+    if model
+        .fields
+        .iter()
+        .any(|field| field.name == preferred_name && field.relation_name.as_deref() == Some(edge_name))
     {
         return;
     }
@@ -1380,6 +1386,88 @@ mod tests {
         let pulled = map_database_info(&tables, &BTreeMap::new(), &preserve).expect("map");
         assert!(pulled.models[0].permissions.is_none());
         assert_eq!(pulled.edges[0].permissions.as_deref(), Some("FULL"));
+    }
+
+    #[test]
+    fn synthesizes_self_relation_preserves_all_nav_names_on_shared_model() {
+        let mut preserve = DatabaseSchema::empty();
+        preserve.datasource.provider = "surrealdb".into();
+        preserve.naming.tables = core::NamingCase::SnakeCase;
+        preserve.models.push(Model {
+            name: "User".into(),
+            fields: vec![
+                Field {
+                    name: "follows".into(),
+                    field_type: FieldType::Array(Box::new(FieldType::Model("User".into()))),
+                    optional: false,
+                    unique: false,
+                    is_id: false,
+                    default_value: None,
+                    default_always: false,
+                    value_expression: None,
+                    readonly: false,
+                    flexible: false,
+                    link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
+                    object_type_name: None,
+                    relation_name: Some("Follows".into()),
+                    attributes: BTreeMap::new(),
+                },
+                Field {
+                    name: "followers".into(),
+                    field_type: FieldType::Array(Box::new(FieldType::Model("User".into()))),
+                    optional: false,
+                    unique: false,
+                    is_id: false,
+                    default_value: None,
+                    default_always: false,
+                    value_expression: None,
+                    readonly: false,
+                    flexible: false,
+                    link_target: None,
+                    link_name: None,
+                    on_delete: None,
+                    link_storage: None,
+                    link_opposite_field: None,
+                    object_type_name: None,
+                    relation_name: Some("Follows".into()),
+                    attributes: BTreeMap::new(),
+                },
+            ],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            indexes: vec![],
+            attributes: BTreeMap::new(),
+        });
+        preserve.edges.push(Edge {
+            name: "Follows".into(),
+            in_model: "User".into(),
+            out_model: "User".into(),
+            fields: vec![],
+            table_mode: TableMode::Schemafull,
+            permissions: None,
+            attributes: BTreeMap::new(),
+        });
+
+        let mut tables = BTreeMap::new();
+        tables.insert("user".into(), "DEFINE TABLE user SCHEMAFULL;".into());
+        tables.insert(
+            "follows".into(),
+            "DEFINE TABLE follows TYPE RELATION IN user OUT user SCHEMAFULL;".into(),
+        );
+        let pulled = map_database_info(&tables, &BTreeMap::new(), &preserve).expect("map");
+        let user = pulled.models.iter().find(|m| m.name == "User").expect("user");
+        let names: Vec<_> = user
+            .fields
+            .iter()
+            .filter(|f| f.relation_name.as_deref() == Some("Follows"))
+            .map(|f| f.name.as_str())
+            .collect();
+        assert!(names.contains(&"follows"), "{names:?}");
+        assert!(names.contains(&"followers"), "{names:?}");
     }
 
     #[test]

@@ -47,10 +47,17 @@ async fn list_analyzers_async(config: &DatabaseConfig) -> Result<Vec<String>, Do
         .take(0)
         .map_err(|error| DomainError::DatabaseError(error.to_string()))?;
     let Some(info) = info else {
-        return Ok(Vec::new());
+        return Err(DomainError::DatabaseError("INFO FOR DB returned no result".into()));
     };
-    let Some(analyzers) = info.get("analyzers").and_then(Value::as_object) else {
-        return Ok(Vec::new());
+    let Some(analyzers) = info.get("analyzers") else {
+        return Err(DomainError::DatabaseError(
+            "INFO FOR DB missing analyzers map (cannot verify @fulltext analyzers)".into(),
+        ));
+    };
+    let Some(analyzers) = analyzers.as_object() else {
+        return Err(DomainError::DatabaseError(
+            "INFO FOR DB analyzers is not an object".into(),
+        ));
     };
     Ok(analyzers.keys().cloned().collect())
 }

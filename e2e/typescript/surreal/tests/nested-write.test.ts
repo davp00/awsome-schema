@@ -533,6 +533,44 @@ describe("generated TypeScript client nested writes", () => {
     await client.user.delete(userId);
   });
 
+  it.skipIf(skip)("liked connectOrCreate is idempotent when the edge already exists", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    const user = await client.user.create({
+      email: `nw-edge-coc-${suffix}@example.com`,
+      metadata: { source: "nested-write-e2e" },
+      tags: ["nw"],
+    });
+    const userId = recordIdString(user.id);
+    const post = await client.post.create({
+      title: `nw-edge-coc-${suffix}`,
+      author: userId,
+    });
+    const postId = recordIdString(post.id);
+    await client.user.update(userId, {
+      liked: { connect: [{ out: postId, score: 2 }] },
+    });
+
+    await client.user.update(userId, {
+      liked: {
+        connectOrCreate: [{
+          where: { out: postId },
+          create: { out: postId, score: 9 },
+        }],
+      },
+    });
+    const selected = await client.user.findUnique({
+      where: { id: userId },
+      select: { liked: { select: { id: true, score: true } } },
+    });
+    const liked = asArray(selected?.liked as { id: unknown; score: number }[]);
+    expect(liked).toHaveLength(1);
+    expect(liked[0]!.score).toBe(2);
+
+    await client.likes.delete(recordIdString(liked[0]!.id));
+    await client.post.delete(postId);
+    await client.user.delete(userId);
+  });
+
   it.skipIf(skip)("author connectOrCreate links an existing user or creates one", async () => {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
     const existing = await client.user.create({

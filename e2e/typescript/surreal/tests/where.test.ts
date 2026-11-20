@@ -123,6 +123,19 @@ describe("generated TypeScript client hybrid where", () => {
       expect(uniquePost!.title).toBe(title);
       expect(uniquePost!.author.email).toBe(email);
 
+      // stored-link identity: bare key and table:key both normalize
+      const byAuthorFull = await client.post.findUnique({
+        where: { author: { id: userId } },
+      });
+      expect(byAuthorFull).toBeDefined();
+      expect(recordIdString(byAuthorFull!.id)).toBe(postId);
+      const bareKey = userId.includes(":") ? userId.slice(userId.indexOf(":") + 1) : userId;
+      const byAuthorBare = await client.post.findUnique({
+        where: { author: { id: bareKey } },
+      });
+      expect(byAuthorBare).toBeDefined();
+      expect(recordIdString(byAuthorBare!.id)).toBe(postId);
+
       // findUnique: edge some filter (scoped to this user — suite shares DB)
       const uniqueWithLike = await client.user.findUnique({
         where: {
