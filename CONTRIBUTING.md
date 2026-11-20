@@ -134,6 +134,8 @@ Local dry-run: `cargo publish -p awesome-schema --dry-run --locked`.
 
 Install paths for contributors/users: `cargo install awesome-schema`, `curl -fsSL …/scripts/install.sh | sh`, or the npm package. Standalone binaries upgrade with `awesome-schema upgrade`.
 
+The **public consumer skill** for skills.sh lives at [`skills/awesome-schema/`](skills/awesome-schema/) (`npx skills add davp00/awsome-schema --skill awesome-schema`). When user-facing CLI, install, DSL, codegen, or Surreal matrix behavior changes, update that skill (and its `metadata.version` when the supported cut changes). Internal maintainer skills under `.agents/skills/` are not published to skills.sh.
+
 ## Adding a database provider
 
 `cli/src/di.rs` still constructs the Surreal renderer, executor, introspector, and migration ledger. `require_surreal_provider` refuses any other `datasource.provider` before schema SQL, migration SQL, and `db push`. TypeScript and Rust codegen return an error unless the provider is `surrealdb`. `validate` and `format` stay provider-agnostic.

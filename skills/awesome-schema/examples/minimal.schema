@@ -1,0 +1,27 @@
+datasource db {
+  provider = "surrealdb"
+  url      = "ws://127.0.0.1:8000"
+  namespace = "app"
+  database  = "main"
+}
+
+generator client {
+  provider = "typescript"
+  output   = "./generated"
+}
+
+model User {
+  id    @id
+  email string @unique
+  posts Post[] @link("PostAuthor")
+
+  @@table(schemafull)
+}
+
+model Post {
+  id     @id
+  title  string
+  author User @link("PostAuthor") @onDelete(Cascade)
+
+  @@table(schemafull)
+}

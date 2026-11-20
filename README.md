@@ -43,6 +43,16 @@ pnpm add -D awesome-schema@alpha surrealdb@2.0.10
 
 Upgrade a standalone or curl install with `awesome-schema upgrade` (or `awesome-schema upgrade --check`). npm installs should use `pnpm update awesome-schema` / `npm update awesome-schema`. Reinstall from crates.io with `awesome-schema upgrade --from crates-io`.
 
+### Agent skill (skills.sh)
+
+Coding agents can install the consumer skill (CLI, DSL, migrate/push, TypeScript client):
+
+```bash
+npx skills add davp00/awsome-schema --skill awesome-schema
+```
+
+Source: [`skills/awesome-schema/`](skills/awesome-schema/). Listing on [skills.sh](https://skills.sh) follows install telemetry; there is no separate registry submit step.
+
 ### Prerequisites
 
 - Rust stable (toolchain in [`rust-toolchain.toml`](rust-toolchain.toml)) — required for `cargo install` / local development

@@ -37,5 +37,6 @@ Copy into the plan or PR notes; check what applies.
 ## Docs / memory / git
 
 - [ ] README / roadmap updated if user-facing
+- [ ] Public skill `skills/awesome-schema/` updated (or N/A — no consumer-facing change)
 - [ ] Engram save for decisions/bugs
 - [ ] Commit / push / graphify only if user asked

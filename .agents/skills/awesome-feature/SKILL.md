@@ -40,6 +40,7 @@ Follow Split-Core Hexagonal / existing crate boundaries. Load skills as needed:
 | `rust-best-practices` | New or refactored Rust |
 | `rust-testing` | Unit/integration tests (prefer TDD) |
 | `.cursor/rules/codegen-prefer-reusable.mdc` | Any codegen emitter |
+| `skills/awesome-schema` (public) | User-facing CLI, install, DSL, codegen, or Surreal matrix changes — keep the skills.sh consumer skill in sync |
 | `git-commit` | Only when the user asks to commit |
 
 **Preferred layer order:** domain/normalize → parser/print (if DSL) → renderer/introspect → migrations/differ → codegen → CLI → tests → docs/roadmap.
@@ -107,6 +108,7 @@ When user-facing behavior changes:
 
 - README usage / test instructions if needed
 - `docs/roadmap/status.md` and `docs/roadmap/next.md` (mark done / deferred accurately)
+- **Public consumer skill:** if the change affects how app developers use Awesome Schema (CLI commands, install/upgrade, DSL, TypeScript client, Surreal matrix), update [`skills/awesome-schema/`](../../../skills/awesome-schema/) — `SKILL.md` and the relevant `references/` / `examples/`. Bump `metadata.version` in that skill when the supported cut changes. Do not publish internal `.agents/skills/*` to skills.sh.
 - Graphify refresh follow-up commit when the user commits and the post-commit hook dirties `graphify-out/`
 
 ## Done definition
@@ -118,3 +120,4 @@ A feature is done when:
 3. Unit/integration tests pass; new code meets the coverage bar
 4. Required Rust e2e and/or generated-client e2e (for each affected language) were run or explicitly waived
 5. Docs/roadmap updated when appropriate
+6. Public skill `skills/awesome-schema/` updated when the change is consumer-facing (or explicitly N/A)
