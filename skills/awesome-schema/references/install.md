@@ -5,16 +5,19 @@ Repo: `https://github.com/davp00/awsome-schema` (spelling **awsome**).
 ## Install the CLI
 
 ```bash
-# crates.io (builds from source; needs Rust)
-cargo install awesome-schema
-
-# Prebuilt binary (macOS / Linux) → ~/.local/bin by default
-curl -fsSL https://raw.githubusercontent.com/davp00/awsome-schema/main/scripts/install.sh | sh
-# Optional: VERSION=0.1.0-alpha.1 INSTALL_DIR=$HOME/.local/bin
+# From git (works without crates.io; needs Rust)
+cargo install --git https://github.com/davp00/awsome-schema --locked awesome-schema
 
 # npm / pnpm (downloads matching GitHub Release binary on install)
 pnpm add -D awesome-schema@alpha surrealdb@2.0.10
 # then: pnpm awesome-schema <command>
+
+# Prebuilt binary (macOS / Linux) → ~/.local/bin — needs a Release with assets
+VERSION=0.1.0-alpha.1 curl -fsSL https://raw.githubusercontent.com/davp00/awsome-schema/main/scripts/install.sh | sh
+# Or omit VERSION once a non-canary GitHub Release exists
+
+# crates.io (only after the first tagged crates.io publish)
+# cargo install awesome-schema
 ```
 
 Override the binary without downloading:
@@ -56,7 +59,8 @@ awesome-schema upgrade [--check] [--version <ver>] [--from github|crates-io]
 | How you installed | How to update |
 |---|---|
 | curl / direct binary | `awesome-schema upgrade` |
-| `cargo install` | `awesome-schema upgrade` or `upgrade --from crates-io` |
+| `cargo install --git …` / curl binary | `awesome-schema upgrade` |
+| `cargo install` from crates.io (when published) | `upgrade --from crates-io` |
 | npm / pnpm package | `pnpm update awesome-schema` / `npm update awesome-schema` only |
 
 `upgrade` refuses npm-cache and `node_modules` paths on purpose.

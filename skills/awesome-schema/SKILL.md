@@ -36,7 +36,7 @@ Do **not** treat SurrealDB 4.x as supported. Stay on this matrix unless the skil
 
 ## Hard rules
 
-1. Prefer documented install paths in [references/install.md](references/install.md).
+1. Prefer documented install paths in [references/install.md](references/install.md). Today that means `cargo install --git …` or npm; do not assume crates.io until a version is published there.
 2. npm-managed CLIs: update with `pnpm update awesome-schema` / `npm update` — **never** `awesome-schema upgrade` on the npm cache binary.
 3. Pass `--schema <path>` when the file is not `./awesome.schema`.
 4. TypeScript generated code imports `awesome-schema/runtime`; peer `surrealdb@2.0.10`.

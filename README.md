@@ -31,27 +31,33 @@ Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate s
 ### Install the CLI
 
 ```bash
-# From crates.io (builds from source)
-cargo install awesome-schema
+# From git (works today; needs Rust)
+cargo install --git https://github.com/davp00/awsome-schema --locked awesome-schema
 
-# Prebuilt binary (macOS / Linux)
-curl -fsSL https://raw.githubusercontent.com/davp00/awsome-schema/main/scripts/install.sh | sh
-
-# Via npm (downloads the matching GitHub Release binary on install)
+# Via npm (downloads the matching GitHub Release binary for this package version)
 pnpm add -D awesome-schema@alpha surrealdb@2.0.10
+
+# Prebuilt binary (macOS / Linux) — needs a GitHub Release with assets
+# Pin a version if tag discovery fails:
+VERSION=0.1.0-alpha.1 curl -fsSL https://raw.githubusercontent.com/davp00/awsome-schema/main/scripts/install.sh | sh
+
+# From crates.io — after the first crates.io publish on a tagged release
+# cargo install awesome-schema
 ```
 
-Upgrade a standalone or curl install with `awesome-schema upgrade` (or `awesome-schema upgrade --check`). npm installs should use `pnpm update awesome-schema` / `npm update awesome-schema`. Reinstall from crates.io with `awesome-schema upgrade --from crates-io`.
+Upgrade a standalone or curl install with `awesome-schema upgrade` (or `awesome-schema upgrade --check`). npm installs should use `pnpm update awesome-schema` / `npm update awesome-schema`. After crates.io publish: `awesome-schema upgrade --from crates-io`.
 
 ### Agent skill (skills.sh)
 
-Coding agents can install the consumer skill (CLI, DSL, migrate/push, TypeScript client):
+Install the consumer skill into an agent (use **`add`**, not `find` — the skills.sh search index only fills after installs):
 
 ```bash
 npx skills add davp00/awsome-schema --skill awesome-schema
+# verify discovery without installing:
+npx skills add davp00/awsome-schema --list
 ```
 
-Source: [`skills/awesome-schema/`](skills/awesome-schema/). Listing on [skills.sh](https://skills.sh) follows install telemetry; there is no separate registry submit step.
+Source: [`skills/awesome-schema/`](skills/awesome-schema/). There is no registry submit step; `npx skills find awesome-schema` stays empty until install telemetry indexes it.
 
 ### Prerequisites
 

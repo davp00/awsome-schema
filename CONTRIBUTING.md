@@ -132,9 +132,9 @@ Required secrets:
 
 Local dry-run: `cargo publish -p awesome-schema --dry-run --locked`.
 
-Install paths for contributors/users: `cargo install awesome-schema`, `curl -fsSL …/scripts/install.sh | sh`, or the npm package. Standalone binaries upgrade with `awesome-schema upgrade`.
+Install paths for contributors/users (today): `cargo install --git https://github.com/davp00/awsome-schema --locked awesome-schema`, npm `awesome-schema@alpha`, or `scripts/install.sh` once a GitHub Release has binary assets. `cargo install awesome-schema` from crates.io works only after the first successful `crates-io` publish job. Standalone binaries upgrade with `awesome-schema upgrade`.
 
-The **public consumer skill** for skills.sh lives at [`skills/awesome-schema/`](skills/awesome-schema/) (`npx skills add davp00/awsome-schema --skill awesome-schema`). When user-facing CLI, install, DSL, codegen, or Surreal matrix behavior changes, update that skill (and its `metadata.version` when the supported cut changes). Internal maintainer skills under `.agents/skills/` are not published to skills.sh.
+The **public consumer skill** for skills.sh lives at [`skills/awesome-schema/`](skills/awesome-schema/). Install with `npx skills add davp00/awsome-schema --skill awesome-schema` (not `skills find` — the directory indexes from install telemetry). When user-facing CLI, install, DSL, codegen, or Surreal matrix behavior changes, update that skill (and its `metadata.version` when the supported cut changes). Internal maintainer skills under `.agents/skills/` are not published to skills.sh.
 
 ## Adding a database provider
 
