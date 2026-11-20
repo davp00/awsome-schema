@@ -1,17 +1,17 @@
 # Graph Report - awsome-schema  (2026-11-20)
 
 ## Corpus Check
-- 195 files · ~106,952 words
+- 195 files · ~107,387 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 16 file(s) not represented in the graph (top: (none) 5, .xml 3, .schema 3)
 
 ## Summary
-- 2145 nodes · 4629 edges · 142 communities (82 shown, 60 thin omitted)
+- 2148 nodes · 4635 edges · 139 communities (82 shown, 57 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 152 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0f5964c0`
+- Built from commit: `714b0e67`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -57,7 +57,7 @@
 - cargo clippy
 - Understanding Pointers
 - upgrade_cli.rs
-- mapped_name
+- src/print.rs
 - Error Handling
 - Comments versus Documentation
 - buildWhere
@@ -66,20 +66,18 @@
 - normalizeThing
 - database_config.rs
 - usecases/mod.rs
-- NamingCase
+- NamingConvention
 - globalSetup.ts
 - surreal.ts
-- result
+- validate.rs
 - manual-test-indexes.sh
-- model.rs
 - schema_core
-- TypeScriptGenerator
 - compilerOptions
-- adapters/binary_installer.rs
+- super
 - codegen-typescript/src/lib.rs
 - parser/src/lib.rs
 - buildProjection
-- super
+- btreemap
 - index.rs
 - FileSystemPort
 - compilerOptions
@@ -89,7 +87,6 @@
 - lib.js
 - coverage.sh
 - runtime.test.ts
-- di.rs
 - typescript/package.json
 - DatabaseConfig
 - bug_report.md
@@ -106,7 +103,7 @@
 - Commands
 - AppContext
 - Infrastructure Layer
-- format.rs
+- result
 - UpgradeFrom
 - install.sh
 - MigrateCommands
@@ -154,15 +151,15 @@
 - **Split-Core Architectural Layers** — agents_skills_split_core_hexagonal_cli_references_reference_domain_core, agents_skills_split_core_hexagonal_cli_references_reference_application_core, agents_skills_split_core_hexagonal_cli_references_reference_infrastructure_layer, agents_skills_split_core_hexagonal_cli_references_reference_shared_capability [EXTRACTED 1.00]
 - **Static and Dynamic Dispatch Trade-off** — agents_skills_rust_best_practices_references_chapter_06_generics, agents_skills_rust_best_practices_references_chapter_06_static_dispatch, agents_skills_rust_best_practices_references_chapter_06_dynamic_dispatch [EXTRACTED 1.00]
 
-## Communities (142 total, 60 thin omitted)
+## Communities (139 total, 57 thin omitted)
 
 ### Community 0 - "FieldType"
 Cohesion: 0.12
 Nodes (16): FieldType, Array, Bool, Custom, Datetime, Float, Int, Object (+8 more)
 
 ### Community 1 - "coverage_gaps.rs"
-Cohesion: 0.05
-Nodes (27): ensure_can_write(), ensure_can_write_ok_for_empty_tables_dir_and_empty_file(), fs_result(), NoopPull, run_pull(), run_push(), write_single_schema(), write_split_schema() (+19 more)
+Cohesion: 0.10
+Nodes (14): test_context_with_introspector(), EmptyLedger, init_reports_schema_created(), migrate_apply_and_rollback_success_messages(), migrate_status_empty_and_rollback_zero_steps(), migrate_status_lists_applied_and_pending_with_snapshot(), MINIMAL_SCHEMA, OkExecutor (+6 more)
 
 ### Community 2 - "Rust Best Practices"
 Cohesion: 0.20
@@ -177,8 +174,8 @@ Cohesion: 0.08
 Nodes (28): computed_link_and_relation_omitted_on_record_present_on_selected(), emits_as_record_id_and_crud_query_helpers(), emits_count_and_groupby(), emits_create_update_inputs_without_computed_fields(), emits_dual_shapes_for_models_and_edges(), emits_find_unique_hybrid_where(), emits_fluent_create_client(), emits_get_payload_and_select_types() (+20 more)
 
 ### Community 5 - "Printer"
-Cohesion: 0.21
-Nodes (6): run_apply(), run_create(), run_dev(), run_rollback(), run_status(), Printer
+Cohesion: 0.17
+Nodes (7): run(), run_apply(), run_create(), run_dev(), run_rollback(), run_status(), Printer
 
 ### Community 6 - "dispatch.rs"
 Cohesion: 0.10
@@ -217,8 +214,8 @@ Cohesion: 0.10
 Nodes (23): applyNestedWrites(), bindNested(), flushOps(), GroupByAlias, insertStoredCreates(), isRecordIdOnlyFilter(), LiveAction, ManyReturnResult (+15 more)
 
 ### Community 16 - "migrations/src/lib.rs"
-Cohesion: 0.15
-Nodes (33): NamingConvention, creates_indexes_when_model_is_new(), creates_initial_migration_from_empty_snapshot(), creates_permission_on_new_edge(), creates_relation_table_for_new_edge(), detects_added_field(), detects_altered_field_and_permissions(), detects_altered_table_mode() (+25 more)
+Cohesion: 0.22
+Nodes (26): creates_indexes_when_model_is_new(), creates_initial_migration_from_empty_snapshot(), creates_permission_on_new_edge(), creates_relation_table_for_new_edge(), detects_added_field(), detects_altered_field_and_permissions(), detects_altered_table_mode(), detects_cleared_permissions() (+18 more)
 
 ### Community 17 - "updateManyRecords"
 Cohesion: 0.29
@@ -237,8 +234,8 @@ Cohesion: 0.15
 Nodes (18): Milestone 1 Offline Schema Toolchain, Post-Plan Work on main, Roadmap Notes, COMPUTED Clause, DEFINE FIELD Compatibility, FLEXIBLE Semantics Change, id Field Enforcement, SurrealDB Rust SDK Upgrade (+10 more)
 
 ### Community 21 - "naming.rs"
-Cohesion: 0.20
-Nodes (8): map_attribute_overrides_convention(), maps_dotted_field_paths_per_segment(), naming_context_resolves_table_and_field_names(), split_identifier_parts(), to_camel_case(), to_kebab_case(), to_pascal_case(), to_snake_case()
+Cohesion: 0.09
+Nodes (18): map_attribute_overrides_convention(), map_field_path(), mapped_name(), maps_dotted_field_paths_per_segment(), naming_context_resolves_table_and_field_names(), NamingCase, CamelCase, KebabCase (+10 more)
 
 ### Community 22 - "Performance Mindset"
 Cohesion: 0.18
@@ -257,8 +254,8 @@ Cohesion: 0.48
 Nodes (3): Breaking Change, Conventional Commits, Git Commit Skill
 
 ### Community 27 - "normalize.rs"
-Cohesion: 0.05
-Nodes (71): Field, Model, LinkStorage, Computed, Stored, OnDeleteAction, Cascade, Ignore (+63 more)
+Cohesion: 0.13
+Nodes (41): Field, Model, LinkStorage, Computed, Stored, bare_field(), empty_base_schema(), ensure_on_delete_default() (+33 more)
 
 ### Community 28 - "generate_code.rs"
 Cohesion: 0.08
@@ -285,8 +282,8 @@ Cohesion: 0.20
 Nodes (12): bindings(), compileClientFile(), compileGeneratedClient(), { dirname, join, resolve, sep }, esmToCjs(), { existsSync, readFileSync, writeFileSync }, findGeneratedClient(), { stripTypeScriptTypes } (+4 more)
 
 ### Community 39 - "DatabaseSchema"
-Cohesion: 0.16
-Nodes (4): MigrationStoreAdapter, DatabaseSchema, MigrationStore, SchemaRenderer
+Cohesion: 0.12
+Nodes (11): MigrationStoreAdapter, DatabaseSchema, Datasource, Generator, merge_pulled_schema(), MigrationStore, SchemaRenderer, checksum_of() (+3 more)
 
 ### Community 40 - "Awesome Feature — gate checklist"
 Cohesion: 0.10
@@ -304,9 +301,9 @@ Nodes (5): Arc, Box, Rc, Rust Atomics and Locks, Understanding Pointers
 Cohesion: 0.15
 Nodes (18): already_up_to_date_skips_download(), check_reports_available_update(), crates_io_source_invokes_installer(), CratesInstaller, empty_target_is_unsupported(), FakeRelease, github_upgrade_replaces_binary(), normalize_tag() (+10 more)
 
-### Community 44 - "mapped_name"
-Cohesion: 0.24
-Nodes (3): map_field_path(), mapped_name(), NamingContext<'a>
+### Community 44 - "src/print.rs"
+Cohesion: 0.05
+Nodes (38): ensure_can_write(), ensure_can_write_ok_for_empty_tables_dir_and_empty_file(), fs_result(), NoopPull, run_pull(), run_push(), write_single_schema(), write_split_schema() (+30 more)
 
 ### Community 45 - "Error Handling"
 Cohesion: 0.44
@@ -333,16 +330,16 @@ Cohesion: 0.14
 Nodes (29): asRecord(), collectComputed(), collectEdge(), deleteRecord(), edgeConnectRows(), edgeContent(), edgeFarData(), edgeParentField() (+21 more)
 
 ### Community 54 - "database_config.rs"
-Cohesion: 0.15
-Nodes (13): connect(), builds_config_from_literal_url(), normalize_ws_endpoint(), normalizes_http_url(), preserves_wss_endpoint(), rejects_missing_env_var(), rejects_missing_url(), rejects_unsupported_provider() (+5 more)
+Cohesion: 0.27
+Nodes (10): builds_config_from_literal_url(), normalize_ws_endpoint(), normalizes_http_url(), preserves_wss_endpoint(), rejects_missing_env_var(), rejects_missing_url(), rejects_unsupported_provider(), require_surreal_provider() (+2 more)
 
 ### Community 55 - "usecases/mod.rs"
 Cohesion: 0.11
 Nodes (13): MigrationPlan, MigrationRenderer, SchemaSource, MigrateCreateInput, MigrateCreateOutput, MigrateCreateUseCase, MigrateDevInput, MigrateDevOutput (+5 more)
 
-### Community 56 - "NamingCase"
-Cohesion: 0.25
-Nodes (7): NamingCase, CamelCase, KebabCase, Lowercase, PascalCase, SnakeCase, naming_case_str()
+### Community 56 - "NamingConvention"
+Cohesion: 0.31
+Nodes (7): NamingConvention, diff_edge(), diff_model(), field_operations_for_edge(), field_operations_for_model(), index_operations_for_model(), relation_endpoints()
 
 ### Community 57 - "globalSetup.ts"
 Cohesion: 0.22
@@ -356,21 +353,21 @@ Nodes (11): LiveHandle, SurrealLike, SurrealOpsLike, SurrealTransactionLike, ADA
 Cohesion: 0.70
 Nodes (4): cleanup(), compose(), manual-test-indexes.sh script, surreal_sql()
 
-### Community 61 - "model.rs"
-Cohesion: 0.38
-Nodes (5): Edge, Model, TableMode, Schemafull, Schemaless
+### Community 62 - "schema_core"
+Cohesion: 0.13
+Nodes (3): connect(), StubIntrospector, ws_connection_address()
 
 ### Community 64 - "compilerOptions"
 Cohesion: 0.15
 Nodes (12): compilerOptions, esModuleInterop, module, moduleResolution, noEmit, resolveJsonModule, rootDir, skipLibCheck (+4 more)
 
-### Community 65 - "adapters/binary_installer.rs"
+### Community 65 - "super"
 Cohesion: 0.08
 Nodes (10): detect_install_kind(), FsBinaryInstaller, replace_atomic(), replace_atomic_writes_executable(), BinaryInstaller, InstallKind, NpmManaged, Standalone (+2 more)
 
 ### Community 66 - "codegen-typescript/src/lib.rs"
-Cohesion: 0.32
-Nodes (4): SURREAL, typescript_provider(), TypeScriptProvider, SurrealTypeScriptProvider
+Cohesion: 0.20
+Nodes (5): SURREAL, typescript_provider(), TypeScriptGenerator, TypeScriptProvider, SurrealTypeScriptProvider
 
 ### Community 67 - "parser/src/lib.rs"
 Cohesion: 0.21
@@ -380,17 +377,17 @@ Nodes (14): EXAMPLE, parse(), parses_edge_block(), parses_example_schema(), pars
 Cohesion: 0.33
 Nodes (9): buildOrderBy(), buildProjection(), collectOrderByCountProjections(), findManyRecords(), nestedLimitClause(), orderByCountAlias(), projectField(), relationCountExpr() (+1 more)
 
-### Community 69 - "super"
-Cohesion: 0.15
-Nodes (6): RelationEndpoints, ObjectTypeDefinition, ObjectTypeField, Relation, Generator, merge_pulled_schema()
+### Community 69 - "btreemap"
+Cohesion: 0.11
+Nodes (9): OnDeleteAction, Cascade, Ignore, Reject, Unset, RelationEndpoints, ObjectTypeDefinition, ObjectTypeField (+1 more)
 
 ### Community 70 - "index.rs"
-Cohesion: 0.17
-Nodes (5): Index, VectorDist, Cosine, Euclidean, Manhattan
+Cohesion: 0.14
+Nodes (6): Index, VectorDist, Cosine, Euclidean, Manhattan, Model
 
 ### Community 71 - "FileSystemPort"
-Cohesion: 0.09
-Nodes (13): list_schema_files(), load_directory_schema(), SchemaFileSource, list_schema_files_directory_without_tables_subdir(), schema_file_source_directory_and_skip_non_schema(), FileSystemPort, InitProjectInput, InitProjectOutput (+5 more)
+Cohesion: 0.11
+Nodes (9): list_schema_files(), load_directory_schema(), SchemaFileSource, list_schema_files_directory_without_tables_subdir(), schema_file_source_directory_and_skip_non_schema(), FileSystemPort, InitProjectInput, InitProjectOutput (+1 more)
 
 ### Community 72 - "compilerOptions"
 Cohesion: 0.17
@@ -433,8 +430,8 @@ Cohesion: 0.50
 Nodes (3): Command or surface, Provider, What you want
 
 ### Community 89 - "MigrationOperation"
-Cohesion: 0.12
-Nodes (16): MigrationOperation, AlterField, AlterTable, CreateEvent, CreateField, CreateFunction, CreateIndex, CreatePermission (+8 more)
+Cohesion: 0.10
+Nodes (20): MigrationOperation, AlterField, AlterTable, CreateEvent, CreateField, CreateFunction, CreateIndex, CreatePermission (+12 more)
 
 ### Community 90 - "Split-Core Hexagonal CLI Architecture"
 Cohesion: 0.15
@@ -461,12 +458,12 @@ Cohesion: 0.50
 Nodes (5): Client Generators, Codegen Stub Gap, codegen crate, codegen-rust, codegen-typescript
 
 ### Community 105 - "Commands"
-Cohesion: 0.13
-Nodes (15): Commands, Db, Format, Generate, Init, Migrate, Upgrade, Validate (+7 more)
+Cohesion: 0.12
+Nodes (16): Commands, Db, Format, Generate, Init, Migrate, Upgrade, Validate (+8 more)
 
 ### Community 118 - "AppContext"
 Cohesion: 0.12
-Nodes (3): run(), run(), AppContext
+Nodes (3): AppContext, build_context(), build_context_with_introspector()
 
 ### Community 132 - "Infrastructure Layer"
 Cohesion: 0.29
@@ -477,32 +474,32 @@ Cohesion: 0.47
 Nodes (4): UpgradeFrom, CratesIo, Github, run()
 
 ### Community 138 - "install.sh"
-Cohesion: 0.52
-Nodes (6): asset_name(), latest_stable_tag(), main(), normalize_version(), rust_target(), install.sh script
+Cohesion: 0.38
+Nodes (9): asset_name(), extract_tags(), gh_get(), is_usable_tag(), latest_stable_tag(), main(), normalize_version(), rust_target() (+1 more)
 
 ### Community 139 - "MigrateCommands"
 Cohesion: 0.33
 Nodes (6): MigrateCommands, Apply, Create, Dev, Rollback, Status
 
 ## Knowledge Gaps
-- **310 isolated node(s):** `Phase 0 — Plan first`, `Phase 1 — Architecture and skills`, `Phase 2 — Implement`, `Unit / integration`, `Coverage (new code)` (+305 more)
+- **310 isolated node(s):** `Prerequisites`, `Workspace`, `Coding agents`, `Development`, `Releases and crates.io` (+305 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 629 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **60 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **57 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DomainError` connect `DomainError` to `adapters/binary_installer.rs`, `codegen-typescript/src/lib.rs`, `types.rs`, `parser/src/lib.rs`, `core`, `FileSystemPort`, `DatabaseSchema`, `upgrade_cli.rs`, `DatabaseConfig`, `database_config.rs`, `usecases/mod.rs`, `github_release_client.rs`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+- **Why does `DomainError` connect `DomainError` to `super`, `codegen-typescript/src/lib.rs`, `types.rs`, `parser/src/lib.rs`, `core`, `FileSystemPort`, `DatabaseSchema`, `upgrade_cli.rs`, `DatabaseConfig`, `database_config.rs`, `usecases/mod.rs`, `github_release_client.rs`, `schema_core`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `map_database_info()` (e.g. with `introspect_async()` and `maps_minimal_user_fixture()`) actually correct?**
   _`map_database_info()` has 4 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Phase 0 — Plan first`, `Phase 1 — Architecture and skills`, `Phase 2 — Implement` to the rest of the system?**
+- **What connects `Prerequisites`, `Workspace`, `Coding agents` to the rest of the system?**
   _310 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `FieldType` be split into smaller, more focused modules?**
   _Cohesion score 0.12343358395989974 - nodes in this community are weakly interconnected._
-- **Why does `MigrationOperation` connect `MigrationOperation` to `super`, `index.rs`, `usecases/mod.rs`, `normalize.rs`, `model.rs`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `MigrationOperation` connect `MigrationOperation` to `normalize.rs`, `btreemap`, `index.rs`, `usecases/mod.rs`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
 - **Should `coverage_gaps.rs` be split into smaller, more focused modules?**
-  _Cohesion score 0.05352112676056338 - nodes in this community are weakly interconnected._
-- **Why does `FieldType` connect `FieldType` to `super`, `core`, `mapped_name`, `validation.rs`, `codegen-rust/tests/generator.rs`, `normalize.rs`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+  _Cohesion score 0.09871794871794871 - nodes in this community are weakly interconnected._
+- **Why does `Field` connect `normalize.rs` to `FieldType`, `btreemap`, `index.rs`, `src/print.rs`, `surrealdb/mod.rs`, `validation.rs`, `naming.rs`, `MigrationOperation`?**
+  _High betweenness centrality (0.029) - this node is a cross-community bridge._
