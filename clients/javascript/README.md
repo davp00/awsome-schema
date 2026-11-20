@@ -23,4 +23,4 @@ pnpm awesome-schema generate --target typescript
 pnpm --filter awesome-schema-typescript-e2e test   # against v3.3.0 via testcontainers
 ```
 
-`awesome-schema@test` is the newest `1.0.0-test.<commit>` build from `main`. `awesome-schema@alpha` tracks tagged alphas. `AWESOME_SCHEMA_BIN` points the launcher at a binary you already have and skips the download.
+`awesome-schema@test` is a manually published `1.0.0-test.<commit>` build (Actions → **publish-test-npm**). `awesome-schema@alpha` tracks tagged alphas. `AWESOME_SCHEMA_BIN` points the launcher at a binary you already have and skips the download.

@@ -1,0 +1,82 @@
+name: publish-test-npm
+
+# Manual publish of awesome-schema@test (1.0.0-test.<sha>).
+# Prefer running after a successful canary for the same commit so GitHub Release
+# binaries exist for the npm postinstall launcher.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA to publish (empty = current main tip)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-test-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve commit
+        id: ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_SHA}" ]; then
+            sha="${INPUT_SHA}"
+          else
+            sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq '.sha')"
+          fi
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "version=1.0.0-test.${sha::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.sha }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install npm 11
+        run: npm install -g npm@11
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Warn if GitHub Release binaries are missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ref.outputs.version }}
+        run: |
+          tag="v${VERSION}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Found release ${tag} (npm postinstall can download assets)."
+          else
+            echo "::warning::No GitHub Release ${tag}. Publish will succeed, but installers that download the CLI binary for this version will fail until canary uploads assets."
+          fi
+
+      - name: Publish awesome-schema@test
+        env:
+          VERSION: ${{ steps.ref.outputs.version }}
+        working-directory: clients/javascript
+        run: |
+          published="$(npm view "awesome-schema@${VERSION}" version 2>/dev/null || true)"
+          if [ "$published" = "$VERSION" ]; then
+            echo "awesome-schema@${VERSION} is already published"
+            exit 0
+          fi
+          npm pkg set "version=${VERSION}"
+          npm publish --access public --tag test
