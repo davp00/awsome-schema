@@ -654,9 +654,9 @@
     "semantic_hash": "78ee7b97ec6cbefd6e781bd238096222"
   },
   "README.md": {
-    "mtime": 1795214359.8957202,
-    "seen": 1795214632.0044532,
-    "ast_hash": "07fa37cad8f129ef38ecb36e678d7e39",
+    "mtime": 1795215104.51452,
+    "seen": 1795215919.517783,
+    "ast_hash": "b5af09273dd5e1607bb03fe49529db58",
     "semantic_hash": ""
   },
   "docs/roadmap/README.md": {
@@ -804,15 +804,15 @@
     "semantic_hash": ""
   },
   ".agents/skills/awesome-feature/SKILL.md": {
-    "mtime": 1791465909.6118877,
-    "seen": 1791467417.7447062,
-    "ast_hash": "9091b7c808afb5505e1f8d9f8103d959",
+    "mtime": 1795215114.9736748,
+    "seen": 1795215919.517771,
+    "ast_hash": "aec0c96142c8cb31c675458bd836eacd",
     "semantic_hash": ""
   },
   ".agents/skills/awesome-feature/checklist.md": {
-    "mtime": 1791465909.9459214,
-    "seen": 1791467417.7447062,
-    "ast_hash": "5997e42fb9ced62dea09ef2efa924232",
+    "mtime": 1795215118.042297,
+    "seen": 1795215919.517772,
+    "ast_hash": "8daaac21d7cc072f58a89a9bc1fc1b30",
     "semantic_hash": ""
   },
   "crates/codegen-typescript/src/surreal.rs": {
@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
-    "mtime": 1795214485.6357954,
-    "seen": 1795214632.0044532,
-    "ast_hash": "e8ea379af1cdbe96b08cd0f1ff313051",
+    "mtime": 1795215106.498605,
+    "seen": 1795215919.517783,
+    "ast_hash": "4e92fbe2801e7d07eb0c1ddfe893342b",
     "semantic_hash": ""
   },
   "SECURITY.md": {
@@ -1185,6 +1185,30 @@
     "mtime": 1795214233.0747929,
     "seen": 1795214632.00444,
     "ast_hash": "44c54dd2fb64a3a696e8988ebc13644a",
+    "semantic_hash": ""
+  },
+  "skills/awesome-schema/SKILL.md": {
+    "mtime": 1795215071.6430464,
+    "seen": 1795215919.517788,
+    "ast_hash": "3d7a94a076b647984bda72484a353e99",
+    "semantic_hash": ""
+  },
+  "skills/awesome-schema/references/dsl.md": {
+    "mtime": 1795215091.8872721,
+    "seen": 1795215919.517789,
+    "ast_hash": "b01586d352e744754b0d3c4cc3160e6e",
+    "semantic_hash": ""
+  },
+  "skills/awesome-schema/references/install.md": {
+    "mtime": 1795215082.396447,
+    "seen": 1795215919.517789,
+    "ast_hash": "98600e1f6ad68fd0133fd50b10f544ba",
+    "semantic_hash": ""
+  },
+  "skills/awesome-schema/references/typescript-client.md": {
+    "mtime": 1795215099.3631768,
+    "seen": 1795215919.517789,
+    "ast_hash": "77d7ca074dbdd0c6c0966ca06e7eda5b",
     "semantic_hash": ""
   }
 }
