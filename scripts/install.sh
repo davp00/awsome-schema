@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Install the awesome-schema CLI binary from GitHub Releases.
-# Usage:
+# Usage (POSIX-safe; works when piped to sh or bash):
 #   curl -fsSL https://raw.githubusercontent.com/davp00/awsome-schema/main/scripts/install.sh | sh
 #   VERSION=0.1.0-alpha.1 INSTALL_DIR=$HOME/.local/bin ./scripts/install.sh
-set -euo pipefail
+set -eu
+# pipefail when the shell supports it (bash); plain sh may not.
+(set -o pipefail) 2>/dev/null && set -o pipefail
 
 REPO="davp00/awsome-schema"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
@@ -76,17 +78,28 @@ is_usable_tag() {
   return 0
 }
 
+# First usable tag from stdin (one tag per line). Avoids bash process
+# substitution so `curl … | sh` works on macOS /dash.
+first_usable_tag() {
+  local tag
+  while IFS= read -r tag; do
+    if is_usable_tag "$tag"; then
+      echo "$tag"
+      return 0
+    fi
+  done
+  return 1
+}
+
 latest_stable_tag() {
   local body tag
 
   # 1) /releases (includes prereleases such as v0.1.0-alpha.1)
   if body="$(gh_get "https://api.github.com/repos/${REPO}/releases?per_page=30")"; then
-    while IFS= read -r tag; do
-      if is_usable_tag "$tag"; then
-        echo "$tag"
-        return 0
-      fi
-    done < <(printf '%s\n' "$body" | extract_tags)
+    if tag="$(printf '%s\n' "$body" | extract_tags | first_usable_tag)"; then
+      echo "$tag"
+      return 0
+    fi
   fi
 
   # 2) /releases/latest (non-prerelease only — may 404 while still on alpha)
@@ -100,12 +113,15 @@ latest_stable_tag() {
 
   # 3) git tags (no assets guarantee — download may still 404)
   if body="$(gh_get "https://api.github.com/repos/${REPO}/tags?per_page=30")"; then
-    while IFS= read -r tag; do
-      if is_usable_tag "$tag"; then
-        echo "$tag"
-        return 0
-      fi
-    done < <(printf '%s\n' "$body" | grep -oE '"name"[[:space:]]*:[[:space:]]*"v[^"]+"' | sed -E 's/.*"([^"]+)".*/\1/')
+    if tag="$(
+      printf '%s\n' "$body" \
+        | grep -oE '"name"[[:space:]]*:[[:space:]]*"v[^"]+"' \
+        | sed -E 's/.*"([^"]+)".*/\1/' \
+        | first_usable_tag
+    )"; then
+      echo "$tag"
+      return 0
+    fi
   fi
 
   echo "could not resolve a release tag from GitHub for ${REPO}." >&2
@@ -113,7 +129,7 @@ latest_stable_tag() {
   echo "  VERSION=0.1.0-alpha.1 curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | sh" >&2
   echo "Or install from git / npm:" >&2
   echo "  cargo install --git https://github.com/${REPO} --locked awesome-schema" >&2
-  echo "  pnpm add -D awesome-schema@alpha surrealdb@2.0.10" >&2
+  echo "  pnpm add -D awesome-schema@alpha surrealdb@^2.2.2" >&2
   exit 1
 }
 
