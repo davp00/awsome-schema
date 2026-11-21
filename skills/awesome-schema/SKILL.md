@@ -17,15 +17,16 @@ metadata:
 
 Consumer skill for **using** Awesome Schema against SurrealDB. Not for maintaining the Awesome Schema repo itself.
 
-## Supported matrix (do not invent newer)
+## Supported matrix (do not invent outside this)
 
-| Piece | Pin |
+| Piece | Declaration |
 |---|---|
-| SurrealDB server | `v3.3.0` |
-| JS peer SDK | `surrealdb@2.0.10` (exact) |
+| SurrealDB servers | **3.3+** and **4.x** |
+| Default local image | `surrealdb/surrealdb:v4` (`SURREAL_IMAGE` for 3.3) |
+| JS peer SDK | `surrealdb@^2.2.2` |
 | npm / crates cut | `0.1.0-alpha.1` |
 
-Do **not** treat SurrealDB 4.x as supported. Stay on this matrix unless the skill `metadata.version` and docs say otherwise.
+One client stack talks to both lines. Do not invent 4-only DDL or pin a single 4.x patch in consumer guidance.
 
 ## When to use
 
@@ -39,7 +40,7 @@ Do **not** treat SurrealDB 4.x as supported. Stay on this matrix unless the skil
 1. Prefer documented install paths in [references/install.md](references/install.md). Today that means `cargo install --git …` or npm; do not assume crates.io until a version is published there.
 2. npm-managed CLIs: update with `pnpm update awesome-schema` / `npm update` — **never** `awesome-schema upgrade` on the npm cache binary.
 3. Pass `--schema <path>` when the file is not `./awesome.schema`.
-4. TypeScript generated code imports `awesome-schema/runtime`; peer `surrealdb@2.0.10`.
+4. TypeScript generated code imports `awesome-schema/runtime`; peer `surrealdb@^2.2.2`.
 5. `@relation` is navigation-only (must name an existing `edge`); `@link` is the stored/computed record reference.
 
 ## Workflow
@@ -59,7 +60,8 @@ Do **not** treat SurrealDB 4.x as supported. Stay on this matrix unless the skil
 See [references/install.md](references/install.md). Local Surreal:
 
 ```bash
-docker compose up -d   # v3.3.0 at ws://127.0.0.1:8000 (root/root)
+docker compose up -d   # 4.x line at ws://127.0.0.1:8000 (root/root)
+# SURREAL_IMAGE=surrealdb/surrealdb:v3.3.0 docker compose up -d
 ```
 
 Datasource needs `provider = "surrealdb"`, `url`, `namespace`, `database`.

@@ -1,0 +1,30 @@
+name: rust-surreal-e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust-surreal-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        surreal_image:
+          - surrealdb/surrealdb:v3.3.0
+          - surrealdb/surrealdb:v4
+    name: rust-surreal-e2e (${{ matrix.surreal_image }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run Surreal CLI e2e
+        env:
+          CI: true
+          SURREAL_IMAGE: ${{ matrix.surreal_image }}
+        run: cargo test -p e2e --locked --test surreal

@@ -9,7 +9,7 @@ Repo: `https://github.com/davp00/awsome-schema` (spelling **awsome**).
 cargo install --git https://github.com/davp00/awsome-schema --locked awesome-schema
 
 # npm / pnpm (downloads matching GitHub Release binary on install)
-pnpm add -D awesome-schema@alpha surrealdb@2.0.10
+pnpm add -D awesome-schema@alpha surrealdb@^2.2.2
 # then: pnpm awesome-schema <command>
 
 # Prebuilt binary (macOS / Linux) → ~/.local/bin — needs a Release with assets
@@ -68,14 +68,16 @@ awesome-schema upgrade [--check] [--version <ver>] [--from github|crates-io]
 ## SurrealDB local
 
 ```bash
-docker compose up -d          # surrealdb/surrealdb:v3.3.0
+docker compose up -d          # surrealdb/surrealdb:v4 (default)
+# SURREAL_IMAGE=surrealdb/surrealdb:v3.3.0 docker compose up -d
 # url ws://127.0.0.1:8000, user/pass root/root
 ```
 
 ## Matrix
 
-| Piece | Pin |
+| Piece | Declaration |
 |---|---|
-| Server | `v3.3.0` |
-| JS SDK | `surrealdb@2.0.10` |
+| Servers | SurrealDB **3.3+** and **4.x** |
+| Default image | `surrealdb/surrealdb:v4` |
+| JS SDK | `surrealdb@^2.2.2` |
 | Package cut | `0.1.0-alpha.1` |

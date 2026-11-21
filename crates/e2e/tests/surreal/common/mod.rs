@@ -156,15 +156,56 @@ mod tests {
         ));
         assert!(!docker_unavailable(&"image pull denied"));
     }
+
+    #[test]
+    fn resolve_surreal_tag_prefers_image_then_tag() {
+        assert_eq!(
+            super::resolve_surreal_tag(Some("surrealdb/surrealdb:v3.3.0"), Some("ignored")),
+            "v3.3.0"
+        );
+        assert_eq!(
+            super::resolve_surreal_tag(Some("surrealdb/surrealdb:v4"), None),
+            "v4"
+        );
+        assert_eq!(super::resolve_surreal_tag(None, Some("v3.3.0")), "v3.3.0");
+        assert_eq!(super::resolve_surreal_tag(None, None), "v4");
+        assert_eq!(super::resolve_surreal_tag(Some("  "), Some("v3.3.0")), "v3.3.0");
+    }
 }
 
 pub type SurrealContainer = testcontainers_modules::testcontainers::ContainerAsync<SurrealDb>;
 
+/// Resolve a Docker tag from optional `SURREAL_IMAGE` / `SURREAL_TAG` values.
+///
+/// Prefer a full image (`surrealdb/surrealdb:v4` or `…:v3.3.0`); otherwise a bare
+/// tag; default `v4` (4.x line).
+pub fn resolve_surreal_tag(image: Option<&str>, tag: Option<&str>) -> String {
+    if let Some(image) = image.map(str::trim).filter(|value| !value.is_empty()) {
+        return image
+            .rsplit_once(':')
+            .map(|(_, tag)| tag.to_owned())
+            .unwrap_or_else(|| image.to_owned());
+    }
+    tag.map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+        .unwrap_or_else(|| "v4".to_owned())
+}
+
+/// Image/tag for Surreal e2e containers from process env.
+pub fn surreal_image_tag() -> String {
+    resolve_surreal_tag(
+        std::env::var("SURREAL_IMAGE").ok().as_deref(),
+        std::env::var("SURREAL_TAG").ok().as_deref(),
+    )
+}
+
 pub async fn start_surrealdb() -> Option<(SurrealContainer, String)> {
+    let tag = surreal_image_tag();
     let container = match SurrealDb::default()
         .with_user("root")
         .with_password("root")
-        .with_tag("v3.3.0")
+        .with_tag(tag)
         .start()
         .await
     {

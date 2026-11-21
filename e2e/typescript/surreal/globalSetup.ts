@@ -11,7 +11,8 @@ import {
   type E2eEnv,
 } from "./src/paths.js";
 
-const SURREAL_IMAGE = "surrealdb/surrealdb:v3.3.0";
+const SURREAL_IMAGE =
+  process.env.SURREAL_IMAGE?.trim() || "surrealdb/surrealdb:v4";
 const SURREAL_PORT = 8000;
 
 export default async function globalSetup() {

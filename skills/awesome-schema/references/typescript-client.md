@@ -3,10 +3,10 @@
 ## Prerequisites
 
 ```bash
-pnpm add awesome-schema@alpha surrealdb@2.0.10
+pnpm add awesome-schema@alpha surrealdb@^2.2.2
 ```
 
-Pins: SurrealDB server **v3.3.0**, peer **`surrealdb@2.0.10`**.
+Supported servers: SurrealDB **3.3+** and **4.x**. Peer **`surrealdb@^2.2.2`**.
 
 Schema must include:
 

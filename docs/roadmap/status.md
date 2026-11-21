@@ -1,14 +1,14 @@
 # Status
 
-**Last live check:** 2026-11-20 against SurrealDB **v3.3.0** (stabilize surface → npm `0.1.0-alpha.1`).
+**Last live check:** 2026-11-20 against SurrealDB **3.3+ and 4.x** (dual matrix; npm `0.1.0-alpha.1`).
 
 Check so far:
 
 - Read the CLI, domain, parser, differ, SurrealDB renderer, codegen, and `db` adapters.
 - `cargo test --workspace --exclude e2e` — unit/integration suite.
-- `cargo test -p e2e --locked --test surreal` — Surreal CLI suite against SurrealDB **v3.3.0** via Docker/testcontainers (incl. schema round-trip + `@relation` pull).
-- `pnpm --filter awesome-schema-typescript-e2e test` — Vitest generated-client e2e (CRUD, nested writes, txn, optional delete, stable take/skip); CI via `.github/workflows/typescript-e2e.yml`.
-- Supported matrix: server `v3.3.0`, Rust crate `3.3.0`, JS `surrealdb@2.0.10` — see [surrealdb-3.3.md](surrealdb-3.3.md).
+- `cargo test -p e2e --locked --test surreal` — Surreal CLI suite via Docker/testcontainers with `SURREAL_IMAGE` for **v3.3.0** and **v4** (CI: `rust-surreal-e2e`).
+- `pnpm --filter awesome-schema-typescript-e2e test` — Vitest generated-client e2e on both images (CI matrix: `typescript-e2e`).
+- Supported matrix: servers **3.3+** and **4.x**, Rust `surrealdb = "4"`, JS `surrealdb@^2.2.2` — see [surrealdb-matrix.md](surrealdb-matrix.md).
 
 Legend: **done** means the behavior exists and is covered by unit or CLI tests. **partial** means some of the path works and a specific gap remains. **not started** means the command or type exists but does not do the job.
 

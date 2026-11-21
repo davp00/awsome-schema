@@ -95,7 +95,7 @@ cargo test -p e2e --test surreal graph_edges   # TYPE RELATION roundtrip
 cargo test -p e2e --test surreal record_refs   # @link REFERENCE + COMPUTED
 ```
 
-TypeScript generated-client e2e uses Vitest. It starts SurrealDB **v3.3.0** via testcontainers unless `SURREALDB_URL` is set. It soft-skips locally when neither a URL nor Docker is available. GitHub Actions (`typescript-e2e`) sets `CI=true` and fails instead of skipping.
+TypeScript generated-client e2e uses Vitest. It starts SurrealDB via testcontainers (`SURREAL_IMAGE`, default `surrealdb/surrealdb:v4`) unless `SURREALDB_URL` is set. It soft-skips locally when neither a URL nor Docker is available. GitHub Actions (`typescript-e2e`, `rust-surreal-e2e`) matrix **v3.3.0** and **v4**, set `CI=true`, and fail instead of skipping.
 
 ```bash
 cd e2e/typescript && pnpm install && pnpm test

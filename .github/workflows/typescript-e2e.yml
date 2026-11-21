@@ -9,6 +9,13 @@ jobs:
   typescript-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        surreal_image:
+          - surrealdb/surrealdb:v3.3.0
+          - surrealdb/surrealdb:v4
+    name: typescript-e2e (${{ matrix.surreal_image }})
     steps:
       - uses: actions/checkout@v4
 
@@ -33,4 +40,5 @@ jobs:
         env:
           # Fail the job if Surreal cannot start (no soft-skip in CI).
           CI: true
+          SURREAL_IMAGE: ${{ matrix.surreal_image }}
         run: pnpm --filter awesome-schema-typescript-e2e test

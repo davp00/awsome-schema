@@ -6,7 +6,7 @@ Stay on SurrealDB until the schema that the DSL already accepts is what migratio
 
 `edge` renders as `DEFINE TABLE … TYPE RELATION IN … OUT …`. `@relation` is navigation-only metadata that must name an existing edge (still skipped in SurrealQL). Differ includes edges. Still deferred:
 
-- SurrealDB 3.3 `LIGHTWEIGHT` relations and `INLINE` edge fields. See [surrealdb-3.3.md](surrealdb-3.3.md).
+- SurrealDB `LIGHTWEIGHT` relations and `INLINE` edge fields. See [surrealdb-matrix.md](surrealdb-matrix.md) / [surrealdb-3.3.md](surrealdb-3.3.md).
 
 ## 2. Migration lifecycle — done
 
@@ -54,4 +54,4 @@ TypeScript `generate --target typescript` dispatches on `datasource.provider` an
 
 ## Last live check
 
-2026-11-20: Surreal 3.3 stabilize cut (`0.1.0-alpha.1`). `cargo test -p e2e --test surreal` (11); `pnpm --filter awesome-schema test` (18); `pnpm --filter awesome-schema-typescript-e2e test` (50) against SurrealDB v3.3.0; `AWESOME_SCHEMA_BIN=target/debug/awesome-schema pnpm awesome-schema validate --schema examples/awesome.schema`. CLI install/upgrade unit + dispatch tests green; `cargo publish -p awesome-schema --dry-run --allow-dirty` succeeds.
+2026-11-20: Dual Surreal matrix (`0.1.0-alpha.1`). Rust `surrealdb = "4"`, JS `^2.2.2`. `cargo test -p e2e --test surreal` green on `SURREAL_IMAGE` **v3.3.0** and **v4**; `pnpm --filter awesome-schema-typescript-e2e test` 51/51 on both; unit `pnpm --filter awesome-schema test` green. Docs: [surrealdb-matrix.md](surrealdb-matrix.md).

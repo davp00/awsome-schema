@@ -37,13 +37,13 @@ export function asSurrealLike(db: Surreal): SurrealLike {
       return asSurrealTransaction(txn);
     },
     async live<T>(table: string): Promise<LiveHandle<T>> {
-      const subscription = await db.live<T>(new Table(table));
+      const subscription = await db.live(new Table(table));
       await whenReady(subscription);
-      return wrapLive(subscription);
+      return wrapLive<T>(subscription);
     },
     async liveOf<T>(id: unknown): Promise<LiveHandle<T>> {
       const subscription = await db.liveOf(asUuid(id));
-      return wrapLive(subscription);
+      return wrapLive<T>(subscription);
     },
   };
   Object.defineProperty(session, ADAPTED, { value: true });
@@ -96,7 +96,7 @@ function toTable(thing: string): Table {
   return new Table(thing);
 }
 
-function wrapLive<T>(subscription: LiveSubscription): LiveHandle<T> {
+function wrapLive<T>(subscription: LiveSubscription<Record<string, unknown>>): LiveHandle<T> {
   return {
     subscribe(listener) {
       subscription.subscribe((message: LiveMessage) => {
@@ -108,8 +108,14 @@ function wrapLive<T>(subscription: LiveSubscription): LiveHandle<T> {
   };
 }
 
-async function whenReady(subscription: LiveSubscription): Promise<void> {
-  const ready = (subscription as LiveSubscription & { ready?: () => Promise<void> }).ready;
+async function whenReady(
+  subscription: LiveSubscription<Record<string, unknown>>,
+): Promise<void> {
+  const ready = (
+    subscription as LiveSubscription<Record<string, unknown>> & {
+      ready?: () => Promise<void>;
+    }
+  ).ready;
   if (typeof ready === "function") {
     await ready.call(subscription);
   }
@@ -121,9 +127,26 @@ function asUuid(id: unknown): Uuid {
   throw new Error("liveOf: expected a live query id");
 }
 
+/**
+ * Encode `table:id` strings for the JS SDK.
+ *
+ * Surreal 4 rejects `StringRecordId("table:id-with-hyphens")` unless the id is
+ * escaped as `table:⟨id-with-hyphens⟩`. Surreal 3.3 accepts both forms.
+ */
+export function encodeRecordIdString(thing: string): StringRecordId {
+  const idx = thing.indexOf(":");
+  if (idx <= 0) return new StringRecordId(thing);
+  const table = thing.slice(0, idx);
+  let id = thing.slice(idx + 1);
+  if (!(id.startsWith("⟨") && id.endsWith("⟩")) && !/^[A-Za-z0-9_]+$/.test(id)) {
+    id = `⟨${id}⟩`;
+  }
+  return new StringRecordId(`${table}:${id}`);
+}
+
 function encodeDeep(value: unknown): unknown {
   if (typeof value === "string" && RECORD_ID_RE.test(value)) {
-    return new StringRecordId(value);
+    return encodeRecordIdString(value);
   }
   if (Array.isArray(value)) {
     return value.map(encodeDeep);

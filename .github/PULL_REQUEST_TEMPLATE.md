@@ -5,5 +5,5 @@
 ## Test plan
 
 - [ ] `cargo test --workspace --locked --exclude e2e`
-- [ ] `cargo test -p e2e --locked --test surreal` if live Surreal behavior changed
-- [ ] `cd e2e/typescript && npm test` if the generated TypeScript client changed
+- [ ] `SURREAL_IMAGE=surrealdb/surrealdb:v3.3.0 cargo test -p e2e --locked --test surreal` and same with `v4` if live Surreal behavior changed
+- [ ] `SURREAL_IMAGE=… pnpm --filter awesome-schema-typescript-e2e test` on both matrix images if the generated TypeScript client changed

@@ -1,6 +1,6 @@
 # Awesome Schema
 
-Awesome Schema is a **schema modeling, migration, and code generation toolkit** for modern databases. It is inspired by [Prisma](https://www.prisma.io/) and [TypeORM](https://typeorm.io/), but designed from the ground up to express database-native capabilities—starting with **SurrealDB 3.x**.
+Awesome Schema is a **schema modeling, migration, and code generation toolkit** for modern databases. It is inspired by [Prisma](https://www.prisma.io/) and [TypeORM](https://typeorm.io/), but designed from the ground up to express database-native capabilities—starting with **SurrealDB 3.3+ and 4.x**.
 
 Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate a TypeScript Surreal client. Rust client models are still a stub.
 
@@ -15,14 +15,14 @@ Awesome Schema provides a **clean modeling layer** that feels familiar (Prisma-l
 |                   | Prisma                             | TypeORM                               | Awesome Schema                          |
 | ----------------- | ---------------------------------- | ------------------------------------- | --------------------------------------- |
 | Primary model     | Relational tables + Prisma Client  | Decorator-based entities + migrations | DSL → domain model → provider renderers |
-| SurrealDB support | Limited / indirect                 | Manual                                | First-class target (SurrealDB 3.3.0)    |
+| SurrealDB support | Limited / indirect                 | Manual                                | First-class target (SurrealDB 3.3+ / 4.x) |
 | Graph edges       | Relations                          | Relations                             | Native `edge` blocks                    |
 | Migration model   | SQL migrations (provider-specific) | TypeORM migration classes             | Domain operations → SurrealQL           |
 | Code generation   | Strong client focus                | Entity classes                        | Pluggable per-language generators       |
 
 ## Why SurrealDB first
 
-SurrealDB 3.x is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. The current target is **SurrealDB 3.3.0**. The first milestone started on 3.1.5.
+SurrealDB is the initial target because it combines document, graph, and schema-full/schemaless tables in one engine. Awesome Schema embraces that expressiveness rather than hiding it. Supported servers are **SurrealDB 3.3+** and **4.x** (one client stack; see [docs/roadmap/surrealdb-matrix.md](docs/roadmap/surrealdb-matrix.md)).
 
 Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate status`, `migrate rollback`) uses the official SurrealDB client. Applied migrations are tracked in `_awesome_migrations`. `@link` fields render as SurrealDB record references (`REFERENCE`); `edge` blocks render as `TYPE RELATION IN … OUT …`; `@relation` on models is navigation-only metadata that must name an existing edge.
 
@@ -35,7 +35,7 @@ Runtime database connectivity (`db pull`, `db push`, `migrate apply`, `migrate s
 cargo install --git https://github.com/davp00/awsome-schema --locked awesome-schema
 
 # Via npm (downloads the matching GitHub Release binary for this package version)
-pnpm add -D awesome-schema@alpha surrealdb@2.0.10
+pnpm add -D awesome-schema@alpha surrealdb@^2.2.2
 
 # Prebuilt binary (macOS / Linux) — needs a GitHub Release with assets
 # Pin a version if tag discovery fails:
@@ -67,7 +67,8 @@ Source: [`skills/awesome-schema/`](skills/awesome-schema/). There is no registry
 ### Local SurrealDB (Docker Compose)
 
 ```bash
-docker compose up -d          # SurrealDB 3.3.0 on ws://127.0.0.1:8000 (root/root)
+docker compose up -d          # SurrealDB 4.x line on ws://127.0.0.1:8000 (root/root)
+# SURREAL_IMAGE=surrealdb/surrealdb:v3.3.0 docker compose up -d   # local 3.3
 docker compose down           # stop
 docker compose down -v        # stop and wipe data volume
 ```

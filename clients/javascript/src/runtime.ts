@@ -563,7 +563,8 @@ export type NestedScriptOp =
       edgeTable: string;
       farTable: string;
       farIsOut: boolean;
-      items: { far: Record<string, unknown>; content: Record<string, unknown>; parent: string }[];
+      // `as_parent` — Surreal 4 reserves query var `parent` / `$parent`.
+      items: { far: Record<string, unknown>; content: Record<string, unknown>; as_parent: string }[];
     };
 
 export function bindNested(vars: Record<string, unknown>, value: unknown): string {
@@ -592,9 +593,11 @@ export function renderNestedOps(ops: NestedScriptOp[]): { sql: string; vars: Rec
       );
     } else {
       const relate = op.farIsOut
-        ? `$parent->${op.edgeTable}->$far`
-        : `$far->${op.edgeTable}->$parent`;
-      parts.push(`FOR $item IN ${bindNested(vars, op.items)} { LET $far = CREATE ONLY ${op.farTable} CONTENT $item.far; LET $parent = $item.parent; RELATE ${relate} CONTENT $item.content }`);
+        ? `$as_parent->${op.edgeTable}->$far`
+        : `$far->${op.edgeTable}->$as_parent`;
+      parts.push(
+        `FOR $item IN ${bindNested(vars, op.items)} { LET $far = CREATE ONLY ${op.farTable} CONTENT $item.far; LET $as_parent = type::record($item.as_parent); RELATE ${relate} CONTENT $item.content }`,
+      );
     }
   }
   return { sql: parts.join(";\n"), vars };
@@ -859,16 +862,16 @@ async function findEdgeId(
   if (field === "id") {
     const rows = await queryRows<{ id?: unknown }>(
       db,
-      `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq("id", "v")} AND ${recordEq(parentField, "parent")} LIMIT 1`,
-      { v: normalizeThing(meta.edgeTable, value), parent: parentThing },
+      `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq("id", "v")} AND ${recordEq(parentField, "as_parent")} LIMIT 1`,
+      { v: normalizeThing(meta.edgeTable, value), as_parent: parentThing },
     );
     return rows[0]?.id == null ? undefined : String(rows[0].id);
   }
   const farTable = field === "out" ? meta.outTable : meta.inTable;
   const rows = await queryRows<{ id?: unknown }>(
     db,
-    `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq(parentField, "parent")} AND ${recordEq(field, "far")} LIMIT 1`,
-    { parent: parentThing, far: normalizeThing(farTable, value) },
+    `SELECT id FROM ${meta.edgeTable} WHERE ${recordEq(parentField, "as_parent")} AND ${recordEq(field, "far")} LIMIT 1`,
+    { as_parent: parentThing, far: normalizeThing(farTable, value) },
   );
   return rows[0]?.id == null ? undefined : String(rows[0].id);
 }
@@ -940,7 +943,7 @@ export async function collectEdge(
 
   const creates = Array.isArray(bag.create) ? bag.create : [];
   let relateRows: Record<string, unknown>[] = [];
-  let farItems: { far: Record<string, unknown>; content: Record<string, unknown>; parent: string }[] = [];
+  let farItems: { far: Record<string, unknown>; content: Record<string, unknown>; as_parent: string }[] = [];
   const flushRelate = () => {
     if (relateRows.length === 0) return;
     ops.push({ kind: "relate", table: meta.edgeTable, rows: relateRows });
@@ -963,7 +966,11 @@ export async function collectEdge(
       const createData = { ...((farVal as { create?: Record<string, unknown> }).create ?? {}) };
       assertNoNestedWrites(createData, farTable, `create ${label}.${farKey}`);
       flushRelate();
-      farItems.push({ far: edgeFarData(parentTable, parentId, farTable, createData), content, parent: parentThing });
+      farItems.push({
+        far: edgeFarData(parentTable, parentId, farTable, createData),
+        content,
+        as_parent: parentThing,
+      });
     } else {
       throw new Error(`${label}.create.${farKey} required`);
     }
