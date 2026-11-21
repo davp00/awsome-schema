@@ -8,6 +8,9 @@ publish = false
 workspace = true
 
 [dependencies]
+# Path dep links the CLI crate into the test graph (lib). The bin is still
+# produced by `cargo build -p awesome-schema` (CI) or a prior workspace build;
+# tests locate it via find_awesome_schema_bin().
 cli = { package = "awesome-schema", path = "../cli" }
 assert_cmd.workspace = true
 predicates.workspace = true

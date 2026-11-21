@@ -23,6 +23,11 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Build CLI binary
+        # Path-dep lib build does not always emit the `awesome-schema` bin;
+        # e2e invokes that binary directly.
+        run: cargo build -p awesome-schema --locked
+
       - name: Run Surreal CLI e2e
         env:
           CI: true

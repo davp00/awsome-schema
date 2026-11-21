@@ -1,6 +1,8 @@
 //! Shared helpers for SurrealDB end-to-end CLI tests.
 
 use std::fs;
+use std::path::PathBuf;
+use std::process::Command as StdCommand;
 
 use assert_cmd::Command;
 use surrealdb::Surreal;
@@ -9,6 +11,71 @@ use surrealdb::opt::auth::Root;
 use testcontainers_modules::surrealdb::{SURREALDB_PORT, SurrealDb};
 use testcontainers_modules::testcontainers::ImageExt;
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
+
+/// Locate the workspace `awesome-schema` binary.
+///
+/// `assert_cmd::Command::cargo_bin` needs `CARGO_BIN_EXE_*`, which Cargo only
+/// sets for bins of the package under test — not for a dependency CLI. Its
+/// legacy `target/deps` walk also breaks under Cargo's newer `build-dir`
+/// layout (`target/debug/build/<pkg>/<hash>/out/…`).
+fn find_awesome_schema_bin() -> PathBuf {
+    let file_name = format!("awesome-schema{}", std::env::consts::EXE_SUFFIX);
+
+    for key in ["CARGO_BIN_EXE_awesome-schema", "CARGO_BIN_EXE_awesome_schema"] {
+        if let Some(path) = std::env::var_os(key) {
+            let path = PathBuf::from(path);
+            if path.is_file() {
+                return path;
+            }
+        }
+    }
+
+    let mut candidates = Vec::new();
+    if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
+        for profile in ["debug", "release"] {
+            candidates.push(PathBuf::from(&target_dir).join(profile).join(&file_name));
+        }
+    }
+
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    for profile in ["debug", "release"] {
+        candidates.push(manifest_dir.join("../../target").join(profile).join(&file_name));
+    }
+
+    // Walk up from the test executable (covers target/debug/deps and
+    // target/debug/build/<pkg>/<hash>/out layouts).
+    if let Ok(mut dir) = std::env::current_exe().map(|p| p) {
+        for _ in 0..10 {
+            if !dir.pop() {
+                break;
+            }
+            for profile in ["debug", "release"] {
+                candidates.push(dir.join(profile).join(&file_name));
+                candidates.push(dir.join("target").join(profile).join(&file_name));
+            }
+            candidates.push(dir.join(&file_name));
+        }
+    }
+
+    for candidate in &candidates {
+        if let Ok(canonical) = candidate.canonicalize() {
+            if canonical.is_file() {
+                return canonical;
+            }
+        } else if candidate.is_file() {
+            return candidate.clone();
+        }
+    }
+
+    panic!(
+        "could not find `{file_name}` for e2e tests; tried {} candidates (build with `cargo build -p awesome-schema`)",
+        candidates.len()
+    );
+}
+
+fn awesome_schema_exe() -> PathBuf {
+    find_awesome_schema_bin()
+}
 
 pub const MINIMAL_SCHEMA: &str = r#"datasource db {
   provider = "surrealdb"
@@ -125,7 +192,7 @@ impl TestProject {
     }
 
     pub fn awesome_schema_cmd_with_schema(&self, schema: &str) -> Command {
-        let mut command = Command::cargo_bin("awesome-schema").expect("binary");
+        let mut command = Command::from_std(StdCommand::new(awesome_schema_exe()));
         command
             .current_dir(self.root.path())
             .arg("--schema")
@@ -170,6 +237,16 @@ mod tests {
         assert_eq!(super::resolve_surreal_tag(None, Some("v3.3.0")), "v3.3.0");
         assert_eq!(super::resolve_surreal_tag(None, None), "v4");
         assert_eq!(super::resolve_surreal_tag(Some("  "), Some("v3.3.0")), "v3.3.0");
+    }
+
+    #[test]
+    fn finds_awesome_schema_binary() {
+        let path = super::find_awesome_schema_bin();
+        assert!(
+            path.is_file(),
+            "expected built CLI at {}",
+            path.display()
+        );
     }
 }
 
