@@ -450,9 +450,9 @@
     "semantic_hash": ""
   },
   "crates/e2e/Cargo.toml": {
-    "mtime": 1795214171.829675,
-    "seen": 1795214632.004419,
-    "ast_hash": "c6524095d4e71f9790f8b0e77055e38c",
+    "mtime": 1795220644.3984504,
+    "seen": 1795220720.437174,
+    "ast_hash": "bd54c050f7e5c4a4d30c649339a02bd9",
     "semantic_hash": ""
   },
   "crates/migrations/Cargo.toml": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "crates/e2e/tests/surreal/common/mod.rs": {
-    "mtime": 1795218441.2813587,
-    "seen": 1795219748.73714,
-    "ast_hash": "202cb1a036ae850d583c019b737c774a",
+    "mtime": 1795220651.99139,
+    "seen": 1795220720.437175,
+    "ast_hash": "78236349f31f2acd42e5e6f85c0342e5",
     "semantic_hash": ""
   },
   "crates/e2e/tests/surreal/db_sync.rs": {
@@ -990,9 +990,9 @@
     "semantic_hash": ""
   },
   ".github/PULL_REQUEST_TEMPLATE.md": {
-    "mtime": 1795218937.5507731,
-    "seen": 1795219748.737173,
-    "ast_hash": "ef1bf54f114ddfe09d383fc56ecce424",
+    "mtime": 1795220661.5844374,
+    "seen": 1795220720.437206,
+    "ast_hash": "5112a4e41b0ad292634693ddacc8305d",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
@@ -1218,9 +1218,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/rust-surreal-e2e.yml": {
-    "mtime": 1795218380.697887,
-    "seen": 1795219748.7371762,
-    "ast_hash": "3d4668fec083e91cf739edced4943c0f",
+    "mtime": 1795220628.630389,
+    "seen": 1795220720.4372091,
+    "ast_hash": "dcca3eebad8833960719a5a92d3f9cb4",
     "semantic_hash": ""
   },
   "docs/roadmap/surrealdb-matrix.md": {
