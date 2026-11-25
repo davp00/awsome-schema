@@ -15,7 +15,6 @@ model User {
 }
 "#;
 
-
 fn temp_cli_with_schema(schema: &str, args: &[&str]) -> (tempfile::TempDir, Cli) {
     let temp = tempfile::tempdir().expect("tempdir");
     let schema_path = temp.path().join("awesome.schema");
@@ -124,13 +123,38 @@ fn dispatch_format_write_command() {
 
 #[test]
 fn dispatch_generate_targets() {
-    for target in ["schema", "rust"] {
-        let (_temp, cli) = temp_cli(&["generate", "--target", target]);
-        commands::dispatch(&cli, &Printer::new()).expect("generate");
+    let (_temp, cli) = temp_cli(&["generate", "--target", "schema"]);
+    commands::dispatch(&cli, &Printer::new()).expect("generate schema");
+
+    // Rust and TypeScript without a matching generator require --stdout.
+    for target in ["rust", "typescript"] {
+        let (_temp, cli) = temp_cli(&["generate", "--target", target, "--stdout"]);
+        commands::dispatch(&cli, &Printer::new()).expect("generate stdout");
     }
-    // TypeScript without generator.output requires --stdout.
-    let (_temp, cli) = temp_cli(&["generate", "--target", "typescript", "--stdout"]);
-    commands::dispatch(&cli, &Printer::new()).expect("generate typescript stdout");
+}
+
+#[test]
+fn dispatch_generate_rust_writes_output() {
+    let schema = r#"datasource db {
+  provider = "surrealdb"
+  url = "ws://127.0.0.1:8000"
+}
+generator client {
+  provider = "rust"
+  output = "./generated"
+}
+model User {
+  id @id
+  email string
+}
+"#;
+    let (temp, cli) = temp_cli_with_schema(schema, &["generate", "--target", "rust"]);
+    commands::dispatch(&cli, &Printer::new()).expect("generate rust");
+    let written = temp.path().join("generated/client.rs");
+    assert!(written.is_file(), "expected {}", written.display());
+    let content = std::fs::read_to_string(&written).expect("read");
+    assert!(content.contains("struct User"));
+    assert!(content.contains("fn create_client"));
 }
 
 #[test]
@@ -168,9 +192,9 @@ fn dispatch_migrate_create() {
 fn parses_migrate_rollback_steps() {
     let (_temp, cli) = temp_cli(&["migrate", "rollback", "--steps", "2"]);
     match cli.command {
-        cli::app::Commands::Migrate {
-            command: cli::app::MigrateCommands::Rollback { steps },
-        } => assert_eq!(steps, 2),
+        cli::app::Commands::Migrate { command: cli::app::MigrateCommands::Rollback { steps } } => {
+            assert_eq!(steps, 2)
+        }
         other => panic!("unexpected command: {other:?}"),
     }
 }
@@ -205,7 +229,11 @@ model User {
     let (_temp, cli) = temp_cli_with_schema(schema, &["db", "pull", "--force"]);
     let error = commands::dispatch(&cli, &Printer::new()).expect_err("pull");
     let message = error.to_string().to_lowercase();
-    assert!(message.contains("database") || message.contains("connect") || message.contains("pull failed"));
+    assert!(
+        message.contains("database")
+            || message.contains("connect")
+            || message.contains("pull failed")
+    );
 }
 
 #[test]
@@ -240,9 +268,7 @@ fn introspector_reports_connection_errors() {
         username: "root".into(),
         password: "root".into(),
     };
-    let error = SurrealDbIntrospector
-        .introspect(&config, &preserve)
-        .expect_err("connection");
+    let error = SurrealDbIntrospector.introspect(&config, &preserve).expect_err("connection");
     assert!(matches!(error, schema_core::DomainError::DatabaseError(_)));
 }
 
@@ -392,13 +418,7 @@ fn parse_upgrade_check_command() {
 
 #[test]
 fn parse_upgrade_from_crates_io() {
-    let (_temp, cli) = temp_cli(&[
-        "upgrade",
-        "--from",
-        "crates-io",
-        "--version",
-        "0.1.0-alpha.1",
-    ]);
+    let (_temp, cli) = temp_cli(&["upgrade", "--from", "crates-io", "--version", "0.1.0-alpha.1"]);
     match cli.command {
         cli::app::Commands::Upgrade { check, version, from } => {
             assert!(!check);
@@ -412,7 +432,7 @@ fn parse_upgrade_from_crates_io() {
 #[test]
 fn schema_directory_loads_merged_schema() {
     use cli::adapters::SchemaFileSource;
-    use schema_core::{FileSystemPort, SchemaSource};
+    use schema_core::SchemaSource;
 
     let temp = tempfile::tempdir().expect("tempdir");
     let schema_dir = temp.path().join("schema");
@@ -431,7 +451,8 @@ fn schema_directory_loads_merged_schema() {
     .expect("user");
 
     let fs = cli::adapters::FsAdapter;
-    let source = SchemaFileSource::new(std::sync::Arc::new(fs), schema_dir.to_string_lossy().into_owned());
+    let source =
+        SchemaFileSource::new(std::sync::Arc::new(fs), schema_dir.to_string_lossy().into_owned());
     let schema = source.load_schema().expect("load");
     assert_eq!(schema.models.len(), 1);
     assert_eq!(schema.models[0].name, "User");
