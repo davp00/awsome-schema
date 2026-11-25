@@ -2,7 +2,7 @@ name: canary
 
 on:
   workflow_run:
-    workflows: [coverage, typescript-e2e, rust-surreal-e2e]
+    workflows: [coverage, typescript-e2e, rust-surreal-e2e, rust-client-e2e]
     types: [completed]
     branches: [main]
 
@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           go=true
-          for workflow in coverage.yml typescript-e2e.yml rust-surreal-e2e.yml; do
+          for workflow in coverage.yml typescript-e2e.yml rust-surreal-e2e.yml rust-client-e2e.yml; do
             status="$(gh api --jq '.workflow_runs[0].status // ""' \
               "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=1")"
             conclusion="$(gh api --jq '.workflow_runs[0].conclusion // ""' \

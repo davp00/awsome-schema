@@ -43,6 +43,8 @@ awesome-schema format --write
 awesome-schema generate --target schema          # SurrealQL to stdout
 awesome-schema generate --target typescript
 awesome-schema generate --target typescript --stdout
+awesome-schema generate --target rust
+awesome-schema generate --target rust --stdout
 awesome-schema db push
 awesome-schema db pull --force
 awesome-schema db pull --split-by-table --force

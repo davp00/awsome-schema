@@ -14,14 +14,14 @@ pub enum GenerateCodeTarget {
 
 pub struct GenerateCodeInput {
     pub target: GenerateCodeTarget,
-    /// When true, never write files (print-only). Schema/Rust always behave as stdout.
+    /// When true, print the generated client and do not write `generator.output`.
     pub stdout: bool,
 }
 
 pub struct GenerateCodeOutput {
     pub content: String,
     pub target: GenerateCodeTarget,
-    /// Path written for TypeScript when not using `--stdout`.
+    /// Path written for a Rust or TypeScript client when not using `--stdout`.
     pub written_path: Option<String>,
 }
 
@@ -69,22 +69,30 @@ impl GenerateCodeUseCase {
             GenerateCodeTarget::TypeScript => self.typescript_generator.generate(&schema)?,
         };
 
-        let written_path = if port.target == GenerateCodeTarget::TypeScript && !port.stdout {
-            let path =
-                resolve_typescript_output_path(&schema, &self.schema_path, &*self.filesystem)?;
-            if let Some(parent) = Path::new(&path).parent() {
-                let parent_str = parent.to_string_lossy();
-                if !parent_str.is_empty() && parent_str != "." {
-                    self.filesystem.create_dir_all(&parent_str)?;
-                }
-            }
-            self.filesystem.write_string(&path, &content)?;
-            if let Some(marker) = client_package_json_path(&path) {
-                self.filesystem.write_string(&marker, CLIENT_PACKAGE_JSON)?;
-            }
-            Some(path)
-        } else {
+        let written_path = if port.stdout {
             None
+        } else {
+            match port.target {
+                GenerateCodeTarget::TypeScript => {
+                    let path = resolve_typescript_output_path(
+                        &schema,
+                        &self.schema_path,
+                        &*self.filesystem,
+                    )?;
+                    write_generated_file(&*self.filesystem, &path, &content)?;
+                    if let Some(marker) = client_package_json_path(&path) {
+                        self.filesystem.write_string(&marker, CLIENT_PACKAGE_JSON)?;
+                    }
+                    Some(path)
+                }
+                GenerateCodeTarget::Rust => {
+                    let path =
+                        resolve_rust_output_path(&schema, &self.schema_path, &*self.filesystem)?;
+                    write_generated_file(&*self.filesystem, &path, &content)?;
+                    Some(path)
+                }
+                GenerateCodeTarget::Schema => None,
+            }
         };
 
         Ok(GenerateCodeOutput { content, target: port.target, written_path })
@@ -115,28 +123,73 @@ pub fn resolve_typescript_output_path(
         return Ok(normalize_relative_path(client));
     }
 
-    let base = if filesystem.is_directory(schema_path) {
+    let base = output_base(schema_path, filesystem);
+    Ok(normalize_relative_path(file_from_output(&base, output, "ts", "index.ts")))
+}
+
+/// Resolve `generator { provider = "rust", output = "…" }` to a `.rs` file path.
+pub fn resolve_rust_output_path(
+    schema: &DatabaseSchema,
+    schema_path: &str,
+    filesystem: &dyn FileSystemPort,
+) -> Result<String, DomainError> {
+    let output = generator_output(schema, "rust")?;
+    if output.is_empty() {
+        return Err(DomainError::CodegenError(
+            "rust generator output is empty; set output or pass --stdout".to_owned(),
+        ));
+    }
+    let base = output_base(schema_path, filesystem);
+    Ok(normalize_relative_path(file_from_output(&base, output, "rs", "client.rs")))
+}
+
+fn generator_output<'a>(
+    schema: &'a DatabaseSchema,
+    provider: &str,
+) -> Result<&'a str, DomainError> {
+    schema
+        .generators
+        .iter()
+        .find(|generator| generator.provider.eq_ignore_ascii_case(provider))
+        .map(|generator| generator.output.trim())
+        .ok_or_else(|| {
+            DomainError::CodegenError(format!(
+                "no generator with provider = \"{provider}\" found; add one or pass --stdout"
+            ))
+        })
+}
+
+fn output_base(schema_path: &str, filesystem: &dyn FileSystemPort) -> PathBuf {
+    if filesystem.is_directory(schema_path) {
         PathBuf::from(schema_path)
     } else {
         Path::new(schema_path).parent().map_or_else(|| PathBuf::from("."), Path::to_path_buf)
-    };
+    }
+}
 
-    let resolved = {
-        let output_path = Path::new(output);
-        if output_path.is_absolute() { output_path.to_path_buf() } else { base.join(output_path) }
-    };
-
-    let file_path = if resolved
+fn file_from_output(base: &Path, output: &str, extension: &str, directory_file: &str) -> PathBuf {
+    let output_path = Path::new(output);
+    let resolved =
+        if output_path.is_absolute() { output_path.to_path_buf() } else { base.join(output_path) };
+    let has_extension = resolved
         .extension()
         .and_then(|ext| ext.to_str())
-        .is_some_and(|ext| ext.eq_ignore_ascii_case("ts"))
-    {
-        resolved
-    } else {
-        resolved.join("index.ts")
-    };
+        .is_some_and(|ext| ext.eq_ignore_ascii_case(extension));
+    if has_extension { resolved } else { resolved.join(directory_file) }
+}
 
-    Ok(normalize_relative_path(file_path))
+fn write_generated_file(
+    filesystem: &dyn FileSystemPort,
+    path: &str,
+    content: &str,
+) -> Result<(), DomainError> {
+    if let Some(parent) = Path::new(path).parent() {
+        let parent_str = parent.to_string_lossy();
+        if !parent_str.is_empty() && parent_str != "." {
+            filesystem.create_dir_all(&parent_str)?;
+        }
+    }
+    filesystem.write_string(path, content)
 }
 
 const CLIENT_PACKAGE_JSON: &str = "\
@@ -277,6 +330,24 @@ mod tests {
         let path =
             resolve_typescript_output_path(&schema, "/proj/awesome.schema", &fs).expect("resolve");
         assert!(path.ends_with("generated/index.ts") || path.ends_with("generated\\index.ts"));
+    }
+
+    #[test]
+    fn resolves_rust_directory_and_file_output() {
+        let mut schema = schema_with_ts_output("./generated");
+        schema.generators[0].provider = "rust".to_owned();
+        let fs = DirAwareFs { dirs: Vec::new() };
+        let path = resolve_rust_output_path(&schema, "/proj/awesome.schema", &fs).expect("dir");
+        assert!(path.ends_with("generated/client.rs") || path.ends_with("generated\\client.rs"));
+
+        schema.generators[0].output = "./gen/client.rs".to_owned();
+        let path = resolve_rust_output_path(&schema, "/proj/awesome.schema", &fs).expect("file");
+        assert!(path.ends_with("gen/client.rs") || path.ends_with("gen\\client.rs"));
+
+        schema.generators.clear();
+        let error =
+            resolve_rust_output_path(&schema, "/proj/awesome.schema", &fs).expect_err("missing");
+        assert!(error.to_string().contains("rust"));
     }
 
     #[test]

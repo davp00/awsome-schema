@@ -252,6 +252,10 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "awesome-schema-codegen",
  "awesome-schema-core",
+ "awesome-schema-surreal",
+ "serde",
+ "serde_json",
+ "surrealdb",
 ]
 
 [[package]]
@@ -294,6 +298,19 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "awesome-schema-core",
  "serde_json",
+]
+
+[[package]]
+name = "awesome-schema-surreal"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "async-trait",
+ "futures",
+ "serde",
+ "serde_json",
+ "surrealdb",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -830,6 +847,23 @@ dependencies = [
  "serde_json",
  "surrealdb",
  "tempfile",
+ "testcontainers-modules",
+ "tokio",
+]
+
+[[package]]
+name = "e2e-rust"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "awesome-schema-codegen",
+ "awesome-schema-codegen-rust",
+ "awesome-schema-core",
+ "awesome-schema-parser",
+ "awesome-schema-renderers",
+ "awesome-schema-surreal",
+ "serde",
+ "serde_json",
+ "surrealdb",
  "testcontainers-modules",
  "tokio",
 ]

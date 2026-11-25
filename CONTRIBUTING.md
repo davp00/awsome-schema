@@ -78,7 +78,7 @@ Use [conventional commits](https://www.conventionalcommits.org/) (`feat`, `fix`,
 ## Tests
 
 ```bash
-cargo test --workspace --locked --exclude e2e
+cargo test --workspace --locked --exclude e2e --exclude e2e-rust
 cargo test -p e2e --locked --test surreal
 ./scripts/coverage.sh
 ```

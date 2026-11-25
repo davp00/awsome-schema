@@ -1,0 +1,25 @@
+[package]
+name = "awesome-schema-surreal"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Shared SurrealDB runtime for Awesome Schema Rust clients."
+readme = "../../README.md"
+
+[lib]
+name = "awesome_schema_surreal"
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = "0.1"
+futures = "0.3"
+serde.workspace = true
+serde_json.workspace = true
+surrealdb.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

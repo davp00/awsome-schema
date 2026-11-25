@@ -21,7 +21,12 @@ pub fn run(
     let output = context.generate_code.execute(GenerateCodeInput { target, stdout })?;
 
     if let Some(path) = &output.written_path {
-        printer.success(&format!("Wrote TypeScript client to `{path}`."));
+        let language = match output.target {
+            GenerateCodeTarget::Rust => "Rust",
+            GenerateCodeTarget::TypeScript => "TypeScript",
+            GenerateCodeTarget::Schema => "schema",
+        };
+        printer.success(&format!("Wrote {language} client to `{path}`."));
     } else {
         printer.plain(&output.content);
     }
