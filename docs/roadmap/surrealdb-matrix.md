@@ -22,8 +22,8 @@ Official Rust SDK **4** connects to **3.x and 4.x** servers. JS `surrealdb` **2.
 |---|---|---|
 | Default Compose image | `${SURREAL_IMAGE:-surrealdb/surrealdb:v4}` | `docker-compose.yml` (storage `surrealkv:`) |
 | TS e2e image | `process.env.SURREAL_IMAGE` or `surrealdb/surrealdb:v4` | `e2e/typescript/surreal/globalSetup.ts` |
-| Rust e2e tag | from `SURREAL_IMAGE` / `SURREAL_TAG`, default `v4` | `crates/e2e/tests/surreal/common/mod.rs` |
-| CI matrix | `surrealdb/surrealdb:v3.3.0` and `surrealdb/surrealdb:v4` | `.github/workflows/typescript-e2e.yml`, `rust-surreal-e2e.yml` |
+| Rust e2e tag | from `SURREAL_IMAGE` / `SURREAL_TAG`, default `v4` | `crates/e2e/tests/surreal/common/mod.rs`, `e2e/rust` |
+| CI matrix | `surrealdb/surrealdb:v3.3.0` and `surrealdb/surrealdb:v4` | `.github/workflows/typescript-e2e.yml`, `rust-surreal-e2e.yml`, `rust-client-e2e.yml` |
 | Rust SDK | `surrealdb = "4"` (`protocol-ws`) | workspace `Cargo.toml` |
 | JS / npm SDK | `surrealdb@^2.2.2` | `clients/javascript`, `e2e/typescript` |
 
@@ -35,6 +35,7 @@ Local override examples:
 SURREAL_IMAGE=surrealdb/surrealdb:v3.3.0 docker compose up -d
 SURREAL_IMAGE=surrealdb/surrealdb:v3.3.0 cargo test -p e2e --locked --test surreal
 SURREAL_IMAGE=surrealdb/surrealdb:v4 pnpm --filter awesome-schema-typescript-e2e test
+SURREAL_IMAGE=surrealdb/surrealdb:v4 cargo test -p e2e-rust --locked
 ```
 
 ## Intersection SurrealQL / runtime

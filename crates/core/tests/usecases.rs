@@ -365,7 +365,7 @@ fn generate_code_targets_schema_rust_and_typescript() {
     );
     assert_eq!(
         use_case
-            .execute(GenerateCodeInput { target: GenerateCodeTarget::Rust, stdout: false })
+            .execute(GenerateCodeInput { target: GenerateCodeTarget::Rust, stdout: true })
             .expect("rust")
             .content,
         "RUST"
@@ -411,6 +411,59 @@ fn generate_typescript_writes_generator_output_unless_stdout() {
         .execute(GenerateCodeInput { target: GenerateCodeTarget::TypeScript, stdout: true })
         .expect("stdout");
     assert!(stdout_only.written_path.is_none());
+}
+
+#[test]
+fn generate_rust_writes_generator_output_unless_stdout() {
+    use core::domain::Generator;
+
+    let mut schema = sample_schema();
+    schema.generators.push(Generator {
+        provider: "rust".to_owned(),
+        output: "./generated".to_owned(),
+        extra: BTreeMap::new(),
+    });
+    let source = Arc::new(StaticSchemaSource { schema, raw: String::new() });
+    let renderer = Arc::new(RecordingRenderer { output: "SQL".to_owned() });
+    let fs = Arc::new(MemoryFs::new());
+    let use_case = GenerateCodeUseCase::new(
+        source,
+        renderer,
+        Arc::new(StaticGenerator { label: "RUST".to_owned() }),
+        Arc::new(StaticGenerator { label: "TS".to_owned() }),
+        fs.clone(),
+        "awesome.schema".to_owned(),
+    );
+
+    let written = use_case
+        .execute(GenerateCodeInput { target: GenerateCodeTarget::Rust, stdout: false })
+        .expect("write");
+    assert_eq!(written.written_path.as_deref(), Some("generated/client.rs"));
+    assert_eq!(fs.read_to_string("generated/client.rs").expect("read"), "RUST");
+
+    let stdout_only = use_case
+        .execute(GenerateCodeInput { target: GenerateCodeTarget::Rust, stdout: true })
+        .expect("stdout");
+    assert!(stdout_only.written_path.is_none());
+
+    let mut missing = sample_schema();
+    missing.generators.clear();
+    let source = Arc::new(StaticSchemaSource { schema: missing, raw: String::new() });
+    let use_case = GenerateCodeUseCase::new(
+        source,
+        Arc::new(RecordingRenderer { output: "SQL".to_owned() }),
+        Arc::new(StaticGenerator { label: "RUST".to_owned() }),
+        Arc::new(StaticGenerator { label: "TS".to_owned() }),
+        Arc::new(MemoryFs::new()),
+        "awesome.schema".to_owned(),
+    );
+    let Err(error) =
+        use_case.execute(GenerateCodeInput { target: GenerateCodeTarget::Rust, stdout: false })
+    else {
+        panic!("missing rust generator should fail");
+    };
+    let message = error.to_string();
+    assert!(message.contains("rust"), "{message}");
 }
 
 #[test]

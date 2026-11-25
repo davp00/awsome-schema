@@ -2,7 +2,7 @@
 
 Awesome Schema is a **schema modeling, migration, and code generation toolkit** for modern databases. It is inspired by [Prisma](https://www.prisma.io/) and [TypeORM](https://typeorm.io/), but designed from the ground up to express database-native capabilities—starting with **SurrealDB 3.3+ and 4.x**.
 
-Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate a TypeScript Surreal client. Rust client models are still a stub.
+Define your schema once in an `awesome.schema` file, validate it, generate SurrealQL, track migrations, and generate TypeScript and Rust Surreal clients.
 
 ## Why Awesome Schema exists
 
@@ -106,13 +106,17 @@ cargo run -p awesome-schema -- --schema examples/awesome.schema validate
 cargo run -p awesome-schema -- format
 cargo run -p awesome-schema -- format --write
 
-# Generate SurrealQL, Rust stubs, or TypeScript client
-# TypeScript writes to generator.output and imports the alpha `awesome-schema` package
-# Another project installs that package and runs `pnpm awesome-schema`; it does not clone this repo
+# Generate SurrealQL, a Rust client, or a TypeScript client
+# TypeScript writes generator.output and imports the alpha `awesome-schema` package
+# Rust writes generator.output (a directory becomes client.rs) and depends on
+# `awesome-schema-surreal` plus `surrealdb = "4"`
+# --stdout prints only and does not write the file
+# Another project installs the TypeScript package and runs `pnpm awesome-schema`; it does not clone this repo
 cargo run -p awesome-schema -- generate
 cargo run -p awesome-schema -- generate --target rust
 cargo run -p awesome-schema -- generate --target typescript
 cargo run -p awesome-schema -- generate --target typescript --stdout
+cargo run -p awesome-schema -- generate --target rust --stdout
 
 # Migrations
 cargo run -p awesome-schema -- migrate dev

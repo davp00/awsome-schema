@@ -10,6 +10,8 @@ members = [
     "crates/codegen-typescript",
     "crates/renderers",
     "crates/e2e",
+    "clients/rust",
+    "e2e/rust",
 ]
 
 default-members = [
@@ -65,3 +67,4 @@ renderers = { package = "awesome-schema-renderers", path = "crates/renderers", v
 codegen = { package = "awesome-schema-codegen", path = "crates/codegen", version = "0.1.0-alpha.1" }
 codegen-rust = { package = "awesome-schema-codegen-rust", path = "crates/codegen-rust", version = "0.1.0-alpha.1" }
 codegen-typescript = { package = "awesome-schema-codegen-typescript", path = "crates/codegen-typescript", version = "0.1.0-alpha.1" }
+client-surreal = { package = "awesome-schema-surreal", path = "clients/rust", version = "0.1.0-alpha.1" }

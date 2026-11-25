@@ -12,7 +12,7 @@ echo "==> cargo llvm-cov --workspace (exclude e2e)"
 mkdir -p "${OUTPUT_DIR}"
 cargo llvm-cov clean --workspace
 
-ARGS=(--workspace --locked --exclude e2e --html --output-dir "${OUTPUT_DIR}")
+ARGS=(--workspace --locked --exclude e2e --exclude e2e-rust --html --output-dir "${OUTPUT_DIR}")
 if [[ -n "${FAIL_UNDER}" ]]; then
   case "${FAIL_UNDER}" in
     *.*) FAIL_UNDER_FLOAT="${FAIL_UNDER}" ;;

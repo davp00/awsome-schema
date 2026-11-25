@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use cli::adapters::{list_schema_files, FsAdapter, SchemaFileSource};
+use cli::adapters::{FsAdapter, SchemaFileSource, list_schema_files};
 use cli::commands::{db, format, migrate};
 use cli::output::Printer;
 use cli::schema_layout::{split_schema_dir, table_fragment_path};
@@ -126,18 +126,12 @@ fn fs_adapter_write_remove_and_error_paths() {
     let dir = temp.path().join("nested");
     let file = dir.join("file.txt");
 
-    adapter
-        .create_dir_all(dir.to_str().expect("dir"))
-        .expect("mkdir");
-    adapter
-        .write_string(file.to_str().expect("file"), "hello")
-        .expect("write");
+    adapter.create_dir_all(dir.to_str().expect("dir")).expect("mkdir");
+    adapter.write_string(file.to_str().expect("file"), "hello").expect("write");
     assert!(adapter.exists(file.to_str().expect("file")));
 
     adapter.remove_file(file.to_str().expect("file")).expect("remove");
-    let remove_err = adapter
-        .remove_file(file.to_str().expect("file"))
-        .expect_err("missing remove");
+    let remove_err = adapter.remove_file(file.to_str().expect("file")).expect_err("missing remove");
     assert!(matches!(remove_err, DomainError::WriteFailed(_)));
 
     let list_err = adapter.list_dir(temp.path().join("missing").to_str().unwrap());
@@ -148,9 +142,7 @@ fn fs_adapter_write_remove_and_error_paths() {
 
     // create_dir_all fails when a file occupies the path.
     let blocker = temp.path().join("as_dir");
-    adapter
-        .write_string(blocker.to_str().unwrap(), "x")
-        .expect("blocker");
+    adapter.write_string(blocker.to_str().unwrap(), "x").expect("blocker");
     let mkdir_err = adapter.create_dir_all(blocker.join("child").to_str().unwrap());
     assert!(matches!(mkdir_err, Err(DomainError::WriteFailed(_))));
 }
@@ -175,11 +167,7 @@ fn schema_file_source_directory_and_skip_non_schema() {
 "#,
     )
     .expect("config");
-    std::fs::write(
-        schema_dir.join("tables/user.schema"),
-        "model User { id @id }\n",
-    )
-    .expect("user");
+    std::fs::write(schema_dir.join("tables/user.schema"), "model User { id @id }\n").expect("user");
     std::fs::write(schema_dir.join("tables/notes.txt"), "ignore\n").expect("notes");
 
     let schema = source.load_schema().expect("load");
@@ -251,9 +239,7 @@ fn split_by_table_refuses_without_force_and_writes_with_force() {
     let context = test_context_with_introspector(
         schema_path.to_string_lossy().into_owned(),
         temp.path().join("migrations").to_string_lossy().into_owned(),
-        Arc::new(StubIntrospector {
-            schema: sample_pulled_schema(),
-        }),
+        Arc::new(StubIntrospector { schema: sample_pulled_schema() }),
     )
     .expect("context");
 
@@ -278,9 +264,7 @@ fn migrate_status_empty_and_rollback_zero_steps() {
     let mut context = test_context_with_introspector(
         schema_path.to_string_lossy().into_owned(),
         migrations.to_string_lossy().into_owned(),
-        Arc::new(StubIntrospector {
-            schema: sample_pulled_schema(),
-        }),
+        Arc::new(StubIntrospector { schema: sample_pulled_schema() }),
     )
     .expect("context");
 
@@ -300,9 +284,7 @@ fn fs_adapter_write_fails_when_path_is_directory() {
     let adapter = FsAdapter;
     let dir = temp.path().join("as_file");
     std::fs::create_dir_all(&dir).expect("mkdir");
-    let err = adapter
-        .write_string(dir.to_str().expect("dir"), "x")
-        .expect_err("dir write");
+    let err = adapter.write_string(dir.to_str().expect("dir"), "x").expect_err("dir write");
     assert!(matches!(err, DomainError::WriteFailed(_)));
 }
 
@@ -316,20 +298,16 @@ fn migration_store_invalid_snapshot_and_list_errors() {
     std::fs::create_dir_all(migrations.join("001_bad")).expect("dir");
     std::fs::write(migrations.join("001_bad/snapshot.json"), "{not-json").expect("bad json");
 
-    let store = MigrationStoreAdapter::new(
-        Arc::new(FsAdapter),
-        migrations.to_string_lossy().into_owned(),
-    );
+    let store =
+        MigrationStoreAdapter::new(Arc::new(FsAdapter), migrations.to_string_lossy().into_owned());
     let err = store.load_last_snapshot().expect_err("bad json");
     assert!(matches!(err, DomainError::MigrationError(_)));
 
     // list_migrations fails when migrations_dir is a file.
     let file_path = temp.path().join("not_a_dir");
     std::fs::write(&file_path, "x").expect("file");
-    let store = MigrationStoreAdapter::new(
-        Arc::new(FsAdapter),
-        file_path.to_string_lossy().into_owned(),
-    );
+    let store =
+        MigrationStoreAdapter::new(Arc::new(FsAdapter), file_path.to_string_lossy().into_owned());
     let err = store.list_migrations().expect_err("not a dir");
     assert!(matches!(err, DomainError::MigrationError(_)));
 }
@@ -379,11 +357,7 @@ fn schema_file_source_loads_edges_from_directory() {
 "#,
     )
     .expect("config");
-    std::fs::write(
-        schema_dir.join("tables/user.schema"),
-        "model User { id @id }\n",
-    )
-    .expect("user");
+    std::fs::write(schema_dir.join("tables/user.schema"), "model User { id @id }\n").expect("user");
     std::fs::write(
         schema_dir.join("tables/likes.schema"),
         "edge Likes {\n  in User\n  out User\n}\n",
@@ -409,11 +383,7 @@ fn format_schema_directory_success_message() {
 "#,
     )
     .expect("config");
-    std::fs::write(
-        schema_dir.join("tables/user.schema"),
-        "model User { id @id }\n",
-    )
-    .expect("user");
+    std::fs::write(schema_dir.join("tables/user.schema"), "model User { id @id }\n").expect("user");
 
     let context = cli::di::AppContext::with_paths(
         schema_dir.to_string_lossy().into_owned(),
@@ -427,11 +397,7 @@ fn format_schema_directory_success_message() {
 struct OkExecutor;
 
 impl schema_core::ports::DatabaseExecutor for OkExecutor {
-    fn execute_script(
-        &self,
-        _config: &DatabaseConfig,
-        _script: &str,
-    ) -> Result<(), DomainError> {
+    fn execute_script(&self, _config: &DatabaseConfig, _script: &str) -> Result<(), DomainError> {
         Ok(())
     }
 
@@ -470,8 +436,8 @@ impl MigrationLedger for StatusLedger {
 #[test]
 fn run_push_succeeds_with_stub_executor() {
     use renderers::SurrealDbRenderer;
-    use schema_core::ports::{DatabaseExecutor, SchemaRenderer, SchemaSource};
     use schema_core::DbPushUseCase;
+    use schema_core::ports::{DatabaseExecutor, SchemaRenderer};
 
     let temp = tempfile::tempdir().expect("tempdir");
     let schema_path = temp.path().join("awesome.schema");
@@ -480,9 +446,7 @@ fn run_push_succeeds_with_stub_executor() {
     let mut context = test_context_with_introspector(
         schema_path.to_string_lossy().into_owned(),
         temp.path().join("migrations").to_string_lossy().into_owned(),
-        Arc::new(StubIntrospector {
-            schema: sample_pulled_schema(),
-        }),
+        Arc::new(StubIntrospector { schema: sample_pulled_schema() }),
     )
     .expect("context");
 
@@ -502,9 +466,7 @@ fn init_reports_schema_created() {
     let mut context = test_context_with_introspector(
         schema_path.to_string_lossy().into_owned(),
         migrations.to_string_lossy().into_owned(),
-        Arc::new(StubIntrospector {
-            schema: sample_pulled_schema(),
-        }),
+        Arc::new(StubIntrospector { schema: sample_pulled_schema() }),
     )
     .expect("context");
     context.init_project = InitProjectUseCase::new(context.filesystem.clone());
@@ -535,9 +497,7 @@ fn migrate_status_lists_applied_and_pending_with_snapshot() {
     let mut context = test_context_with_introspector(
         schema_path.to_string_lossy().into_owned(),
         migrations.to_string_lossy().into_owned(),
-        Arc::new(StubIntrospector {
-            schema: sample_pulled_schema(),
-        }),
+        Arc::new(StubIntrospector { schema: sample_pulled_schema() }),
     )
     .expect("context");
 
@@ -615,9 +575,7 @@ fn migrate_apply_and_rollback_success_messages() {
     let mut context = test_context_with_introspector(
         schema_path.to_string_lossy().into_owned(),
         migrations.to_string_lossy().into_owned(),
-        Arc::new(StubIntrospector {
-            schema: sample_pulled_schema(),
-        }),
+        Arc::new(StubIntrospector { schema: sample_pulled_schema() }),
     )
     .expect("context");
 
@@ -625,9 +583,7 @@ fn migrate_apply_and_rollback_success_messages() {
         context.filesystem.clone(),
         migrations.to_string_lossy().into_owned(),
     ));
-    let ledger = Arc::new(RecordingLedger {
-        applied: Mutex::new(Vec::new()),
-    });
+    let ledger = Arc::new(RecordingLedger { applied: Mutex::new(Vec::new()) });
     let database: Arc<dyn schema_core::ports::DatabaseExecutor> = Arc::new(OkExecutor);
 
     context.migrate_apply = MigrateApplyUseCase::new(
@@ -636,12 +592,8 @@ fn migrate_apply_and_rollback_success_messages() {
         database.clone(),
         ledger.clone(),
     );
-    context.migrate_rollback = MigrateRollbackUseCase::new(
-        store,
-        context.filesystem.clone(),
-        database,
-        ledger,
-    );
+    context.migrate_rollback =
+        MigrateRollbackUseCase::new(store, context.filesystem.clone(), database, ledger);
 
     migrate::run_apply(&context, &Printer::new()).expect("apply");
     migrate::run_rollback(&context, 1, &Printer::new()).expect("rollback");

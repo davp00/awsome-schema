@@ -22,7 +22,7 @@ generator client {
 }
 ```
 
-Only `surrealdb` is supported for SQL render, `db push`/`pull`, migrate apply, and TypeScript client emit.
+Only `surrealdb` is supported for SQL render, `db push`/`pull`, migrate apply, and client emit. `generator.provider` is `typescript` or `rust`.
 
 ## Models, links, edges
 

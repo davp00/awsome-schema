@@ -5,9 +5,10 @@
 Check so far:
 
 - Read the CLI, domain, parser, differ, SurrealDB renderer, codegen, and `db` adapters.
-- `cargo test --workspace --exclude e2e` — unit/integration suite.
+- `cargo test --workspace --exclude e2e --exclude e2e-rust` — unit/integration suite.
 - `cargo test -p e2e --locked --test surreal` — Surreal CLI suite via Docker/testcontainers with `SURREAL_IMAGE` for **v3.3.0** and **v4** (CI: `rust-surreal-e2e`).
 - `pnpm --filter awesome-schema-typescript-e2e test` — Vitest generated-client e2e on both images (CI matrix: `typescript-e2e`).
+- `cargo test -p e2e-rust --locked` — generated Rust client e2e (CI: `rust-client-e2e`, images v3.3.0 and v4). Soft-skips locally without Docker unless `CI=true` or `REQUIRE_SURREAL=1`.
 - Supported matrix: servers **3.3+** and **4.x**, Rust `surrealdb = "4"`, JS `surrealdb@^2.2.2` — see [surrealdb-matrix.md](surrealdb-matrix.md).
 
 Legend: **done** means the behavior exists and is covered by unit or CLI tests. **partial** means some of the path works and a specific gap remains. **not started** means the command or type exists but does not do the job.
@@ -31,6 +32,7 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | Permissions (raw) | `@@permissions("FULL")` renders `DEFINE TABLE … PERMISSIONS` | renderer tests |
 | `generate --target schema` | Prints full SurrealQL | CLI tests; e2e offline_cli |
 | TypeScript codegen | Dual record/`*Selected` shapes; Create/Update inputs; nested `Select`/`GetPayload`; hybrid where; order/take/skip; bulk/upsert/return; count/groupBy; nested writes; `$transaction`; raw query; `live()`. Shared Surreal runtime is the alpha `awesome-schema` package. Generated clients import it. `pnpm awesome-schema` launches a prebuilt CLI for the current platform | `crates/codegen-typescript`; `clients/javascript`; CLI tests; `e2e/typescript` |
+| Rust codegen | Same operations as the TypeScript client: dual record/`*Selected` shapes, where/select/order, edges, nested writes, transactions, raw query, and session `live()`. Shared runtime is `awesome-schema-surreal` (`clients/rust`). Writes `generator.output` unless `--stdout` | `crates/codegen-rust`; `clients/rust`; `e2e/rust` |
 | `migrate dev` | Diffs models against the last snapshot and writes up, down, and `snapshot.json` | `crates/migrations` |
 | `migrate create` | Empty migration directory | use case + CLI tests |
 | `migrate status` | Applied vs pending via `_awesome_migrations` ledger; snapshot flag | use case tests; e2e migrate |
@@ -48,7 +50,6 @@ Legend: **done** means the behavior exists and is covered by unit or CLI tests. 
 | `edge` blocks | Parsed and rendered as `DEFINE TABLE … TYPE RELATION IN … OUT …`; differ create/alter/drop; edge permissions; e2e roundtrip | `LIGHTWEIGHT` / `INLINE` not modeled |
 | `@relation` | Parsed; must name an existing edge; skipped in SurrealQL (navigation-only for codegen); `db pull` synthesizes nav fields from RELATION edges (preserve names when present) | — |
 | Events, functions | `CreateEvent`, `DropEvent`, `CreateFunction`, `DropFunction` render | No DSL syntax. Nothing in the parser produces them |
-| Rust codegen | `generate --target rust` emits struct shells (optionals/arrays) | Still a stub: no dual link shapes, edges as real types, or client helpers |
 
 ## Not started
 
